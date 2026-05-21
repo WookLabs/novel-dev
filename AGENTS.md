@@ -4,10 +4,10 @@
 
 ## Purpose
 
-Novel-Sisyphus is a Claude Code plugin for AI-powered Korean novel writing. It provides a multi-agent orchestration system specifically designed for creative writing workflows, featuring 22 specialized agents and 27 skills that support the complete novel creation lifecycle from initial concept to final export.
+Novel-Sisyphus is a Claude Code plugin for AI-powered Korean novel writing. It provides a multi-agent orchestration system specifically designed for creative writing workflows, featuring 22 specialized agents and 29 skills that support the complete novel creation lifecycle from initial concept to final export.
 
 This plugin adapts the oh-my-claude-sisyphus orchestration framework for creative writing, implementing:
-- Agent-based workflow with specialized roles (novelist, editor, critic, lore-keeper, plot-architect, proofreader, summarizer, beta-reader, genre-validator, chapter-verifier, consistency-verifier, engagement-optimizer, character-voice-analyzer, quality-oracle, prose-surgeon, style-curator, team-orchestrator)
+- Agent-based workflow with specialized roles (novelist, editor, critic, lore-keeper, plot-architect, proofreader, summarizer, beta-reader, genre-validator, chapter-verifier, consistency-verifier, engagement-optimizer, character-voice-analyzer, quality-oracle, prose-surgeon, style-curator, team-orchestrator, narrator, character-designer, arc-designer, extras, chapter-merger)
 - Ralph Loop for automated chapter writing with quality gates
 - Comprehensive project structure with JSON schemas
 - Korean-language literary conventions and best practices
@@ -26,14 +26,14 @@ This plugin adapts the oh-my-claude-sisyphus orchestration framework for creativ
 
 | Directory | Purpose | Details |
 |-----------|---------|---------|
-| `agents/` | Agent prompt files | 17 specialized agent definitions |
-| `commands/` | Command implementations | 18 slash commands for writing workflow (.md files) |
+| `agents/` | Agent prompt files | 22 specialized agent definitions |
+| `skills/` | Skill implementations | 29 skill workflows for writing, review, and utilities |
 | `schemas/` | JSON schemas | Data validation schemas for all project files |
-| `teams/` | Team presets | 6 preset team definitions + custom teams (.team.json files) |
+| `teams/` | Team presets | 15 preset team definitions + custom teams (.team.json files) |
 | `templates/` | JSON templates | Default templates for project initialization |
 | `scripts/` | Utility scripts | Helper scripts for workflow automation (.mjs files) |
 | `hooks/` | Plugin hooks | Hook configuration for Claude Code integration |
-| `test-project/` | Example project | Sample novel project structure for testing |
+| `test-workspace/` | Example project | Sample novel project structure for testing |
 
 ## Plugin Architecture
 
@@ -60,21 +60,19 @@ The plugin implements a multi-agent system with specialized roles:
 | style-curator | sonnet | Style exemplar curation and library management |
 | chapter-verifier | sonnet | Automated chapter verification with parallel validators |
 | team-orchestrator | sonnet | Team orchestration - loads team definitions, spawns agent teams, coordinates workflows |
+| narrator | sonnet | Collaborative writing session narration and pacing |
+| character-designer | opus | Character profile design and character-agent generation |
+| arc-designer | sonnet | Sub-arc, foreshadowing, hook, and cliffhanger design |
+| extras | sonnet | Minor/cameo character dialogue and action generation |
+| chapter-merger | opus | Claude+Codex parallel chapter merge review |
 
 ### Team System
 
 에이전트를 역할 기반 팀으로 조직화하여 병렬/순차/파이프라인/협업 실행을 지원합니다.
 
-**6개 프리셋 팀:**
+**15개 프리셋 팀:**
 
-| Team | Category | Agents | Workflow | 용도 |
-|------|----------|--------|----------|------|
-| planning-team | planning | plot-architect, lore-keeper, style-curator | collaborative | 소설 기획/설계 |
-| writing-team | writing | novelist, proofreader, summarizer | sequential | 회차 집필 |
-| writing-team-2pass | writing | novelist, quality-oracle, prose-surgeon, proofreader | pipeline | 2-Pass 정밀 집필 |
-| verification-team | verification | critic, beta-reader, genre-validator | parallel | 품질 검증 |
-| deep-review-team | verification | 6 agents | parallel | 심층 다관점 리뷰 |
-| revision-team | revision | critic, editor, proofreader, consistency-verifier | pipeline | 피드백 기반 퇴고 |
+전체 15개 팀의 상세 목록은 [teams/AGENTS.md](teams/AGENTS.md)를 참조하세요.
 
 **사용법:** `/team run <team-name> [chapter]`
 
@@ -87,7 +85,7 @@ The plugin implements a multi-agent system with specialized roles:
 
 ### Command Categories
 
-Commands are organized by workflow phase:
+Skills are organized by workflow phase:
 
 1. **Initialization**: `/init` - Project setup
 2. **Design**: `/design_*` - Worldbuilding, characters, plot arcs
@@ -104,6 +102,13 @@ The `/write_all` command activates Ralph Loop mode:
 - Quality gate at 70/100 points
 - Automatic revision on failure (max 3 retries)
 - User confirmation between acts
+
+### Writer-Safe Brief
+
+`codex-writer` (and Codex-mode pipelines) receive a **writer-safe brief** — not the raw chapter JSON.
+The brief is built by `scripts/lib/writer-brief-builder.mjs`, which strips storyboard notation,
+resolves character references by `id` (fallback: stem → alias → name), and sanitizes plot-meta
+fields before passing the context to the LLM.
 
 ## Project Structure
 
@@ -253,7 +258,7 @@ The plugin enforces quality through multiple mechanisms:
 To add new functionality:
 
 - **New Agent**: Create `.md` file in `agents/` with frontmatter (name, description, model)
-- **New Command**: Create `.md` file in `commands/` with description and workflow
+- **New Skill**: Create `SKILL.md` file in `skills/<skill-name>/` with description and workflow
 - **New Schema**: Add JSON schema to `schemas/` following existing patterns
 - **New Template**: Add default JSON to `templates/`
 - **New Hook**: Update `hooks/hooks.json` with hook configuration

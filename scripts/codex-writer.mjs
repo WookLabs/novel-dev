@@ -23,9 +23,13 @@
  */
 
 import fs from 'fs';
+import os from 'node:os';
 import path from 'path';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { extractChapterCast } from './lib/chapter-cast.mjs';
+import { resolveCharacters } from './lib/character-resolver.mjs';
+import { buildWriterBrief } from './lib/writer-brief-builder.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,7 +54,8 @@ function parseArgs(argv) {
     model: 'gpt-5.4',
     mode: 'write',
     feedback: null,
-    dryRun: false
+    dryRun: false,
+    qualityMode: 'strict',  // strict | warn | off
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -67,6 +72,8 @@ function parseArgs(argv) {
       result.feedback = argv[++i];
     } else if (arg === '--dry-run') {
       result.dryRun = true;
+    } else if (arg === '--quality-mode' && argv[i + 1]) {
+      result.qualityMode = argv[++i];
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       process.exit(0);
@@ -84,13 +91,17 @@ ${colors.yellow}Usage:${colors.reset}
   node scripts/codex-writer.mjs --chapter N --project PATH
 
 ${colors.yellow}Options:${colors.reset}
-  --chapter N        회차 번호 (필수)
-  --project PATH     소설 프로젝트 경로 (필수)
-  --model MODEL      GPT 모델 (기본: gpt-5.4)
-  --mode MODE        write(초고, 기본) | revise(퇴고)
-  --feedback PATH    퇴고 시 리뷰 피드백 JSON 경로
-  --dry-run          프롬프트 생성만, Codex 호출 안 함
-  --help, -h         도움말
+  --chapter N             회차 번호 (필수)
+  --project PATH          소설 프로젝트 경로 (필수)
+  --model MODEL           GPT 모델 (기본: gpt-5.4)
+  --mode MODE             write(초고, 기본) | revise(퇴고)
+  --feedback PATH         퇴고 시 리뷰 피드백 JSON 경로
+  --dry-run               프롬프트 생성만, Codex 호출 안 함
+  --quality-mode MODE     strict(기본) | warn | off  — 품질 게이트 모드
+                          strict: 실패 시 최종본 덮어쓰기 안 함, exit 1
+                          warn: 경고만 출력, exit 0
+                          off: 게이트 건너뜀
+  --help, -h              도움말
 
 ${colors.yellow}Environment:${colors.reset}
   Codex CLI가 자체적으로 인증 처리 (별도 API 키 불필요)
@@ -111,7 +122,7 @@ function padChapter(n) {
   return String(n).padStart(3, '0');
 }
 
-function loadContext(projectPath, chapterNum) {
+async function loadContext(projectPath, chapterNum) {
   const pad = padChapter(chapterNum);
 
   const chapterPlot = readIfExists(path.join(projectPath, `chapters/chapter_${pad}.json`));
@@ -129,15 +140,35 @@ function loadContext(projectPath, chapterNum) {
 
   // 캐릭터 파일 로드 (플롯에 등장하는 캐릭터)
   const plotData = JSON.parse(chapterPlot);
-  const characterIds = plotData.meta?.characters || [];
+
+  // Use extractChapterCast + resolveCharacters for robust resolution
+  // (handles filename ≠ id cases like protagonist.json / char_001)
+  const castIds = extractChapterCast(plotData);
+  const { resolved: resolvedChars, missing: missingChars } = await resolveCharacters(projectPath, castIds);
+
+  for (const missingId of missingChars) {
+    warn(`캐릭터를 찾을 수 없습니다 (건너뜀): ${missingId}`);
+  }
+
   const characters = [];
-  for (const id of characterIds) {
-    const agentMd = readIfExists(path.join(PLUGIN_ROOT, `agents/characters/${id}.md`));
+  for (const { requestedId, character } of resolvedChars) {
+    // Prefer a dedicated agent .md if one exists (keyed by id or by name-derived path)
+    const charId = character.id || requestedId;
+    const charName = character.name;
+
+    // Try agent file by id first, then by name slug
+    const agentMdById = readIfExists(path.join(PLUGIN_ROOT, `agents/characters/${charId}.md`));
+    const nameStem = charName ? charName.replace(/\s+/g, '-') : null;
+    const agentMdByName = nameStem
+      ? readIfExists(path.join(PLUGIN_ROOT, `agents/characters/${nameStem}.md`))
+      : null;
+    const agentMd = agentMdById || agentMdByName;
+
     if (agentMd) {
-      characters.push({ id, agentContent: agentMd });
+      characters.push({ id: charId, agentContent: agentMd });
     } else {
-      const charJson = readIfExists(path.join(projectPath, `characters/${id}.json`));
-      if (charJson) characters.push({ id, jsonContent: charJson });
+      // Build a concise profile block from the resolved JSON (not the full 200-line file)
+      characters.push({ id: charId, resolvedCharacter: character });
     }
   }
 
@@ -166,10 +197,33 @@ function buildSystemPrompt(ctx) {
 
   // 캐릭터 보이스 프로필
   if (ctx.characters.length > 0) {
+    const charNames = ctx.characters.map(c => {
+      if (c.resolvedCharacter) return c.resolvedCharacter.name || c.id;
+      return c.id;
+    });
     prompt += `## 등장인물 보이스 프로필\n\n`;
+    prompt += `등장인물: ${charNames.join(', ')}\n\n`;
     for (const char of ctx.characters) {
       if (char.agentContent) {
         prompt += `### ${char.id}\n${char.agentContent}\n\n`;
+      } else if (char.resolvedCharacter) {
+        // Concise profile — id, name, role, aliases, summary only (not full JSON)
+        const c = char.resolvedCharacter;
+        prompt += `### ${c.name || char.id}\n`;
+        prompt += `- **id**: ${c.id || char.id}\n`;
+        prompt += `- **role**: ${c.role || '(unknown)'}\n`;
+        if (Array.isArray(c.aliases) && c.aliases.length > 0) {
+          prompt += `- **aliases**: ${c.aliases.join(', ')}\n`;
+        }
+        if (c.notes) {
+          prompt += `- **notes**: ${c.notes}\n`;
+        } else if (c.inner?.want) {
+          prompt += `- **want**: ${c.inner.want}\n`;
+        }
+        if (c.basic?.voice?.tone) {
+          prompt += `- **voice**: ${c.basic.voice.tone}\n`;
+        }
+        prompt += `\n`;
       } else if (char.jsonContent) {
         prompt += `### ${char.id}\n\`\`\`json\n${char.jsonContent}\n\`\`\`\n\n`;
       }
@@ -191,8 +245,49 @@ function buildUserPrompt(ctx, mode, feedbackContent) {
     return buildRevisePrompt(ctx, feedbackContent);
   }
 
+  // Build sanitized writer brief instead of embedding raw chapter JSON
+  const { brief, privateOutlineWarnings } = buildWriterBrief(ctx.plotData);
+
+  // Inject resolved character profiles into the ### 등장인물 section
+  let characterSection = '';
+  if (ctx.characters.length > 0) {
+    const charLines = [];
+    for (const char of ctx.characters) {
+      if (char.agentContent) {
+        charLines.push(`#### ${char.id}\n${char.agentContent}`);
+      } else if (char.resolvedCharacter) {
+        const c = char.resolvedCharacter;
+        const parts = [`#### ${c.name || char.id}`];
+        if (c.role) parts.push(`- **역할**: ${c.role}`);
+        if (Array.isArray(c.aliases) && c.aliases.length > 0) {
+          parts.push(`- **별칭**: ${c.aliases.join(', ')}`);
+        }
+        if (c.notes) parts.push(`- **노트**: ${c.notes}`);
+        else if (c.inner?.want) parts.push(`- **욕구**: ${c.inner.want}`);
+        if (c.basic?.voice?.tone) parts.push(`- **보이스**: ${c.basic.voice.tone}`);
+        charLines.push(parts.join('\n'));
+      }
+    }
+    characterSection = charLines.join('\n\n');
+  }
+
+  // Insert character profiles after the ### 등장인물 heading
+  let enrichedBrief = brief;
+  if (characterSection) {
+    enrichedBrief = brief.replace(
+      /### 등장인물\n+/,
+      `### 등장인물\n\n${characterSection}\n\n`
+    );
+  }
+
+  // Log storyboard phrase rewrites (for debugging)
+  if (privateOutlineWarnings.length > 0) {
+    warn(`플롯 브리프 변환: ${privateOutlineWarnings.length}개 스토리보드 표현을 산문 지시문으로 교체함`);
+  }
+
   let prompt = `# 집필 대상\n\n`;
-  prompt += `## 플롯\n\`\`\`json\n${ctx.chapterPlot}\n\`\`\`\n\n`;
+  prompt += enrichedBrief;
+  prompt += `\n\n`;
 
   if (ctx.summaries.length > 0) {
     prompt += `## 이전 회차 요약\n\n`;
@@ -201,7 +296,8 @@ function buildUserPrompt(ctx, mode, feedbackContent) {
     });
   }
 
-  prompt += `위 플롯에 따라 완전한 챕터를 집필하세요. 목표 분량: 5000~8000자.\n`;
+  prompt += `위 브리프에 따라 완전한 챕터를 집필하세요. 목표 분량: 5000~8000자.\n`;
+  prompt += `브리프는 사전 설계 자료이며, 메타/연출/분석 용어를 본문에 복사하지 말 것.\n`;
   prompt += `출력은 마크다운 형식으로, 본문만 출력하세요 (메타 코멘트 없음).\n`;
 
   return prompt;
@@ -364,8 +460,8 @@ function checkPrerequisites() {
 
 function runCodex(systemPrompt, userPrompt, model) {
   // 임시 파일로 프롬프트 전달 (CLI 인자 길이 제한 우회)
-  const tmpDir = path.join(process.env.TEMP || '/tmp', 'codex-writer');
-  fs.mkdirSync(tmpDir, { recursive: true });
+  // mkdtempSync로 고유 디렉터리를 생성하여 병렬 실행 시 파일 충돌을 방지
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-writer-'));
 
   const promptFile = path.join(tmpDir, 'prompt.md');
   const outputFile = path.join(tmpDir, 'output.md');
@@ -391,9 +487,7 @@ function runCodex(systemPrompt, userPrompt, model) {
     }
     return '';
   } finally {
-    try { fs.unlinkSync(promptFile); } catch { /* ignore */ }
-    try { fs.unlinkSync(outputFile); } catch { /* ignore */ }
-    try { fs.rmdirSync(tmpDir); } catch { /* ignore */ }
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
   }
 }
 
@@ -440,8 +534,12 @@ async function main() {
     }
   } else {
     // write, revise: 챕터 레벨 모드
-    const ctx = loadContext(args.project, args.chapter);
-    log(`플롯 로드 완료. 등장인물: ${ctx.characters.map(c => c.id).join(', ') || 'none'}`);
+    const ctx = await loadContext(args.project, args.chapter);
+    const charDisplay = ctx.characters.map(c => {
+      if (c.resolvedCharacter) return `${c.resolvedCharacter.name || c.id}(${c.id})`;
+      return c.id;
+    }).join(', ') || 'none';
+    log(`플롯 로드 완료. 등장인물: ${charDisplay}`);
 
     let feedbackContent = null;
     if (args.mode === 'revise' && args.feedback) {
@@ -493,6 +591,43 @@ async function main() {
     const chPath = path.join(args.project, `chapters/ch${pad}.md`);
     const chapterPath = path.join(args.project, `chapters/chapter_${pad}.md`);
     outputPath = fs.existsSync(chPath) ? chPath : (fs.existsSync(chapterPath) ? chapterPath : chPath);
+  }
+
+  // ─── Quality Gate (write/revise/polish modes only) ────────────────────────
+  // Run BEFORE replacing the final chapter file.
+  // In strict mode, gate failure prevents the final file from being overwritten.
+  const isChapterMode = ['write', 'revise', 'polish'].includes(args.mode);
+  const gateMode = args.qualityMode || 'strict';
+
+  if (isChapterMode && gateMode !== 'off') {
+    // Write to a temp file first so gate can inspect it
+    const tmpInputPath = outputPath + '.gate-tmp.md';
+    fs.writeFileSync(tmpInputPath, result, 'utf-8');
+
+    const GATE_SCRIPT = path.join(__dirname, 'quality-gate.mjs');
+    const gateArgs = [
+      GATE_SCRIPT,
+      '--input', tmpInputPath,
+      '--project', args.project,
+      '--chapter', String(args.chapter),
+      '--mode', gateMode,
+      '--final-path', outputPath,
+    ];
+
+    log(`품질 게이트 실행 중 (mode: ${gateMode})...`);
+    const gateResult = spawnSync('node', gateArgs, { encoding: 'utf-8' });
+
+    // Clean up temp file
+    try { fs.unlinkSync(tmpInputPath); } catch { /* ignore */ }
+
+    if (gateResult.stdout) process.stdout.write(gateResult.stdout);
+    if (gateResult.stderr) process.stderr.write(gateResult.stderr);
+
+    if (gateMode === 'strict' && gateResult.status !== 0) {
+      error('품질 게이트 STRICT 실패 — 최종본을 덮어쓰지 않습니다.');
+      error('draft 파일이 저장되었습니다. 원고를 수정 후 다시 실행하세요.');
+      process.exit(1);
+    }
   }
 
   // 백업

@@ -60,7 +60,8 @@ All output MUST conform to `schemas/surgical-directive.schema.json`
 | `transition-smoothing` | 7 | Abrupt scene transitions |
 | `voice-consistency` | 8 | Character voice drift |
 | `proofreading` | 9 | Grammar, spacing, punctuation |
-| `consecutive-short-sentences` | 4 | 20자 이하 단문 3개 이상 연속 → 복문 결합/길이 변주 |
+| `consecutive-short-sentences` | 4 | 20자 이하 단문 4개 이상 연속 → 복문 결합/길이 변주 |
+| `plot-meta-leak` | 1 | 스토리보드/영상 연출 언어(`화면 페이드`, `0.5초`, `메커닉` 등) 산문 내 누출 — 고심각 시 cap 무시 |
 | `list-monologue` | 3 | 리스트형 독백 (하나/둘/셋, 첫째/둘째) → 자유간접화법 |
 
 ## Detection Heuristics
@@ -86,10 +87,21 @@ Flag 5+ consecutive sentences ending with same pattern:
 - -요. endings
 
 ### Consecutive Short Sentences (AI 끊어쓰기 감지)
-Flag 3+ consecutive sentences where each is 20자 이하:
+Flag 4+ consecutive sentences where each is 20자 이하:
 - "잡혔다. 도현은 발버둥 쳤다. 소용없었다." → directive
 - 액션씬에서 의도적 짧은 리듬은 허용 (5+ 연속 시에만 경고)
 - Instruction: "복문으로 결합하거나 문장 길이를 변주하세요"
+
+### Plot-Meta Leak (스토리보드/연출 언어 누출 감지)
+Flag storyboard or screenplay language appearing in prose narration **outside dialogue**:
+- Timecode + production verb: `0.5초 침묵`, `2초 페이드`, `1초 블랙`
+- Screen directions: `화면 페이드`, `페이드 인`, `페이드 아웃`, `블랙 컷`, `장면 전환`
+- Plot meta terms: `메커닉`, `정서 전환`, `첫 능청`, `권말 컷`, `호흡 전환`
+- Storyboard rhythm: `한 박자` (when adjacent to meta patterns)
+- **NOT flagged**: `가사 한 줄` or `한 줄` alone without accompanying meta patterns
+- **Severity**: 2+ high-confidence matches → high; mixed → medium; single low-confidence → low
+- **High-severity directives bypass the 5-directive cap** (non-suppressible)
+- Instruction: "스토리보드/영상 연출 언어를 소설 산문으로 교체하세요"
 
 ### List Monologue (리스트형 독백 감지)
 Flag numbered/ordered internal monologue patterns:

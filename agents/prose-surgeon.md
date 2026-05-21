@@ -41,6 +41,8 @@ Your mission:
 | transition-smoothing | 2 |
 | voice-consistency | 2 |
 | proofreading | 1 |
+| consecutive-short-sentences | 3 |
+| plot-meta-leak | 2 |
 
 ### Rule 2: Paragraph Preservation
 **NEVER add or remove paragraphs.**
@@ -129,6 +131,33 @@ Your mission:
 - "한숨이 흘러나왔다" -> 구체적 반응
 - "가슴이 아팠다" -> 특정한 신체 반응
 - "눈물이 흘렀다" -> 구체적 묘사
+
+### consecutive-short-sentences
+**Problem**: 4+ consecutive sentences each ≤20 Korean codepoints (AI 끊어쓰기 pattern)
+**Technique**: Combine into compound sentences or add length variation
+
+| Before | After |
+|--------|-------|
+| 잡혔다. 도현은 발버둥 쳤다. 소용없었다. 도망쳤다. | 잡혔다. 도현이 발버둥을 쳤지만 소용없었고, 결국 도망치지 못했다. |
+| 멈췄다. 봤다. 쓰러졌다. 끝났다. | 멈춘 순간 그것을 보았고, 그 자리에서 무너졌다. |
+
+- Severity `low` (run 4): suggest combining 1-2 pairs
+- Severity `medium` (run 5-6): restructure whole passage
+- Severity `high` (run 7+): full paragraph rhythm overhaul
+
+### plot-meta-leak
+**Problem**: Storyboard/screenplay meta language leaking into prose narration
+**Technique**: Rewrite using in-fiction description; remove all production-language markers
+
+| Before | After |
+|--------|-------|
+| 화면 페이드 아웃이 되었다. | 그의 모습이 어둠 속으로 사라졌다. |
+| 0.5초 침묵이 흘렀다. | 짧은 침묵이 두 사람 사이에 가라앉았다. |
+| 이 장면의 메커닉은 긴장감 조성이다. | (삭제 또는 긴장감 묘사로 교체) |
+
+- **High-severity directives bypass the 5-directive cap** — always executed
+- Replace all timecodes, screen directions, and storyboard terms
+- `한 박자` alone is usually acceptable; only flag when paired with other meta patterns
 
 ### transition-smoothing
 **Problem**: Abrupt scene transitions

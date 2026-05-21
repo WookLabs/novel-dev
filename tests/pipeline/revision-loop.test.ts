@@ -47,7 +47,8 @@ describe('DEFAULT_REVISION_LOOP_CONFIG', () => {
 
 describe('analyzeAndReport', () => {
   it('should return PASS for clean content', () => {
-    const content = '빛이 눈부셨다. 소리가 들렸나? 차갑네. 향긋하지!';
+    // Sentences are long enough (>20 chars) so consecutive-short-sentences(maxRun:4) does not fire.
+    const content = '창문으로 들어오는 빛이 방 안을 환하게 비추었다. 멀리서 들려오는 소리가 조용히 울려 퍼졌나? 차가운 공기가 피부를 스치며 지나갔다. 향긋한 풀냄새가 코끝을 간질였다!';
     // Disable texture assessment for this basic test
     const report = analyzeAndReport(content, 1, { assessKoreanTexture: false });
 

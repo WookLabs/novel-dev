@@ -44,7 +44,10 @@ export type DirectiveType =
   | 'style-alignment'
   | 'subtext-injection'
   | 'voice-drift'
-  | 'arc-alignment';
+  | 'arc-alignment'
+  // Prose pattern detection (Phase 5)
+  | 'consecutive-short-sentences'
+  | 'plot-meta-leak';
 
 /**
  * Location of a passage within chapter content

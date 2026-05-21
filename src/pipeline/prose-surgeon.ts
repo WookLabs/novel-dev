@@ -44,6 +44,9 @@ export const MODEL_ROUTING: Record<DirectiveType, { model: 'opus' | 'sonnet'; te
   'subtext-injection': { model: 'opus', temperature: 0.7 },
   'voice-drift': { model: 'opus', temperature: 0.5 },
   'arc-alignment': { model: 'opus', temperature: 0.6 },
+  // Prose pattern detection (Phase 5)
+  'consecutive-short-sentences': { model: 'opus', temperature: 0.6 },
+  'plot-meta-leak': { model: 'opus', temperature: 0.5 },
 };
 
 // ============================================================================
@@ -73,6 +76,9 @@ export const MAX_SCOPE_LIMITS: Record<DirectiveType, number> = {
   'subtext-injection': 2,
   'voice-drift': 2,
   'arc-alignment': 2,
+  // Prose pattern detection (Phase 5)
+  'consecutive-short-sentences': 3,
+  'plot-meta-leak': 2,
 };
 
 /**

@@ -6,7 +6,16 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEST_PROJECT = join(__dirname, '..', 'test-project', 'novels', 'novel_20250117_100000');
+const TEST_PROJECT = join(__dirname, '..', 'test-workspace', 'novels', 'novel_20250117_100000');
+
+const fixtureStatePath = join(TEST_PROJECT, 'meta', 'ralph-state.json');
+if (!existsSync(fixtureStatePath)) {
+  console.log('Generating missing integration test fixture...');
+  execSync('node scripts/generate-test-data.mjs', {
+    cwd: join(__dirname, '..'),
+    stdio: 'inherit',
+  });
+}
 
 let passed = 0;
 let failed = 0;

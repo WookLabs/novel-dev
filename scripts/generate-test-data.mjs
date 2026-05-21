@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const PROJECT_ID = 'novel_20250117_100000';
-const BASE_PATH = `test-project/novels/${PROJECT_ID}`;
+const BASE_PATH = `test-workspace/novels/${PROJECT_ID}`;
 
 async function generateTestProject() {
   console.log('Generating 100-chapter test project...');

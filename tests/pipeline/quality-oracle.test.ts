@@ -19,6 +19,10 @@ import {
   createDirective,
   analyzeChapter,
   analyzeAndReport,
+  // New: Korean sentence splitter + new detectors
+  splitKoreanSentences,
+  detectConsecutiveShortSentences,
+  detectPlotMetaLeaks,
 } from '../../src/pipeline/quality-oracle.js';
 
 // ============================================================================
@@ -52,7 +56,7 @@ describe('Quality Oracle Constants', () => {
 
   it('should have correct limits', () => {
     expect(MAX_DIRECTIVES_PER_PASS).toBe(5);
-    expect(MIN_SENSES_PER_500_CHARS).toBe(2);
+    expect(MIN_SENSES_PER_500_CHARS).toBe(3);
     expect(MAX_CONSECUTIVE_SAME_ENDINGS).toBe(5);
   });
 });
@@ -418,12 +422,13 @@ describe('createDirective', () => {
 
 describe('analyzeChapter', () => {
   it('should return PASS for clean content', () => {
-    // Good prose: no filter words, varied rhythm, sensory content, with texture
-    const content = '빛이 창문으로 쏟아졌다. ' +
-      '소리가 들려왔는가? ' +
-      '차가운 바람이 피부를 스쳤네. ' +
-      '향긋한 냄새가 코를 간질였지. ' +
-      '단맛이 혀끝에 맴돌았다!';
+    // Good prose: no filter words, varied rhythm, sensory content, with texture.
+    // Sentences are long enough (>20 chars each) so detectConsecutiveShortSentences(maxRun:4) does not fire.
+    const content = '창문으로 쏟아지는 햇빛이 바닥을 가로질러 길게 뻗어 있었다. ' +
+      '멀리서 들려오는 새소리가 아침의 고요함을 깨웠는가? ' +
+      '차가운 바람이 피부를 부드럽게 스치고 지나갔다. ' +
+      '향긋한 꽃냄새가 코끝을 간질이며 퍼져 나갔다. ' +
+      '혀끝에 맴도는 단맛이 천천히 사라져 갔다!';
 
     // Disable texture assessment for this basic test
     const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
@@ -575,5 +580,189 @@ describe('Edge Cases', () => {
 
     // Should still detect Korean filter word
     expect(result.assessment.filterWordDensity.count).toBeGreaterThan(0);
+  });
+});
+
+// ============================================================================
+// splitKoreanSentences Tests
+// ============================================================================
+
+describe('splitKoreanSentences', () => {
+  it('should split on standard terminators', () => {
+    const content = '갔다. 봤다? 왔다!';
+    const sentences = splitKoreanSentences(content);
+    expect(sentences.length).toBe(3);
+  });
+
+  it('should not split inside double-quoted dialogue', () => {
+    const content = '"나는 갔다. 봤다." 그녀가 말했다.';
+    const sentences = splitKoreanSentences(content);
+    // The quoted part is one unit, plus the outside sentence
+    expect(sentences.length).toBe(2);
+  });
+
+  it('should split on paragraph breaks', () => {
+    const content = '첫 문장이다.\n\n두 번째 문장이다.';
+    const sentences = splitKoreanSentences(content);
+    expect(sentences.length).toBe(2);
+  });
+
+  it('should return only non-empty trimmed sentences', () => {
+    const content = '   갔다.   \n봤다.   ';
+    const sentences = splitKoreanSentences(content);
+    expect(sentences.every(s => s.length > 0)).toBe(true);
+    expect(sentences.every(s => s === s.trim())).toBe(true);
+  });
+});
+
+// ============================================================================
+// detectConsecutiveShortSentences Tests (MUST criteria)
+// ============================================================================
+
+describe('detectConsecutiveShortSentences', () => {
+  // MUST: Four or more consecutive sentences each under 20 characters triggers directive
+  it('MUST: 4+ consecutive sentences each ≤20 chars triggers consecutive-short-sentences directive', () => {
+    // Each Korean sentence is well under 20 chars
+    const content = '잡혔다.\n봤다.\n소용없었다.\n도망쳤다.';
+    const directives = detectConsecutiveShortSentences(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('consecutive-short-sentences');
+  });
+
+  it('should NOT trigger for 3 consecutive short sentences (below threshold)', () => {
+    const content = '잡혔다.\n봤다.\n소용없었다.';
+    const directives = detectConsecutiveShortSentences(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('should NOT trigger when short sentences are broken by a longer one', () => {
+    const content = '잡혔다.\n봤다.\n소용없었다.\n이것은 스무 자보다 긴 문장입니다.\n또 짧다.\n짧다.\n짧다.\n짧다.';
+    const directives = detectConsecutiveShortSentences(content);
+    // Should detect the second run (4 short after the long one), but not include
+    // the first 3 across the long sentence boundary
+    const runCovering4After = directives.find(d => d.issue.includes('연속'));
+    expect(runCovering4After).toBeDefined();
+  });
+
+  it('should scale severity: run of 4 → low, run of 5-6 → medium, 7+ → high', () => {
+    const shortLine = '짧다.\n';
+    const run4 = detectConsecutiveShortSentences(shortLine.repeat(4).trim());
+    const run6 = detectConsecutiveShortSentences(shortLine.repeat(6).trim());
+    const run7 = detectConsecutiveShortSentences(shortLine.repeat(7).trim());
+
+    expect(run4[0]?.issue).toMatch(/low|낮음/i);
+    expect(run6[0]?.issue).toMatch(/medium|중간/i);
+    expect(run7[0]?.issue).toMatch(/high|높음/i);
+  });
+});
+
+// ============================================================================
+// detectPlotMetaLeaks Tests (MUST criteria)
+// ============================================================================
+
+describe('detectPlotMetaLeaks', () => {
+  // MUST: Prose containing 화면 페이드, 0.5초, or 메커닉 outside dialogue triggers plot-meta-leak
+  it('MUST: 화면 페이드 outside dialogue triggers plot-meta-leak directive', () => {
+    const content = '그리고 화면 페이드 아웃이 되었다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('plot-meta-leak');
+  });
+
+  it('MUST: 0.5초 with storyboard context outside dialogue triggers plot-meta-leak directive', () => {
+    const content = '0.5초 침묵이 흘렀다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('plot-meta-leak');
+  });
+
+  it('MUST: 메커닉 outside dialogue triggers plot-meta-leak directive', () => {
+    const content = '이 장면의 메커닉은 간단하다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('plot-meta-leak');
+  });
+
+  // MUST: Prose containing only 가사 한 줄 (without timecodes or storyboard patterns) does NOT trigger
+  it('MUST: 가사 한 줄 alone does NOT trigger plot-meta-leak', () => {
+    const content = '"가사 한 줄이 머릿속을 맴돌았다."';
+    const directives = detectPlotMetaLeaks(content);
+    // Since it's inside dialogue, should not trigger
+    expect(directives.length).toBe(0);
+  });
+
+  it('한 줄 alone in narration does NOT trigger plot-meta-leak', () => {
+    const content = '가사 한 줄이 머릿속을 맴돌았다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('should NOT trigger for meta patterns inside dialogue', () => {
+    const content = '"화면 페이드 아웃이 뭔지 알아?" 그녀가 물었다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('페이드 인/페이드 아웃 triggers plot-meta-leak outside dialogue', () => {
+    const content = '페이드 인으로 장면이 시작되었다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('plot-meta-leak');
+  });
+});
+
+// ============================================================================
+// Korean curly-quote dialogue detection regression tests
+// ============================================================================
+
+describe('curly-quote dialogue detection — FIX 1 regression', () => {
+  it('prose with curly-quote dialogue containing 화면 페이드를 보여줘 should NOT trigger plot-meta-leak', () => {
+    // "화면 페이드를 보여줘" is inside Korean curly quotes — should be treated as dialogue
+    const content = '그가 “화면 페이드를 보여줘”라고 말했다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('curly-quote dialogue containing 메커닉을 보여줘 should NOT trigger plot-meta-leak', () => {
+    const content = '그가 “메커닉을 보여줘”라고 말했다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('curly-quote dialogue in analyzeChapter should NOT trigger plot-meta-leak', () => {
+    // Good prose: only plot-meta patterns are inside curly-quote dialogue
+    const content = '빛이 창문으로 들어왔다. 그가 “화면 페이드를 보여줘”라고 말했다. 소리가 들렸다.';
+    const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
+    const metaLeakDirectives = result.directives.filter(d => d.type === 'plot-meta-leak');
+    expect(metaLeakDirectives.length).toBe(0);
+  });
+});
+
+// ============================================================================
+// analyzeChapter — plot-meta-leak integration + non-suppressible high severity
+// ============================================================================
+
+describe('analyzeChapter — plot-meta-leak integration', () => {
+  // SHOULD: High-severity plot-meta-leak directives are not suppressed by
+  //         lower-severity filter-word directive cap
+  it('SHOULD: high-severity plot-meta-leak is not suppressed by filter-word cap', () => {
+    // Create content that would normally fill all 5 directive slots with
+    // filter-word-removal directives, BUT also contains a high-severity plot-meta-leak
+    const content = [
+      '느꼈다. 보였다. 생각했다. 들렸다. 알 수 있었다.', // 5 filter words
+      '화면 페이드 아웃이 되었다.',                        // high-severity meta leak
+      '메커닉을 보여준다.',                                // another meta leak
+    ].join('\n\n');
+
+    const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
+    const metaLeakDirectives = result.directives.filter(d => d.type === 'plot-meta-leak');
+    // High-severity meta-leak should appear in directives despite cap
+    expect(metaLeakDirectives.length).toBeGreaterThan(0);
+  });
+
+  it('analyzeChapter should return REVISE for content with plot-meta-leak patterns', () => {
+    const content = '화면 페이드 아웃.\n\n메커닉이 동작한다.\n\n장면 전환이 이루어진다.';
+    const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
+    expect(result.verdict).toBe('REVISE');
   });
 });

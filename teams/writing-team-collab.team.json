@@ -47,10 +47,20 @@
         "output": "챕터 초고 (chapters/chapter_XXX.md)"
       },
       {
+        "name": "quality-gate-draft",
+        "agents": [],
+        "execution": "sequential",
+        "depends_on": ["collab-write"],
+        "output": "품질 게이트 검사 결과",
+        "type": "orchestrator_action",
+        "action": "quality-gate",
+        "_comment": "team-orchestrator가 scripts/quality-gate.mjs를 실행하여 초고 품질을 검증합니다. 기본 모드: strict."
+      },
+      {
         "name": "proofread",
         "agents": ["proofreader"],
         "execution": "sequential",
-        "depends_on": ["collab-write"],
+        "depends_on": ["quality-gate-draft"],
         "output": "교정된 챕터"
       },
       {
@@ -68,7 +78,7 @@
     "communication": "message-based"
   },
   "quality_gates": {
-    "enabled": false
+    "enabled": true
   },
   "cost_estimate": {
     "tokens_per_agent": 30000,

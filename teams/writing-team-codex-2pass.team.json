@@ -32,10 +32,20 @@
         "_comment": "team-orchestrator가 codex-writer.mjs를 Bash로 실행. Codex CLI → GPT-5.4 집필."
       },
       {
-        "name": "adult-rewrite",
+        "name": "quality-gate-draft",
         "agents": [],
         "execution": "sequential",
         "depends_on": ["codex-write"],
+        "output": "품질 게이트 검사 결과",
+        "type": "orchestrator_action",
+        "action": "quality-gate",
+        "_comment": "team-orchestrator가 scripts/quality-gate.mjs를 실행하여 초고 품질을 검증합니다. 기본 모드: strict."
+      },
+      {
+        "name": "adult-rewrite",
+        "agents": [],
+        "execution": "sequential",
+        "depends_on": ["quality-gate-draft"],
         "output": "성인 장면 리라이트된 챕터",
         "type": "orchestrator_action",
         "action": "adult-rewriter",
@@ -64,7 +74,7 @@
     "communication": "task-based"
   },
   "quality_gates": {
-    "enabled": false
+    "enabled": true
   },
   "cost_estimate": {
     "tokens_per_agent": 20000,

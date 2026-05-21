@@ -4,7 +4,7 @@
  * Agent Validation Script
  *
  * Validates:
- * 1. Only allowed agents exist (20 agents)
+ * 1. Only allowed agents exist (22 agents)
  * 2. No duplicate agents
  * 3. All required agents are present
  */
@@ -120,6 +120,8 @@ const ALLOWED_AGENTS = new Set([
   'narrator.md',
   'character-designer.md',
   'arc-designer.md',
+  'extras.md',             // sonnet - 단역/엑스트라 캐릭터 (minor/cameo 처리)
+  'chapter-merger.md',     // opus - Claude+Codex 병합 리뷰
 ]);
 
 // Files to ignore (not agents)

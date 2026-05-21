@@ -58,11 +58,27 @@
             "output_suffix": "_claude"
           },
           {
+            "name": "claude-branch-quality-gate",
+            "type": "orchestrator_action",
+            "action": "quality-gate",
+            "depends_on_branch": "claude-branch",
+            "output_suffix": "_claude_qg",
+            "_comment": "Claude 브랜치 초고에 대한 품질 게이트. scripts/quality-gate.mjs --mode strict 실행."
+          },
+          {
             "name": "codex-branch",
             "type": "orchestrator_action",
             "action": "codex-writer",
             "output_suffix": "_codex",
             "_comment": "codex-writer.mjs --chapter {N} --project {projectPath} --mode write"
+          },
+          {
+            "name": "codex-branch-quality-gate",
+            "type": "orchestrator_action",
+            "action": "quality-gate",
+            "depends_on_branch": "codex-branch",
+            "output_suffix": "_codex_qg",
+            "_comment": "Codex 브랜치 초고에 대한 품질 게이트. scripts/quality-gate.mjs --mode strict 실행."
           }
         ]
       },
@@ -74,10 +90,20 @@
         "output": "병합된 최종 챕터"
       },
       {
-        "name": "adult-rewrite",
+        "name": "quality-gate-merged",
         "agents": [],
         "execution": "sequential",
         "depends_on": ["merge"],
+        "output": "병합 결과 품질 게이트 검사 결과",
+        "type": "orchestrator_action",
+        "action": "quality-gate",
+        "_comment": "병합된 최종 챕터에 대한 품질 게이트. scripts/quality-gate.mjs --mode strict 실행."
+      },
+      {
+        "name": "adult-rewrite",
+        "agents": [],
+        "execution": "sequential",
+        "depends_on": ["quality-gate-merged"],
         "output": "성인 장면 리라이트",
         "type": "orchestrator_action",
         "action": "adult-rewriter",
@@ -105,7 +131,7 @@
     "communication": "message-based"
   },
   "quality_gates": {
-    "enabled": false
+    "enabled": true
   },
   "cost_estimate": {
     "tokens_per_agent": 30000,

@@ -34,7 +34,7 @@ Utility scripts for Novel-Sisyphus project lifecycle management. Contains CLI co
   - Creates: 10 characters, 15 world locations, 20 foreshadowing items
   - Generates 100 chapter metadata files with full schema compliance
   - Creates 5 chapter summaries for testing
-  - Output: test-project/novels/novel_20250117_100000/
+  - Output: test-workspace/novels/novel_20250117_100000/
 
 ### Ralph Loop Hooks
 
