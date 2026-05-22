@@ -37,9 +37,12 @@ async function importChapterCast() {
   return await import(`${REPO_ROOT}/scripts/lib/chapter-cast.mjs?t=${Date.now()}`);
 }
 
+// Gate tests that depend on the local novels/novel_1/ workspace (gitignored).
+const novel1Exists = existsSync(join(REPO_ROOT, 'novels', 'novel_1', 'characters'));
+
 // ─── CRITERION 1: Resolve by JSON id when filename differs ──────────────────
 // protagonist.json has id "char_001" — must be resolvable by "char_001"
-describe('resolveCharacters — filename vs id mismatch (MUST)', () => {
+describe.skipIf(!novel1Exists)('resolveCharacters — filename vs id mismatch (MUST)', () => {
   it('resolves char_001 from protagonist.json via JSON id field', async () => {
     const { resolveCharacters } = await importResolver();
     // Use the real novel_1 data
@@ -139,7 +142,7 @@ describe('extractChapterCast — meta.characters fallback (MUST)', () => {
 });
 
 // ─── CRITERION 4: codex-writer --dry-run shows at least one character ────────
-describe('codex-writer --dry-run character display (MUST)', () => {
+describe.skipIf(!novel1Exists)('codex-writer --dry-run character display (MUST)', () => {
   it('prints a loaded character name instead of "등장인물: none"', () => {
     const result = spawnSync('node', [
       join(REPO_ROOT, 'scripts', 'codex-writer.mjs'),
@@ -183,7 +186,6 @@ describe('resolveCharacters — missing ids are warnings not errors (SHOULD)', (
 });
 
 // ─── Integration: real novel_1 data (10 characters) ──────────────────────────
-const novel1Exists = existsSync(join(REPO_ROOT, 'novels', 'novel_1', 'characters'));
 describe.skipIf(!novel1Exists)('loadCharacterIndex — real novel_1 integration', () => {
   it('indexes all 10 character files from novels/novel_1/characters/', async () => {
     const { loadCharacterIndex } = await importResolver();
