@@ -90,6 +90,8 @@ export interface SurgicalDirective {
   exemplarContent?: string;
   /** Maximum number of paragraphs this fix should touch (1-5) */
   maxScope: number;
+  /** Severity of the directive (optional; set by pattern-based detectors) */
+  severity?: 'low' | 'medium' | 'high';
 }
 
 // ============================================================================

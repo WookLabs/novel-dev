@@ -112,6 +112,9 @@ function validateTeam(filePath, fileName, knownAgents) {
   // Collect all step names for depends_on validation
   const stepNames = new Set(steps.map(s => s.name).filter(Boolean));
 
+  // Cumulative branch names seen so far (from prior steps)
+  const cumulativeBranchNames = new Set();
+
   for (const step of steps) {
     const stepName = step.name ?? '(unnamed step)';
 
@@ -177,6 +180,41 @@ function validateTeam(filePath, fileName, knownAgents) {
           fileName,
           `Step "${stepName}" uses unknown orchestrator_action "${action}" (allowed: ${[...ALLOWED_ORCHESTRATOR_ACTIONS].join(', ')})`
         );
+      }
+    }
+
+    // 2e. Validate depends_on_branch (top-level step)
+    if (step.depends_on_branch != null) {
+      if (!cumulativeBranchNames.has(step.depends_on_branch)) {
+        error(
+          fileName,
+          `Step "${stepName}": depends_on_branch references unknown branch "${step.depends_on_branch}"`
+        );
+      }
+    }
+
+    // 2f. Validate branches[].depends_on_branch (branch-level inside parallel step)
+    // Within the same step, a branch may depend on another branch defined in the same step
+    // (processed earlier in the branches array), as well as any prior-step branches.
+    const stepBranches = step.branches ?? [];
+    const thisStepBranchNames = new Set(stepBranches.map(b => b.name).filter(Boolean));
+    const availableBranchNames = new Set([...cumulativeBranchNames, ...thisStepBranchNames]);
+
+    for (const branch of stepBranches) {
+      if (branch.depends_on_branch != null) {
+        if (!availableBranchNames.has(branch.depends_on_branch)) {
+          error(
+            fileName,
+            `Step "${stepName}" branch "${branch.name ?? '(unnamed)'}": depends_on_branch references unknown branch "${branch.depends_on_branch}"`
+          );
+        }
+      }
+    }
+
+    // Accumulate branch names defined in this step (available to subsequent steps)
+    for (const branch of stepBranches) {
+      if (branch.name) {
+        cumulativeBranchNames.add(branch.name);
       }
     }
   }

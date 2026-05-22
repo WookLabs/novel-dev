@@ -218,20 +218,21 @@ export function detectFunctionalNarration(content: string): PatternMatch[] {
 // ============================================================================
 
 /**
- * Split Korean prose content into individual sentences.
+ * Split Korean prose content into individual sentences with start positions.
  *
  * Rules:
  * - Splits on sentence-ending punctuation: . ? ! … and paragraph breaks.
- * - Text inside double-quoted ("…"), Korean open-quotes (「…」), and
+ * - Text inside double-quoted (“…”), Korean open-quotes (「…」), and
  *   ASCII single-quoted ('…') spans is treated as a single unit (dialogue).
- * - Returns trimmed, non-empty sentence strings.
+ * - Returns trimmed, non-empty sentence objects with their start offset in content.
  */
-export function splitKoreanSentences(content: string): string[] {
+export function splitKoreanSentences(content: string): Array<{ text: string; start: number }> {
   // Step 1: Collect dialogue span offsets so we don't split inside them.
   const dialogueSpans: Array<{ start: number; end: number }> = [];
 
-  // Collect "..." spans (ASCII straight, Korean curly “/”, fullwidth variants)
-  const dqPattern = /"[^"]*"|“[^”]*”/gu;
+  // Collect “...” spans (ASCII straight double-quotes, U+0022) and “...” (Korean curly quotes)
+  // U+0022 = ASCII double-quote, U+201C = left curly “, U+201D = right curly “
+  const dqPattern = new RegExp('\\u0022[^\\u0022]*\\u0022|\\u201c[^\\u201d]*\\u201d', 'gu');
   let m: RegExpExecArray | null;
   while ((m = dqPattern.exec(content)) !== null) {
     dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
@@ -252,12 +253,17 @@ export function splitKoreanSentences(content: string): string[] {
 
   // Step 2: Walk the string and record sentence boundaries.
   // Terminators: . ? ! … (and \n\n counted as a paragraph break terminator)
-  const sentences: string[] = [];
+  const sentences: Array<{ text: string; start: number }> = [];
   let sentenceStart = 0;
 
   const flush = (end: number): void => {
-    const seg = content.slice(sentenceStart, end).trim();
-    if (seg.length > 0) sentences.push(seg);
+    const raw = content.slice(sentenceStart, end);
+    const trimmed = raw.trim();
+    if (trimmed.length > 0) {
+      // Compute the actual start of the trimmed text within content
+      const leadingSpace = raw.length - raw.trimStart().length;
+      sentences.push({ text: trimmed, start: sentenceStart + leadingSpace });
+    }
   };
 
   let i = 0;
@@ -280,8 +286,8 @@ export function splitKoreanSentences(content: string): string[] {
     }
 
     // Closing dialogue quote followed by non-quote content — sentence boundary
-    // Handles: " (ASCII 34), " (U+201D), 」 (U+300D)
-    const isCloseQuote = ch === '"' || ch === '”' || ch === '」';
+    // Handles: “ (ASCII 34 = U+0022), “ (U+201D), 」 (U+300D)
+    const isCloseQuote = ch.charCodeAt(0) === 0x0022 || ch.charCodeAt(0) === 0x201d || ch.charCodeAt(0) === 0x300d;
     if (isCloseQuote) {
       // Only split when this closing quote terminates a dialogue span
       const spanEnd = dialogueSpans.find(s => s.end === i);
@@ -303,6 +309,30 @@ export function splitKoreanSentences(content: string): string[] {
   flush(content.length);
 
   return sentences;
+}
+
+// ============================================================================
+// Paragraph Index Helper
+// ============================================================================
+
+/**
+ * Find the paragraph index (0-based) that contains the given character offset.
+ * Walks the paragraph list using cumulative positions from content.
+ */
+function paragraphIndexAt(paragraphs: string[], offset: number, content: string): number {
+  let cursor = 0;
+  for (let i = 0; i < paragraphs.length; i++) {
+    const para = paragraphs[i];
+    const start = content.indexOf(para, cursor);
+    if (start === -1) {
+      cursor += para.length;
+      continue;
+    }
+    const end = start + para.length;
+    if (offset >= start && offset <= end) return i;
+    cursor = end;
+  }
+  return 0;
 }
 
 // ============================================================================
@@ -332,29 +362,37 @@ export function detectConsecutiveShortSentences(
   let runStart = 0;
   let runLen = 0;
 
-  const getSeverityLabel = (len: number): string => {
+  const getSeverityLabel = (len: number): 'low' | 'medium' | 'high' => {
     if (len >= 7) return 'high';
     if (len >= 5) return 'medium';
     return 'low';
   };
 
+  // Raw paragraph strings for paragraphIndexAt
+  const rawParas = content.split(/\n\n+/).filter(p => p.trim().length > 0);
+
   const emitDirective = (start: number, end: number, len: number): void => {
     const severityLabel = getSeverityLabel(len);
-    const snippet = sentences.slice(start, end + 1).join(' ');
-    results.push(createDirective(
+    const snippet = sentences.slice(start, end + 1).map(s => s.text).join(' ');
+    // Compute paragraph index from the start sentence's offset in content
+    const runOffset = sentences[start].start;
+    const paraIdx = paragraphIndexAt(rawParas, runOffset, content);
+    const directive = createDirective(
       'consecutive-short-sentences',
       4,
-      { sceneNumber: 1, paragraphStart: 0, paragraphEnd: 0 },
+      { sceneNumber: 1, paragraphStart: paraIdx, paragraphEnd: paraIdx },
       `${len}개의 짧은 문장(≤${maxChars}자) 연속 감지 — severity: ${severityLabel}`,
       snippet.slice(0, 300),
       '복문으로 결합하거나 문장 길이를 변주하세요.',
       2
-    ));
+    );
+    directive.severity = severityLabel;
+    results.push(directive);
   };
 
   for (let i = 0; i < sentences.length; i++) {
     // Korean codepoint-aware length
-    const len = [...sentences[i]].length;
+    const len = [...sentences[i].text].length;
     if (len <= maxChars) {
       if (runLen === 0) runStart = i;
       runLen++;
@@ -410,7 +448,8 @@ const HIGH_SEVERITY_PATTERNS: RegExp[] = [
 export function detectPlotMetaLeaks(content: string): SurgicalDirective[] {
   // Build dialogue exclusion spans
   const dialogueSpans: Array<{ start: number; end: number }> = [];
-  const dqPattern = /"[^"]*"|“[^”]*”/gu;
+  // U+0022 = ASCII double-quote, U+201C = left curly “, U+201D = right curly “
+  const dqPattern = new RegExp('\\u0022[^\\u0022]*\\u0022|\\u201c[^\\u201d]*\\u201d', 'gu');
   let m: RegExpExecArray | null;
   while ((m = dqPattern.exec(content)) !== null) {
     dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
@@ -445,29 +484,48 @@ export function detectPlotMetaLeaks(content: string): SurgicalDirective[] {
 
   if (matches.length === 0) return [];
 
-  // Determine severity
-  const highCount = matches.filter(m => m.isHighSeverity).length;
-  let severity: 'low' | 'medium' | 'high';
-  if (highCount >= 2) {
-    severity = 'high';
-  } else if (matches.length > 1 || highCount === 1) {
-    severity = 'medium';
-  } else {
-    severity = 'low';
+  // Raw paragraph strings for paragraphIndexAt
+  const rawParas = content.split(/\n\n+/).filter(p => p.trim().length > 0);
+
+  // Group matches by paragraph index
+  const byParagraph = new Map<number, MetaMatch[]>();
+  for (const match of matches) {
+    const paraIdx = paragraphIndexAt(rawParas, match.position, content);
+    if (!byParagraph.has(paraIdx)) byParagraph.set(paraIdx, []);
+    byParagraph.get(paraIdx)!.push(match);
   }
 
-  const matchedTexts = matches.map(m => m.matched).join(', ');
-  const snippet = content.slice(Math.max(0, matches[0].position - 30), matches[0].position + 100).trim();
+  // Emit one directive per paragraph
+  const results: SurgicalDirective[] = [];
+  for (const [paraIdx, paraMatches] of byParagraph) {
+    const highCount = paraMatches.filter(mm => mm.isHighSeverity).length;
+    let severity: 'low' | 'medium' | 'high';
+    if (highCount >= 2) {
+      severity = 'high';
+    } else if (paraMatches.length > 1 || highCount === 1) {
+      severity = 'medium';
+    } else {
+      severity = 'low';
+    }
 
-  return [createDirective(
-    'plot-meta-leak',
-    1, // Highest priority — immersion breaking
-    { sceneNumber: 1, paragraphStart: 0, paragraphEnd: 0 },
-    `플롯/스토리보드 메타 언어 감지: ${matchedTexts} — severity: ${severity}`,
-    snippet.slice(0, 300),
-    '스토리보드/영상 연출 언어를 소설 산문으로 교체하세요. 예: "화면 페이드" → 장면 전환 묘사.',
-    2,
-  )];
+    const matchedTexts = paraMatches.map(mm => mm.matched).join(', ');
+    const firstMatch = paraMatches[0];
+    const snippet = content.slice(Math.max(0, firstMatch.position - 30), firstMatch.position + 100).trim();
+
+    const directive = createDirective(
+      'plot-meta-leak',
+      1, // Highest priority — immersion breaking
+      { sceneNumber: 1, paragraphStart: paraIdx, paragraphEnd: paraIdx },
+      `플롯/스토리보드 메타 언어 감지: ${matchedTexts} — severity: ${severity}`,
+      snippet.slice(0, 300),
+      '스토리보드/영상 연출 언어를 소설 산문으로 교체하세요. 예: “화면 페이드” → 장면 전환 묘사.',
+      2,
+    );
+    directive.severity = severity;
+    results.push(directive);
+  }
+
+  return results;
 }
 
 // ============================================================================
@@ -1177,10 +1235,10 @@ export function analyzeChapter(
   // 5c. Plot-meta leak detection (high severity directives are non-suppressible)
   const plotMetaDirectives = detectPlotMetaLeaks(content);
   const highSeverityMetaDirectives = plotMetaDirectives.filter(d =>
-    d.issue.includes('severity: high')
+    d.severity === 'high' || (d.issue && d.issue.includes('severity: high'))
   );
   const otherMetaDirectives = plotMetaDirectives.filter(d =>
-    !d.issue.includes('severity: high')
+    !(d.severity === 'high' || (d.issue && d.issue.includes('severity: high')))
   );
 
   // Non-suppressible high-severity meta-leak directives: collected separately,

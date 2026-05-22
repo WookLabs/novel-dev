@@ -139,7 +139,12 @@ async function loadContext(projectPath, chapterNum) {
   }
 
   // 캐릭터 파일 로드 (플롯에 등장하는 캐릭터)
-  const plotData = JSON.parse(chapterPlot);
+  let plotData;
+  try {
+    plotData = JSON.parse(chapterPlot);
+  } catch (e) {
+    throw new Error(`Failed to parse chapter JSON at ${path.join(projectPath, `chapters/chapter_${pad}.json`)}: ${e.message}`);
+  }
 
   // Use extractChapterCast + resolveCharacters for robust resolution
   // (handles filename ≠ id cases like protagonist.json / char_001)
@@ -224,8 +229,6 @@ function buildSystemPrompt(ctx) {
           prompt += `- **voice**: ${c.basic.voice.tone}\n`;
         }
         prompt += `\n`;
-      } else if (char.jsonContent) {
-        prompt += `### ${char.id}\n\`\`\`json\n${char.jsonContent}\n\`\`\`\n\n`;
       }
     }
   }

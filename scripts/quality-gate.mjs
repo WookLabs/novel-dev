@@ -152,9 +152,20 @@ async function main() {
   // Import quality oracle from dist
   const { analyzeChapter } = await import(DIST_ORACLE);
 
+  // Determine sceneCount from chapter JSON (if available)
+  let sceneCount = 1;
+  try {
+    const pad = padChapter(args.chapter);
+    const chapterJsonPath = path.join(args.project, 'chapters', `chapter_${pad}.json`);
+    const plotJson = JSON.parse(fs.readFileSync(chapterJsonPath, 'utf8'));
+    sceneCount = plotJson.scenes?.length ?? 1;
+  } catch {
+    // chapter JSON missing or malformed; default sceneCount = 1
+  }
+
   // Run analysis
   const oracleOpts = {};
-  const result = analyzeChapter(content, 1, oracleOpts);
+  const result = analyzeChapter(content, sceneCount, oracleOpts);
 
   const { verdict, directives, assessment } = result;
 
@@ -180,7 +191,7 @@ async function main() {
 
   // 2. Any directive with type "plot-meta-leak" AND severity "high"
   const highMetaLeaks = directives.filter(
-    d => d.type === 'plot-meta-leak' && d.issue && d.issue.includes('severity: high')
+    d => d.type === 'plot-meta-leak' && (d.severity === 'high' || (d.issue && d.issue.includes('severity: high')))
   );
   if (highMetaLeaks.length > 0) {
     failureReasons.push(`${highMetaLeaks.length} high-severity plot-meta-leak directive(s)`);
@@ -188,7 +199,7 @@ async function main() {
 
   // 3. Any directive with type "consecutive-short-sentences" AND severity "high"
   const highShortSentences = directives.filter(
-    d => d.type === 'consecutive-short-sentences' && d.issue && d.issue.includes('severity: high')
+    d => d.type === 'consecutive-short-sentences' && (d.severity === 'high' || (d.issue && d.issue.includes('severity: high')))
   );
   if (highShortSentences.length > 0) {
     failureReasons.push(`${highShortSentences.length} high-severity consecutive-short-sentences directive(s)`);

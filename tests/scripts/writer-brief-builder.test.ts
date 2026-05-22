@@ -155,3 +155,96 @@ describe('buildWriterBrief — MUST criteria', () => {
     expect(brief).toContain('짧은 침묵');
   });
 });
+
+// ---------------------------------------------------------------------------
+// C4 — Sanitizer scope: required_facts, emotional_arc, hooks
+// ---------------------------------------------------------------------------
+describe('buildWriterBrief — C4 sanitizer scope (required_facts, emotional_arc, hooks)', () => {
+  it('C4-1: required_facts with storyboard phrase is sanitized and warning is emitted', async () => {
+    const { buildWriterBrief } = await importWriterBriefBuilder();
+    const chapterJson = {
+      chapter_number: 1,
+      chapter_title: '테스트 챕터',
+      word_count_target: 5000,
+      required_facts: ['0.5초 침묵으로 시작한다'],
+      scenes: [],
+    };
+    const { brief, privateOutlineWarnings } = buildWriterBrief(chapterJson);
+
+    // brief must NOT contain the raw storyboard phrase
+    expect(brief).not.toContain('0.5초');
+
+    // privateOutlineWarnings must include an entry for required_facts[0]
+    const warning = privateOutlineWarnings.find(
+      (w: { location: string }) => w.location === 'required_facts[0]'
+    );
+    expect(warning).toBeDefined();
+  });
+
+  it('C4-2: emotional_arc string with storyboard phrase is sanitized', async () => {
+    const { buildWriterBrief } = await importWriterBriefBuilder();
+    const chapterJson = {
+      chapter_number: 1,
+      chapter_title: '테스트 챕터',
+      word_count_target: 5000,
+      emotional_arc: '화면 페이드로 회복한다',
+      scenes: [],
+    };
+    const { brief, privateOutlineWarnings } = buildWriterBrief(chapterJson);
+
+    // brief must NOT contain the raw storyboard phrase
+    expect(brief).not.toContain('화면 페이드');
+
+    // A warning should be emitted for emotional_arc
+    const warning = privateOutlineWarnings.find(
+      (w: { location: string }) => w.location === 'emotional_arc'
+    );
+    expect(warning).toBeDefined();
+  });
+
+  it('C4-3: hooks array with storyboard phrase is sanitized', async () => {
+    const { buildWriterBrief } = await importWriterBriefBuilder();
+    const chapterJson = {
+      chapter_number: 1,
+      chapter_title: '테스트 챕터',
+      word_count_target: 5000,
+      hooks: ['다음 권말 컷에서 회수'],
+      scenes: [],
+    };
+    const { brief, privateOutlineWarnings } = buildWriterBrief(chapterJson);
+
+    // brief must NOT contain the raw storyboard phrase
+    expect(brief).not.toContain('권말 컷');
+
+    // A warning should be emitted for hooks[0]
+    const warning = privateOutlineWarnings.find(
+      (w: { location: string }) => w.location === 'hooks[0]'
+    );
+    expect(warning).toBeDefined();
+  });
+
+  it('C4-4: emotional_arc as object sanitizes each string-valued field', async () => {
+    const { buildWriterBrief } = await importWriterBriefBuilder();
+    const chapterJson = {
+      chapter_number: 1,
+      chapter_title: '테스트 챕터',
+      word_count_target: 5000,
+      emotional_arc: {
+        opening: '화면 페이드인으로 시작',
+        closing: '장면 전환으로 마무리',
+      },
+      scenes: [],
+    };
+    const { brief, privateOutlineWarnings } = buildWriterBrief(chapterJson);
+
+    // Neither raw storyboard phrase should appear
+    expect(brief).not.toContain('화면 페이드');
+    expect(brief).not.toContain('장면 전환');
+
+    // Warnings for each sub-field
+    const openingWarning = privateOutlineWarnings.find(
+      (w: { location: string }) => w.location === 'emotional_arc.opening'
+    );
+    expect(openingWarning).toBeDefined();
+  });
+});

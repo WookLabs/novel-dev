@@ -211,10 +211,9 @@ function sanitizeText(text, location) {
  * Build a writer-safe markdown brief from raw chapter JSON.
  *
  * @param {object} chapterJson - parsed chapter JSON (e.g. chapter_001.json)
- * @param {object} [options]
  * @returns {{ brief: string, privateOutlineWarnings: Array }}
  */
-export function buildWriterBrief(chapterJson, options = {}) {
+export function buildWriterBrief(chapterJson) {
   const allWarnings = [];
 
   // Helper to sanitize and collect warnings
@@ -235,7 +234,7 @@ export function buildWriterBrief(chapterJson, options = {}) {
   lines.push(`- **POV**: ${chapterJson.meta?.pov_character || '(미정)'}`);
   lines.push(`- **목표 분량**: ${chapterJson.word_count_target ?? '(미정)'}자`);
   if (chapterJson.continuity) {
-    lines.push(`- **연속성**: ${chapterJson.continuity}`);
+    lines.push(`- **연속성**: ${s(chapterJson.continuity, 'continuity')}`);
   }
   lines.push('');
 
@@ -287,9 +286,9 @@ export function buildWriterBrief(chapterJson, options = {}) {
   if (Array.isArray(chapterJson.required_facts) && chapterJson.required_facts.length > 0) {
     lines.push('### 필수 스토리 팩트');
     lines.push('');
-    for (const fact of chapterJson.required_facts) {
-      lines.push(`- ${fact}`);
-    }
+    chapterJson.required_facts.forEach((fact, i) => {
+      lines.push(`- ${s(fact, `required_facts[${i}]`)}`);
+    });
     lines.push('');
   }
 
@@ -297,7 +296,16 @@ export function buildWriterBrief(chapterJson, options = {}) {
   if (chapterJson.emotional_arc) {
     lines.push('### 정서적 호흡');
     lines.push('');
-    lines.push(chapterJson.emotional_arc);
+    if (typeof chapterJson.emotional_arc === 'string') {
+      lines.push(s(chapterJson.emotional_arc, 'emotional_arc'));
+    } else if (typeof chapterJson.emotional_arc === 'object' && chapterJson.emotional_arc !== null) {
+      // Object with descriptive fields — sanitize each string-valued leaf
+      for (const [key, val] of Object.entries(chapterJson.emotional_arc)) {
+        if (typeof val === 'string') {
+          lines.push(`- **${key}**: ${s(val, `emotional_arc.${key}`)}`);
+        }
+      }
+    }
     lines.push('');
   }
 
@@ -310,10 +318,16 @@ export function buildWriterBrief(chapterJson, options = {}) {
     lines.push('### 복선 / 훅');
     lines.push('');
     if (hasForeshadowing) {
-      lines.push(`- **복선**: ${chapterJson.foreshadowing.join(', ')}`);
+      const sanitizedForeshadowing = chapterJson.foreshadowing.map((item, i) =>
+        s(item, `foreshadowing[${i}]`)
+      );
+      lines.push(`- **복선**: ${sanitizedForeshadowing.join(', ')}`);
     }
     if (hasHooks) {
-      lines.push(`- **훅**: ${chapterJson.hooks.join(', ')}`);
+      const sanitizedHooks = chapterJson.hooks.map((item, i) =>
+        s(item, `hooks[${i}]`)
+      );
+      lines.push(`- **훅**: ${sanitizedHooks.join(', ')}`);
     }
     lines.push('');
   }

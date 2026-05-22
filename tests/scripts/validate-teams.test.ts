@@ -205,6 +205,69 @@ describe('validate-teams.mjs — characters/* placeholder checks', () => {
 });
 
 // ---------------------------------------------------------------------------
+// CRITERION C6: depends_on_branch validation
+// ---------------------------------------------------------------------------
+describe('validate-teams.mjs — depends_on_branch checks', () => {
+  it('MUST: fails when branches[].depends_on_branch references a typo/unknown branch name', () => {
+    const tmp = buildTempProject({
+      'bad-depends-branch.team.json': makeTeam({
+        steps: [
+          {
+            name: 'parallel-write',
+            execution: 'parallel',
+            branches: [
+              { name: 'claude-branch', agents: ['novelist'], output: 'Claude draft' },
+              { name: 'codex-branch', agents: ['proofreader'], output: 'Codex draft' },
+            ],
+            output: 'Both drafts',
+          },
+          {
+            name: 'merge',
+            execution: 'sequential',
+            depends_on: ['parallel-write'],
+            // Typo: "claude-brnch" instead of "claude-branch"
+            depends_on_branch: 'claude-brnch',
+            agents: ['novelist'],
+            output: 'Merged chapter',
+          },
+        ],
+      }),
+    });
+    const { exitCode, combined } = runValidator(tmp);
+    expect(exitCode).not.toBe(0);
+    expect(combined).toContain('claude-brnch');
+  });
+
+  it('passes when depends_on_branch references a valid earlier branch name', () => {
+    const tmp = buildTempProject({
+      'good-depends-branch.team.json': makeTeam({
+        steps: [
+          {
+            name: 'parallel-write',
+            execution: 'parallel',
+            branches: [
+              { name: 'claude-branch', agents: ['novelist'], output: 'Claude draft' },
+              { name: 'codex-branch', agents: ['proofreader'], output: 'Codex draft' },
+            ],
+            output: 'Both drafts',
+          },
+          {
+            name: 'merge',
+            execution: 'sequential',
+            depends_on: ['parallel-write'],
+            depends_on_branch: 'claude-branch',
+            agents: ['novelist'],
+            output: 'Merged chapter',
+          },
+        ],
+      }),
+    });
+    const { exitCode } = runValidator(tmp);
+    expect(exitCode).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // CRITERION 4: All four current writing-team*.team.json files pass
 // ---------------------------------------------------------------------------
 describe('validate-teams.mjs — real writing-team files', () => {

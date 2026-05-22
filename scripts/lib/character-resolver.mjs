@@ -43,8 +43,9 @@ export async function loadCharacterIndex(projectPath) {
     let data;
     try {
       data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    } catch {
-      continue; // skip malformed JSON
+    } catch (e) {
+      console.warn(`[character-resolver] skipping malformed JSON at ${filePath}: ${e.message}`);
+      continue;
     }
 
     const stem = filename.replace(/\.json$/, '');
