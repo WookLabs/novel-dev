@@ -165,6 +165,8 @@ novels/{novel_id}/
 
 Choose the appropriate agent based on task:
 
+#### 핵심 집필 파이프라인
+
 - **plot-architect**: Story structure, act breaks, dramatic arcs, plot design
 - **lore-keeper**: Worldbuilding, character creation, consistency checks, setting details
 - **novelist**: Prose writing, scene construction, dialogue, narrative flow
@@ -173,6 +175,38 @@ Choose the appropriate agent based on task:
 - **proofreader**: Grammar, spelling, typos, Korean language corrections
 - **summarizer**: Chapter summaries, context building for subsequent chapters
 - **chapter-verifier**: Quality verification before completion claims
+
+#### 품질 게이트 파이프라인
+
+- **quality-oracle**: 결정론적 품질 지시서 생성 — 필터 단어·리듬·감각·플롯-메타-누출·연속 단문 탐지가 필요할 때
+- **prose-surgeon**: Quality Oracle 지시서 기반 외과적 산문 리라이트 — 지시서가 이미 있고 특정 문단만 수정해야 할 때
+
+#### 설계 에이전트
+
+- **arc-designer**: 서브아크·복선·훅/클리프행어 설계 — 챕터 단위 긴장 흐름과 장기 플롯 정합성을 관리해야 할 때
+- **character-designer**: 캐릭터 프로필·심리 설계 및 캐릭터 에이전트 파일 생성 — 신규 캐릭터를 프로젝트에 추가할 때
+
+#### 협업 집필 에이전트
+
+- **narrator**: 협업 집필 모드 진행 — 씬 단위로 캐릭터 에이전트들에게 SCENE_BRIEF를 전송하고 응답을 산문으로 엮을 때
+- **extras**: 에이전트 파일이 없는 단역/엑스트라 캐릭터 대사·행동 담당 — 협업 씬에서 minor/cameo 역할이 필요할 때
+- **chapter-merger**: Claude + Codex 두 버전의 챕터를 최상의 결과물로 병합 — 병렬 생성된 두 초고를 합칠 때
+
+#### 팀 오케스트레이션
+
+- **team-orchestrator**: 멀티에이전트 팀 워크플로우 전체 조율 — 팀 정의 파일을 읽고 병렬/순차 에이전트 실행을 분배해야 할 때
+
+#### 검증/분석 에이전트
+
+- **consistency-verifier**: 설정·캐릭터·세계관·인과율·복선 5개 도메인 일관성 검증 — 챕터 간 모순을 체계적으로 점검할 때
+- **character-voice-analyzer**: 대화 전반에 걸친 캐릭터 말투 일관성 분석·OOC 탐지 — 캐릭터 성격이 대사에 제대로 반영됐는지 검토할 때
+- **engagement-optimizer**: 페이싱·텐션·감정·훅·대화·감각·스테이크스 7개 도메인 독자 몰입도 분석 — 페이지터너 품질을 높여야 할 때
+- **beta-reader**: 실제 독자 시뮬레이션 시점의 몰입도 분석·이탈 리스크 예측 — 독자 관점의 1차 피드백이 필요할 때
+- **genre-validator**: 장르 필수 요소 검증·클리셰 과용 경고·상업적 적합성 평가 — 장르 규범 준수 여부를 확인할 때
+
+#### 문체 관리
+
+- **style-curator**: 문체 예시 문장 큐레이션·5차원 분류·anti-exemplar 쌍 관리 — few-shot 스타일 학습용 예시 라이브러리를 구축·갱신할 때
 
 ### chapter-verifier (sonnet)
 

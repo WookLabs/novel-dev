@@ -72,13 +72,15 @@ These are integration points that respond to system events during novel writing 
    - novel-state-detector.mjs runs before processing user input
    - act-completion.mjs runs when Ralph Loop stops (handles continuation logic)
 
-3. **Testing**: Run `npm run test:integration` before committing state management changes. Tests validate:
+3. **Build requirement**: `quality-gate.mjs` imports from `dist/pipeline/quality-oracle.js` — run `npm run build` before invoking `codex-writer.mjs` in write/revise/polish modes. Dry-run bypasses this check.
+
+4. **Testing**: Run `npm run test:integration` before committing state management changes. Tests validate:
    - State file format compliance
    - Schema validation for 100 test chapters
    - Path resolution for context loading
    - Hook script exports and functionality
 
-4. **Data Generation**: The test project structure is authoritative:
+5. **Data Generation**: The test project structure is authoritative:
    - 100 chapter JSON files in chapters/chapter_NNN.json format
    - Chapters follow chapter.schema.json structure
    - Must include: meta, context, narrative_elements, scenes, style_guide

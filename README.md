@@ -286,6 +286,25 @@ novels/{novel_id}/
 3. 보고서(`reviews/quality/chapter_XXX_quality.json`)를 확인하여 실패 원인 파악.
 4. 초안을 수동 편집하거나 `prose-surgeon` 에이전트로 수정 후 재집필합니다.
 
+## 지속적 통합 (CI)
+
+저장소는 GitHub Actions 워크플로우(`.github/workflows/ci.yml`) 한 개로 다음 이벤트마다 자동으로 실행됩니다:
+
+- 모든 Pull Request
+- `master` 브랜치에 대한 모든 push
+
+워크플로우는 `ubuntu-latest` 환경에 Node 20과 npm 캐시를 사용하며, 아래 순서로 실행됩니다:
+
+1. `npm ci` — 의존성 클린 설치
+2. `npm run build` — TypeScript 빌드 + 스키마/에이전트/팀/스킬 검증
+3. `npm test` — vitest 전체 유닛 테스트 스위트
+4. `npm run test:integration` — 통합 테스트
+5. `npm audit --audit-level=moderate` — 공급망 보안 감사
+
+CI 실패 시 머지가 자동으로 차단되지는 않지만, 머지 전 원인을 파악하고 수정하는 것을 권장합니다. 로컬 등가 명령어: `npm test && npm run build`.
+
+> **참고**: 사용자의 로컬 `novels/novel_1/` 워크스페이스에 의존하는 테스트는 `describe.skipIf(!projectExists)`로 게이팅되어 CI에서는 자동으로 스킵됩니다(`novels/`는 `.gitignore`에 등록된 로컬 워크스페이스 아티팩트입니다).
+
 ## BLUEPRINT.md 워크플로우
 
 소설 시작 전 체계적인 기획:

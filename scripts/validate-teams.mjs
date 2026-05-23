@@ -26,13 +26,29 @@ const agentsDir = join(__dirname, '..', 'agents');
 
 // ---------------------------------------------------------------------------
 // Allowlist for orchestrator_action.action values.
+// Sourced from schemas/team.schema.json so that adding a new action is a
+// single-file edit (the schema). Falls back to a hardcoded list if the schema
+// cannot be read, with a loud warning.
 // ---------------------------------------------------------------------------
-const ALLOWED_ORCHESTRATOR_ACTIONS = new Set([
-  'codex-writer',
-  'adult-rewriter',
-  'chapter-polisher-full',
-  'quality-gate',
-]);
+
+function loadOrchestratorActionsFromSchema() {
+  try {
+    const schemaPath = join(__dirname, '..', 'schemas', 'team.schema.json');
+    const schema = JSON.parse(readFileSync(schemaPath, 'utf-8'));
+    // Walk to definitions.workflowStep.properties.action.enum
+    const actions =
+      schema?.definitions?.workflowStep?.properties?.action?.enum;
+    if (Array.isArray(actions) && actions.length > 0) {
+      return new Set(actions);
+    }
+    console.warn('[validate-teams] team.schema.json found but action enum is missing or empty — using fallback allowlist');
+  } catch (e) {
+    console.warn(`[validate-teams] schema read failed, using fallback allowlist: ${e.message}`);
+  }
+  return new Set(['codex-writer', 'adult-rewriter', 'chapter-polisher-full', 'quality-gate']);
+}
+
+const ALLOWED_ORCHESTRATOR_ACTIONS = loadOrchestratorActionsFromSchema();
 
 // ---------------------------------------------------------------------------
 // Helpers

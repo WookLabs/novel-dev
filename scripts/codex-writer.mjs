@@ -15,37 +15,36 @@
  *   --chapter N        회차 번호 (필수)
  *   --project PATH     소설 프로젝트 경로 (필수)
  *   --model MODEL      GPT 모델 (기본: gpt-5.4)
+ *   --mode MODE        write | revise | polish | design | gen-plot | blueprint
+ *   --feedback PATH    퇴고 시 리뷰 피드백 JSON 경로
  *   --dry-run          프롬프트 생성만, Codex 호출 안 함
+ *   --quality-mode M   strict(기본) | warn | off
  *   --help, -h         도움말
  *
  * Environment:
  *   Codex CLI가 자체적으로 인증을 처리합니다 (별도 API 키 불필요)
  */
 
-import fs from 'fs';
-import os from 'node:os';
-import path from 'path';
-import { execFileSync, spawnSync } from 'child_process';
-import { fileURLToPath } from 'url';
-import { extractChapterCast } from './lib/chapter-cast.mjs';
-import { resolveCharacters } from './lib/character-resolver.mjs';
-import { buildWriterBrief } from './lib/writer-brief-builder.mjs';
+import { colors, error, log } from './lib/codex-writer-common.mjs';
+import runWrite from './lib/modes/write.mjs';
+import runRevise from './lib/modes/revise.mjs';
+import runPolish from './lib/modes/polish.mjs';
+import runDesign from './lib/modes/design.mjs';
+import runGenPlot from './lib/modes/gen-plot.mjs';
+import runBlueprint from './lib/modes/blueprint.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PLUGIN_ROOT = path.resolve(__dirname, '..');
+// ─── Mode dispatch table ─────────────────────────────────────────────────────
 
-const colors = {
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  reset: '\x1b[0m'
+const MODES = {
+  write: runWrite,
+  revise: runRevise,
+  polish: runPolish,
+  design: runDesign,
+  'gen-plot': runGenPlot,
+  blueprint: runBlueprint,
 };
 
-// ─── CLI Argument Parsing ────────────────────────────────────────────────────
+// ─── CLI Argument Parsing ─────────────────────────────────────────────────────
 
 function parseArgs(argv) {
   const result = {
@@ -94,7 +93,7 @@ ${colors.yellow}Options:${colors.reset}
   --chapter N             회차 번호 (필수)
   --project PATH          소설 프로젝트 경로 (필수)
   --model MODEL           GPT 모델 (기본: gpt-5.4)
-  --mode MODE             write(초고, 기본) | revise(퇴고)
+  --mode MODE             write(초고, 기본) | revise(퇴고) | polish | design | gen-plot | blueprint
   --feedback PATH         퇴고 시 리뷰 피드백 JSON 경로
   --dry-run               프롬프트 생성만, Codex 호출 안 함
   --quality-mode MODE     strict(기본) | warn | off  — 품질 게이트 모드
@@ -108,393 +107,7 @@ ${colors.yellow}Environment:${colors.reset}
 `);
 }
 
-function log(msg) { console.error(`${colors.blue}[codex-writer]${colors.reset} ${msg}`); }
-function warn(msg) { console.error(`${colors.yellow}[WARN]${colors.reset} ${msg}`); }
-function error(msg) { console.error(`${colors.red}[ERROR]${colors.reset} ${msg}`); }
-
-// ─── File Loading ────────────────────────────────────────────────────────────
-
-function readIfExists(filePath) {
-  try { return fs.readFileSync(filePath, 'utf-8'); } catch { return null; }
-}
-
-function padChapter(n) {
-  return String(n).padStart(3, '0');
-}
-
-async function loadContext(projectPath, chapterNum) {
-  const pad = padChapter(chapterNum);
-
-  const chapterPlot = readIfExists(path.join(projectPath, `chapters/chapter_${pad}.json`));
-  if (!chapterPlot) throw new Error(`chapters/chapter_${pad}.json not found in ${projectPath}`);
-
-  const styleGuide = readIfExists(path.join(projectPath, 'meta/style-guide.json'));
-  const project = readIfExists(path.join(projectPath, 'meta/project.json'));
-
-  // 이전 요약 로드 (최대 3개)
-  const summaries = [];
-  for (let i = Math.max(1, chapterNum - 3); i < chapterNum; i++) {
-    const s = readIfExists(path.join(projectPath, `context/summaries/chapter_${padChapter(i)}_summary.md`));
-    if (s) summaries.push(s);
-  }
-
-  // 캐릭터 파일 로드 (플롯에 등장하는 캐릭터)
-  let plotData;
-  try {
-    plotData = JSON.parse(chapterPlot);
-  } catch (e) {
-    throw new Error(`Failed to parse chapter JSON at ${path.join(projectPath, `chapters/chapter_${pad}.json`)}: ${e.message}`);
-  }
-
-  // Use extractChapterCast + resolveCharacters for robust resolution
-  // (handles filename ≠ id cases like protagonist.json / char_001)
-  const castIds = extractChapterCast(plotData);
-  const { resolved: resolvedChars, missing: missingChars } = await resolveCharacters(projectPath, castIds);
-
-  for (const missingId of missingChars) {
-    warn(`캐릭터를 찾을 수 없습니다 (건너뜀): ${missingId}`);
-  }
-
-  const characters = [];
-  for (const { requestedId, character } of resolvedChars) {
-    // Prefer a dedicated agent .md if one exists (keyed by id or by name-derived path)
-    const charId = character.id || requestedId;
-    const charName = character.name;
-
-    // Try agent file by id first, then by name slug
-    const agentMdById = readIfExists(path.join(PLUGIN_ROOT, `agents/characters/${charId}.md`));
-    const nameStem = charName ? charName.replace(/\s+/g, '-') : null;
-    const agentMdByName = nameStem
-      ? readIfExists(path.join(PLUGIN_ROOT, `agents/characters/${nameStem}.md`))
-      : null;
-    const agentMd = agentMdById || agentMdByName;
-
-    if (agentMd) {
-      characters.push({ id: charId, agentContent: agentMd });
-    } else {
-      // Build a concise profile block from the resolved JSON (not the full 200-line file)
-      characters.push({ id: charId, resolvedCharacter: character });
-    }
-  }
-
-  return { chapterPlot, styleGuide, project, summaries, characters, plotData, chapterNum, projectPath };
-}
-
-// ─── System Prompt Assembly ──────────────────────────────────────────────────
-
-function buildSystemPrompt(ctx) {
-  const novelistMd = readIfExists(path.join(PLUGIN_ROOT, 'agents/novelist.md'));
-  if (!novelistMd) throw new Error('agents/novelist.md not found');
-
-  let prompt = `# 역할: 한국어 소설 집필 AI\n\n`;
-  prompt += `아래 규칙을 모두 준수하여 챕터를 집필하세요.\n\n`;
-
-  // novelist.md의 핵심 규칙 (Critical_Constraints 섹션)
-  const constraintsMatch = novelistMd.match(/<Critical_Constraints>([\s\S]*?)<\/Critical_Constraints>/);
-  if (constraintsMatch) {
-    prompt += `## 집필 규칙\n\n${constraintsMatch[1].trim()}\n\n`;
-  }
-
-  // 스타일 가이드
-  if (ctx.styleGuide) {
-    prompt += `## 스타일 가이드\n\n\`\`\`json\n${ctx.styleGuide}\n\`\`\`\n\n`;
-  }
-
-  // 캐릭터 보이스 프로필
-  if (ctx.characters.length > 0) {
-    const charNames = ctx.characters.map(c => {
-      if (c.resolvedCharacter) return c.resolvedCharacter.name || c.id;
-      return c.id;
-    });
-    prompt += `## 등장인물 보이스 프로필\n\n`;
-    prompt += `등장인물: ${charNames.join(', ')}\n\n`;
-    for (const char of ctx.characters) {
-      if (char.agentContent) {
-        prompt += `### ${char.id}\n${char.agentContent}\n\n`;
-      } else if (char.resolvedCharacter) {
-        // Concise profile — id, name, role, aliases, summary only (not full JSON)
-        const c = char.resolvedCharacter;
-        prompt += `### ${c.name || char.id}\n`;
-        prompt += `- **id**: ${c.id || char.id}\n`;
-        prompt += `- **role**: ${c.role || '(unknown)'}\n`;
-        if (Array.isArray(c.aliases) && c.aliases.length > 0) {
-          prompt += `- **aliases**: ${c.aliases.join(', ')}\n`;
-        }
-        if (c.notes) {
-          prompt += `- **notes**: ${c.notes}\n`;
-        } else if (c.inner?.want) {
-          prompt += `- **want**: ${c.inner.want}\n`;
-        }
-        if (c.basic?.voice?.tone) {
-          prompt += `- **voice**: ${c.basic.voice.tone}\n`;
-        }
-        prompt += `\n`;
-      }
-    }
-  }
-
-  // ADULT 마커 지시
-  prompt += `## ADULT 마커 규칙\n\n`;
-  prompt += `성인 장면(정사, 신체 접촉, 관능적 묘사)을 작성할 때는\n`;
-  prompt += `<!-- ADULT_N_START --> 와 <!-- ADULT_N_END --> 마커로 감싸세요. (N은 1부터 순번)\n`;
-  prompt += `마커 안에서는 행위, 신체 부위, 감정 반응을 구체적으로 서술하세요.\n`;
-  prompt += `마커 밖의 일반 장면은 평소대로 작성하세요.\n\n`;
-
-  return prompt;
-}
-
-function buildUserPrompt(ctx, mode, feedbackContent) {
-  if (mode === 'revise') {
-    return buildRevisePrompt(ctx, feedbackContent);
-  }
-
-  // Build sanitized writer brief instead of embedding raw chapter JSON
-  const { brief, privateOutlineWarnings } = buildWriterBrief(ctx.plotData);
-
-  // Inject resolved character profiles into the ### 등장인물 section
-  let characterSection = '';
-  if (ctx.characters.length > 0) {
-    const charLines = [];
-    for (const char of ctx.characters) {
-      if (char.agentContent) {
-        charLines.push(`#### ${char.id}\n${char.agentContent}`);
-      } else if (char.resolvedCharacter) {
-        const c = char.resolvedCharacter;
-        const parts = [`#### ${c.name || char.id}`];
-        if (c.role) parts.push(`- **역할**: ${c.role}`);
-        if (Array.isArray(c.aliases) && c.aliases.length > 0) {
-          parts.push(`- **별칭**: ${c.aliases.join(', ')}`);
-        }
-        if (c.notes) parts.push(`- **노트**: ${c.notes}`);
-        else if (c.inner?.want) parts.push(`- **욕구**: ${c.inner.want}`);
-        if (c.basic?.voice?.tone) parts.push(`- **보이스**: ${c.basic.voice.tone}`);
-        charLines.push(parts.join('\n'));
-      }
-    }
-    characterSection = charLines.join('\n\n');
-  }
-
-  // Insert character profiles after the ### 등장인물 heading
-  let enrichedBrief = brief;
-  if (characterSection) {
-    enrichedBrief = brief.replace(
-      /### 등장인물\n+/,
-      `### 등장인물\n\n${characterSection}\n\n`
-    );
-  }
-
-  // Log storyboard phrase rewrites (for debugging)
-  if (privateOutlineWarnings.length > 0) {
-    warn(`플롯 브리프 변환: ${privateOutlineWarnings.length}개 스토리보드 표현을 산문 지시문으로 교체함`);
-  }
-
-  let prompt = `# 집필 대상\n\n`;
-  prompt += enrichedBrief;
-  prompt += `\n\n`;
-
-  if (ctx.summaries.length > 0) {
-    prompt += `## 이전 회차 요약\n\n`;
-    ctx.summaries.forEach((s, i) => {
-      prompt += `### 이전 ${ctx.summaries.length - i}화 전\n${s}\n\n`;
-    });
-  }
-
-  prompt += `위 브리프에 따라 완전한 챕터를 집필하세요. 목표 분량: 5000~8000자.\n`;
-  prompt += `브리프는 사전 설계 자료이며, 메타/연출/분석 용어를 본문에 복사하지 말 것.\n`;
-  prompt += `출력은 마크다운 형식으로, 본문만 출력하세요 (메타 코멘트 없음).\n`;
-
-  return prompt;
-}
-
-function buildRevisePrompt(ctx, feedbackContent) {
-  const pad3 = padChapter(ctx.chapterNum);
-  const manuscript = readIfExists(path.join(ctx.projectPath, `chapters/ch${pad3}.md`))
-    || readIfExists(path.join(ctx.projectPath, `chapters/chapter_${pad3}.md`));
-
-  let prompt = `# 퇴고 대상\n\n`;
-  prompt += `## 원고\n${manuscript || '(원고 없음)'}\n\n`;
-  prompt += `## 플롯\n\`\`\`json\n${ctx.chapterPlot}\n\`\`\`\n\n`;
-
-  if (feedbackContent) {
-    prompt += `## 리뷰 피드백\n\`\`\`json\n${feedbackContent}\n\`\`\`\n\n`;
-  }
-
-  prompt += `위 피드백을 반영하여 원고를 퇴고하세요.\n`;
-  prompt += `- 피드백에서 지적한 문제를 우선 수정\n`;
-  prompt += `- 캐릭터 보이스 일관성 유지\n`;
-  prompt += `- 기존 분량 유지 (±10%)\n`;
-  prompt += `- ADULT 마커가 있으면 그대로 유지\n`;
-  prompt += `출력은 마크다운 형식으로, 수정된 본문 전체를 출력하세요.\n`;
-
-  return prompt;
-}
-
-// ─── Design/Gen-Plot/Blueprint Prompts ───────────────────────────────────────
-
-function buildDesignPrompt(projectPath) {
-  const blueprint = readIfExists(path.join(projectPath, 'BLUEPRINT.md'));
-  if (!blueprint) throw new Error('BLUEPRINT.md not found in project');
-  const project = readIfExists(path.join(projectPath, 'meta/project.json'));
-  const structure = readIfExists(path.join(projectPath, 'plot/structure.json'));
-
-  let system = `# 역할: 소설 설계 AI (5관점 통합)\n\n`;
-  system += `당신은 5명의 설계 에이전트 관점을 모두 갖춘 통합 설계자입니다.\n`;
-  system += `1. style-curator (문체, 톤, POV, 금기어)\n`;
-  system += `2. lore-keeper (세계관, 마법 체계, 지리, 용어)\n`;
-  system += `3. character-designer (캐릭터 프로필, 관계, 성장 아크)\n`;
-  system += `4. plot-architect (3막 구조, 타임라인, 메인 아크)\n`;
-  system += `5. arc-designer (서브 아크, 복선, 훅)\n\n`;
-  system += `## 출력 형식\n`;
-  system += `JSON 객체 하나를 출력하세요. 구조:\n`;
-  system += `{\n  "style_guide": { ... },\n  "world": { ... },\n  "characters": [ ... ],\n`;
-  system += `  "relationships": [ ... ],\n  "timeline": [ ... ],\n  "main_arc": { ... },\n`;
-  system += `  "sub_arcs": [ ... ],\n  "foreshadowing": [ ... ],\n  "hooks": [ ... ]\n}\n`;
-
-  let user = `# 설계 대상\n\n## 기획서\n${blueprint}\n\n`;
-  if (project) user += `## 프로젝트 메타\n\`\`\`json\n${project}\n\`\`\`\n\n`;
-  if (structure) user += `## 구조\n\`\`\`json\n${structure}\n\`\`\`\n\n`;
-  user += `위 기획서를 바탕으로 완전한 설계 JSON을 생성하세요.\n`;
-
-  return { system, user };
-}
-
-function buildGenPlotPrompt(projectPath, chapterNum, prevSummaries) {
-  const mainArc = readIfExists(path.join(projectPath, 'plot/main-arc.json'));
-  const subArcs = readIfExists(path.join(projectPath, 'plot/sub-arcs.json'));
-  const foreshadowing = readIfExists(path.join(projectPath, 'plot/foreshadowing.json'));
-  const hooks = readIfExists(path.join(projectPath, 'plot/hooks.json'));
-  const timeline = readIfExists(path.join(projectPath, 'plot/timeline.json'));
-  const structure = readIfExists(path.join(projectPath, 'plot/structure.json'));
-  const styleGuide = readIfExists(path.join(projectPath, 'meta/style-guide.json'));
-  const charIndex = readIfExists(path.join(projectPath, 'characters/index.json'));
-
-  let system = `# 역할: 소설 플롯 설계 AI\n\n`;
-  system += `회차별 상세 플롯 JSON을 생성합니다.\n`;
-  system += `각 회차에 포함할 내용: 제목, 목표 분량, 현재 플롯(1500자+), 다음화 예고(500자),\n`;
-  system += `POV 캐릭터, 등장인물, 장소, 복선 plant/payoff, 훅, 감정 목표, 2-4개 씬.\n\n`;
-  system += `## 출력 형식\n`;
-  system += `chapter_${padChapter(chapterNum)}.json 형식의 JSON 하나를 출력하세요.\n`;
-
-  let user = `# 플롯 생성 대상: Chapter ${chapterNum}\n\n`;
-  if (structure) user += `## 구조\n\`\`\`json\n${structure}\n\`\`\`\n\n`;
-  if (mainArc) user += `## 메인 아크\n\`\`\`json\n${mainArc}\n\`\`\`\n\n`;
-  if (subArcs) user += `## 서브 아크\n\`\`\`json\n${subArcs}\n\`\`\`\n\n`;
-  if (foreshadowing) user += `## 복선\n\`\`\`json\n${foreshadowing}\n\`\`\`\n\n`;
-  if (hooks) user += `## 훅\n\`\`\`json\n${hooks}\n\`\`\`\n\n`;
-  if (timeline) user += `## 타임라인\n\`\`\`json\n${timeline}\n\`\`\`\n\n`;
-  if (styleGuide) user += `## 스타일 가이드\n\`\`\`json\n${styleGuide}\n\`\`\`\n\n`;
-  if (charIndex) user += `## 캐릭터\n\`\`\`json\n${charIndex}\n\`\`\`\n\n`;
-  if (prevSummaries && prevSummaries.length > 0) {
-    user += `## 이전 회차 요약\n\n`;
-    prevSummaries.forEach((s, i) => { user += `### 이전 ${prevSummaries.length - i}화 전\n${s}\n\n`; });
-  }
-  user += `Chapter ${chapterNum}의 상세 플롯 JSON을 생성하세요.\n`;
-
-  return { system, user };
-}
-
-function buildBlueprintPrompt(projectPath) {
-  // brainstorm 결과 또는 사용자 아이디어를 입력으로 BLUEPRINT.md 생성
-  const idea = readIfExists(path.join(projectPath, 'meta/idea.md'))
-    || readIfExists(path.join(projectPath, 'meta/brainstorm.md'));
-  const project = readIfExists(path.join(projectPath, 'meta/project.json'));
-
-  let system = `# 역할: 소설 기획서 작성 AI\n\n`;
-  system += `소설 아이디어를 받아 완전한 기획서(BLUEPRINT.md)를 생성합니다.\n`;
-  system += `포함 항목: 로그라인, 시놉시스(500자+), 3막 구조 아웃라인,\n`;
-  system += `주요 캐릭터 소개, 장르/톤, 타겟 독자, 차별화 포인트.\n\n`;
-  system += `출력: 마크다운 형식의 BLUEPRINT.md 전문.\n`;
-
-  let user = `# 기획서 작성 대상\n\n`;
-  if (idea) user += `## 아이디어\n${idea}\n\n`;
-  if (project) user += `## 프로젝트 메타\n\`\`\`json\n${project}\n\`\`\`\n\n`;
-  user += `위 내용을 바탕으로 완전한 BLUEPRINT.md를 생성하세요.\n`;
-
-  return { system, user };
-}
-
-function buildPolishPrompt(projectPath, chapterNum) {
-  const pad3 = padChapter(chapterNum);
-  const manuscript = readIfExists(path.join(projectPath, `chapters/ch${pad3}.md`))
-    || readIfExists(path.join(projectPath, `chapters/chapter_${pad3}.md`));
-  if (!manuscript) throw new Error(`Chapter ${chapterNum} manuscript not found`);
-
-  const styleGuide = readIfExists(path.join(projectPath, 'meta/style-guide.json'));
-
-  let system = `# 역할: 한국어 소설의 문학적 폴리셔\n\n`;
-  system += `기능적 서술을 몰입적 산문으로 향상시킵니다.\n`;
-  system += `플롯, 대화, 사건은 유지하고 서술/묘사/전환만 문학적으로 업그레이드합니다.\n\n`;
-
-  system += `# 절대 규칙\n\n`;
-  system += `1. 대화("큰따옴표" 안)는 한 글자도 수정하지 마세요.\n`;
-  system += `2. 플롯, 사건, 캐릭터 행동, 시간 순서를 변경하지 마세요.\n`;
-  system += `3. 문체 연속성: 원본의 시점, 시제, 톤을 유지하세요.\n`;
-  system += `4. 단문 나열 금지: "~했다. ~했다." → 복문으로 전환.\n`;
-  system += `5. 필터 워드 제거: 느꼈다, 보였다, 생각했다 → 신체 반응/직접 묘사.\n`;
-  system += `6. 건조한 전환 제거: "그날 저녁.", "밤이 됐다." → 감각 앵커.\n\n`;
-
-  system += `# BAD vs GOOD\n\n`;
-  system += `BAD: 손끝에서 감각이 왔다. 반응이 잡혔다. 그날 저녁.\n`;
-  system += `GOOD: 손끝이 유리 표면을 따라 미끄러지는 순간, 내부에서 흰빛 진동이 올라왔다. 창 밖의 빛이 주홍에서 남색으로 바뀌었을 때.\n\n`;
-
-  if (styleGuide) {
-    system += `# 스타일 가이드\n\`\`\`json\n${styleGuide}\n\`\`\`\n\n`;
-  }
-
-  system += `출력: 폴리시된 챕터 전체 (마크다운). ADULT 마커가 있으면 그대로 보존.\n`;
-
-  let user = `# 폴리시 대상: Chapter ${chapterNum}\n\n${manuscript}\n\n`;
-  user += `위 원고의 서술/묘사/전환을 문학적으로 향상시키세요. 대화는 보존.\n`;
-
-  return { system, user };
-}
-
-// ─── Codex CLI Execution ─────────────────────────────────────────────────────
-
-function checkPrerequisites() {
-  try {
-    execFileSync('codex', ['--version'], { stdio: 'pipe', shell: true });
-  } catch {
-    error('codex CLI를 찾을 수 없습니다.');
-    error('OpenAI Codex CLI를 설치하세요: npm install -g @openai/codex');
-    process.exit(1);
-  }
-}
-
-function runCodex(systemPrompt, userPrompt, model) {
-  // 임시 파일로 프롬프트 전달 (CLI 인자 길이 제한 우회)
-  // mkdtempSync로 고유 디렉터리를 생성하여 병렬 실행 시 파일 충돌을 방지
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-writer-'));
-
-  const promptFile = path.join(tmpDir, 'prompt.md');
-  const outputFile = path.join(tmpDir, 'output.md');
-  const combinedPrompt = `# System Instructions\n\n${systemPrompt}\n\n# Task\n\n${userPrompt}`;
-  fs.writeFileSync(promptFile, combinedPrompt, 'utf-8');
-
-  try {
-    // codex exec 모드: 파일에서 읽어 stdin으로 파이프 (Windows ENAMETOOLONG 우회)
-    const promptPath = promptFile.replace(/\\/g, '/');
-    const outputPath = outputFile.replace(/\\/g, '/');
-    const cmd = `cat "${promptPath}" | codex exec --model "${model}" -o "${outputPath}" -`;
-    log(`Codex CLI 실행: model=${model}`);
-
-    execFileSync('bash', ['-c', cmd], {
-      encoding: 'utf-8',
-      maxBuffer: 1024 * 1024 * 10, // 10MB
-      timeout: 600000, // 10분
-      env: { ...process.env }
-    });
-
-    if (fs.existsSync(outputFile)) {
-      return fs.readFileSync(outputFile, 'utf-8');
-    }
-    return '';
-  } finally {
-    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
-  }
-}
-
-// ─── Main ────────────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -502,156 +115,23 @@ async function main() {
   if (!args.project) { error('--project PATH 필수'); process.exit(1); }
 
   const CHAPTER_MODES = ['write', 'revise', 'polish'];
-  const PROJECT_MODES = ['design', 'gen-plot', 'blueprint'];
-
   if (CHAPTER_MODES.includes(args.mode) && !args.chapter) {
     error(`--chapter N 필수 (mode: ${args.mode})`); process.exit(1);
   }
 
-  const modeLabels = { write: '집필', revise: '퇴고', design: '설계', 'gen-plot': '플롯 생성', blueprint: '기획서 생성', polish: '산문 폴리시' };
+  const modeLabels = {
+    write: '집필', revise: '퇴고', design: '설계',
+    'gen-plot': '플롯 생성', blueprint: '기획서 생성', polish: '산문 폴리시',
+  };
   log(`${modeLabels[args.mode] || args.mode} 시작 (model: ${args.model}, mode: ${args.mode})`);
 
-  let systemPrompt, userPrompt;
-
-  if (args.mode === 'polish') {
-    // polish: 기존 챕터 산문 폴리시 (대화 유지, 서술만 향상)
-    const { system, user } = buildPolishPrompt(args.project, args.chapter);
-    systemPrompt = system; userPrompt = user;
-  } else if (PROJECT_MODES.includes(args.mode)) {
-    // design, gen-plot, blueprint: 프로젝트 레벨 모드
-    if (args.mode === 'design') {
-      const { system, user } = buildDesignPrompt(args.project);
-      systemPrompt = system; userPrompt = user;
-    } else if (args.mode === 'gen-plot') {
-      if (!args.chapter) { error('--chapter N 필수 (gen-plot)'); process.exit(1); }
-      const summaries = [];
-      for (let i = Math.max(1, args.chapter - 3); i < args.chapter; i++) {
-        const s = readIfExists(path.join(args.project, `context/summaries/chapter_${padChapter(i)}_summary.md`));
-        if (s) summaries.push(s);
-      }
-      const { system, user } = buildGenPlotPrompt(args.project, args.chapter, summaries);
-      systemPrompt = system; userPrompt = user;
-    } else if (args.mode === 'blueprint') {
-      const { system, user } = buildBlueprintPrompt(args.project);
-      systemPrompt = system; userPrompt = user;
-    }
-  } else {
-    // write, revise: 챕터 레벨 모드
-    const ctx = await loadContext(args.project, args.chapter);
-    const charDisplay = ctx.characters.map(c => {
-      if (c.resolvedCharacter) return `${c.resolvedCharacter.name || c.id}(${c.id})`;
-      return c.id;
-    }).join(', ') || 'none';
-    log(`플롯 로드 완료. 등장인물: ${charDisplay}`);
-
-    let feedbackContent = null;
-    if (args.mode === 'revise' && args.feedback) {
-      feedbackContent = readIfExists(args.feedback);
-      if (feedbackContent) log(`피드백 로드 완료: ${args.feedback}`);
-      else warn(`피드백 파일을 찾을 수 없습니다: ${args.feedback}`);
-    }
-
-    systemPrompt = buildSystemPrompt(ctx);
-    userPrompt = buildUserPrompt(ctx, args.mode, feedbackContent);
+  const handler = MODES[args.mode];
+  if (!handler) {
+    error(`Unknown mode: ${args.mode}`);
+    process.exit(2);
   }
 
-  log(`시스템 프롬프트: ${systemPrompt.length}자, 유저 프롬프트: ${userPrompt.length}자`);
-
-  if (args.dryRun) {
-    log('--dry-run 모드. Codex 호출 건너뜀.');
-    console.log('=== SYSTEM PROMPT ===\n');
-    console.log(systemPrompt);
-    console.log('\n=== USER PROMPT ===\n');
-    console.log(userPrompt);
-    return;
-  }
-
-  // 사전 조건 확인
-  checkPrerequisites();
-
-  // Codex CLI 실행
-  const result = runCodex(systemPrompt, userPrompt, args.model);
-
-  if (!result || result.trim().length === 0) {
-    error('Codex CLI가 빈 결과를 반환했습니다. 파일을 변경하지 않습니다.');
-    process.exit(1);
-  }
-
-  // 결과 저장 (모드별 출력 경로)
-  let outputPath;
-  if (args.mode === 'design') {
-    outputPath = path.join(args.project, 'meta/design-codex-output.json');
-  } else if (args.mode === 'gen-plot') {
-    const pad = padChapter(args.chapter);
-    const chJson = path.join(args.project, `chapters/ch${pad}.json`);
-    const chapterJson = path.join(args.project, `chapters/chapter_${pad}.json`);
-    outputPath = fs.existsSync(chJson) ? chJson : (fs.existsSync(chapterJson) ? chapterJson : chJson);
-  } else if (args.mode === 'blueprint') {
-    outputPath = path.join(args.project, 'BLUEPRINT.md');
-  } else {
-    // write, revise
-    const pad = padChapter(args.chapter);
-    const chPath = path.join(args.project, `chapters/ch${pad}.md`);
-    const chapterPath = path.join(args.project, `chapters/chapter_${pad}.md`);
-    outputPath = fs.existsSync(chPath) ? chPath : (fs.existsSync(chapterPath) ? chapterPath : chPath);
-  }
-
-  // ─── Quality Gate (write/revise/polish modes only) ────────────────────────
-  // Run BEFORE replacing the final chapter file.
-  // In strict mode, gate failure prevents the final file from being overwritten.
-  const isChapterMode = ['write', 'revise', 'polish'].includes(args.mode);
-  const gateMode = args.qualityMode || 'strict';
-
-  if (isChapterMode && gateMode !== 'off') {
-    // Write to a temp file first so gate can inspect it
-    const tmpInputPath = outputPath + '.gate-tmp.md';
-    fs.writeFileSync(tmpInputPath, result, 'utf-8');
-
-    const GATE_SCRIPT = path.join(__dirname, 'quality-gate.mjs');
-    const gateArgs = [
-      GATE_SCRIPT,
-      '--input', tmpInputPath,
-      '--project', args.project,
-      '--chapter', String(args.chapter),
-      '--mode', gateMode,
-      '--final-path', outputPath,
-    ];
-
-    log(`품질 게이트 실행 중 (mode: ${gateMode})...`);
-    const gateResult = spawnSync('node', gateArgs, { encoding: 'utf-8' });
-
-    // Clean up temp file
-    try { fs.unlinkSync(tmpInputPath); } catch { /* ignore */ }
-
-    if (gateResult.stdout) process.stdout.write(gateResult.stdout);
-    if (gateResult.stderr) process.stderr.write(gateResult.stderr);
-
-    if (gateMode === 'strict' && gateResult.status !== 0) {
-      error('품질 게이트 STRICT 실패 — 최종본을 덮어쓰지 않습니다.');
-      error('draft 파일이 저장되었습니다. 원고를 수정 후 다시 실행하세요.');
-      process.exit(1);
-    }
-  }
-
-  // 백업
-  if (fs.existsSync(outputPath)) {
-    const bakPath = outputPath + '.bak';
-    fs.copyFileSync(outputPath, bakPath);
-    log(`기존 파일 백업: ${bakPath}`);
-  }
-
-  fs.writeFileSync(outputPath, result, 'utf-8');
-  log(`${colors.green}완료!${colors.reset} ${outputPath} (${result.length}자)`);
-
-  // ADULT 마커 감지 보고 (write/revise 모드만)
-  if (['write', 'revise'].includes(args.mode)) {
-    const adultCount = (result.match(/<!-- ADULT_\d+_START -->/g) || []).length;
-    if (adultCount > 0) {
-      log(`ADULT 마커 ${adultCount}개 감지 → Pass 2(Grok)에서 리라이트됩니다.`);
-    } else {
-      log('ADULT 마커 없음 → Pass 2 건너뜁니다.');
-    }
-  }
+  await handler(args);
 }
 
 main().catch(e => {

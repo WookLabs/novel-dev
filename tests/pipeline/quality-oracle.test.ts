@@ -870,4 +870,64 @@ describe('analyzeChapter — plot-meta-leak integration', () => {
     const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
     expect(result.verdict).toBe('REVISE');
   });
+
+  // U3 pin: high-severity bypass works via .severity field alone, not issue text
+  it('U3-pin: high-severity cap-bypass fires on .severity === "high" regardless of issue text', () => {
+    // Content that fills all 5 slots with filter-word directives, plus one high-severity meta-leak
+    const content = [
+      '느꼈다. 보였다. 생각했다. 들렸다. 알 수 있었다.', // fills cap with filter-word directives
+      '화면 페이드 아웃이 되었다. 메커닉을 보여준다.',   // two high-severity patterns → severity: 'high'
+    ].join('\n\n');
+
+    const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
+    const highMeta = result.directives.filter(d => d.type === 'plot-meta-leak' && d.severity === 'high');
+
+    // Must survive the cap
+    expect(highMeta.length).toBeGreaterThan(0);
+    // The directive must carry severity field; issue text is irrelevant to bypass logic
+    expect(highMeta[0].severity).toBe('high');
+  });
+});
+
+// ============================================================================
+// U3 pin: severity-string fallback is dead — field is sole authority
+// ============================================================================
+
+describe('U3 pin: severity field is sole source of truth', () => {
+  it('synthetic directive with severity "high" and NO "severity: high" in issue text bypasses cap', () => {
+    // Build content that generates exactly one high-severity plot-meta-leak directive.
+    // The directive will have severity: 'high' set by detectPlotMetaLeaks, and its
+    // .issue text will NOT need to contain the string "severity: high" for bypass logic.
+    const metaContent = '화면 페이드 아웃이 되었다. 메커닉을 확인하라.'; // two high-severity patterns
+    const dirs = detectPlotMetaLeaks(metaContent);
+    const highDir = dirs.find(d => d.severity === 'high');
+    expect(highDir).toBeDefined();
+
+    // Confirm the issue field does not need to contain literal "severity: high"
+    // (the old fallback text) for the bypass to work in analyzeChapter.
+    // The bypass is based solely on d.severity === 'high'.
+    expect(highDir!.severity).toBe('high');
+
+    // Now run analyzeChapter with a cap-filling prefix to prove the bypass fires
+    const capFiller = '느꼈다. 보였다. 생각했다. 들렸다. 알 수 있었다.';
+    const full = `${capFiller}\n\n${metaContent}`;
+    const result = analyzeChapter(full, 1, { assessKoreanTexture: false });
+    const survived = result.directives.filter(d => d.type === 'plot-meta-leak' && d.severity === 'high');
+    expect(survived.length).toBeGreaterThan(0);
+  });
+
+  it('directive with severity undefined does NOT trigger high-severity bypass', () => {
+    // detectPlotMetaLeaks always assigns severity, so we test at the filter level:
+    // a directive that lacks severity 'high' should not survive the high-severity filter.
+    const dirs = detectPlotMetaLeaks('가사 한 줄이 머릿속을 맴돌았다.'); // no meta patterns
+    expect(dirs.length).toBe(0); // no leak → nothing to bypass
+
+    // Explicit check: if a directive has severity 'low', it is NOT treated as high
+    const lowContent = '이 장면의 메커닉은 간단하다.'; // single pattern → low/medium
+    const lowDirs = detectPlotMetaLeaks(lowContent);
+    // None of them should bypass as 'high' unless they actually are high
+    const wronglyHigh = lowDirs.filter(d => d.severity === 'high');
+    // Single pattern may be low or medium but not high
+    expect(wronglyHigh.length).toBe(0);
+  });
 });

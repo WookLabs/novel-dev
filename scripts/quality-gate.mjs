@@ -191,7 +191,7 @@ async function main() {
 
   // 2. Any directive with type "plot-meta-leak" AND severity "high"
   const highMetaLeaks = directives.filter(
-    d => d.type === 'plot-meta-leak' && (d.severity === 'high' || (d.issue && d.issue.includes('severity: high')))
+    d => d.type === 'plot-meta-leak' && d.severity === 'high'
   );
   if (highMetaLeaks.length > 0) {
     failureReasons.push(`${highMetaLeaks.length} high-severity plot-meta-leak directive(s)`);
@@ -199,7 +199,7 @@ async function main() {
 
   // 3. Any directive with type "consecutive-short-sentences" AND severity "high"
   const highShortSentences = directives.filter(
-    d => d.type === 'consecutive-short-sentences' && (d.severity === 'high' || (d.issue && d.issue.includes('severity: high')))
+    d => d.type === 'consecutive-short-sentences' && d.severity === 'high'
   );
   if (highShortSentences.length > 0) {
     failureReasons.push(`${highShortSentences.length} high-severity consecutive-short-sentences directive(s)`);

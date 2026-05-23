@@ -279,6 +279,128 @@ describe('validate-teams.mjs — real writing-team files', () => {
 });
 
 // ---------------------------------------------------------------------------
+// CRITERION 6: Schema is the source of truth for orchestrator_action allowlist
+// ---------------------------------------------------------------------------
+describe('validate-teams.mjs — schema-driven orchestrator_action allowlist (U6)', () => {
+  it('team.schema.json defines an enum for the action property under workflowStep', () => {
+    // The schema must declare the action enum so validate-teams can load it.
+    const schemaPath = join(REPO_ROOT, 'schemas', 'team.schema.json');
+    const schema = JSON.parse(readFileSync(schemaPath, 'utf-8'));
+    const actionEnum = schema?.definitions?.workflowStep?.properties?.action?.enum;
+    expect(Array.isArray(actionEnum)).toBe(true);
+    expect(actionEnum!.length).toBeGreaterThan(0);
+  });
+
+  it('schema enum contains all four expected actions (drift detection)', () => {
+    // If someone removes an action from the schema, this test catches it.
+    const schemaPath = join(REPO_ROOT, 'schemas', 'team.schema.json');
+    const schema = JSON.parse(readFileSync(schemaPath, 'utf-8'));
+    const actionEnum: string[] =
+      schema?.definitions?.workflowStep?.properties?.action?.enum ?? [];
+    const required = ['codex-writer', 'adult-rewriter', 'chapter-polisher-full', 'quality-gate'];
+    for (const action of required) {
+      expect(actionEnum, `schema enum is missing required action: "${action}"`).toContain(action);
+    }
+  });
+
+  it('validate-teams accepts a new action when added to the schema enum', () => {
+    // Verify schema is actually the source of truth:
+    // inject an extra action into the patched schema copy and confirm validation passes.
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'validate-teams-schema-'));
+
+    // -- agents dir --
+    const agentsDir2 = join(tmpRoot, 'agents');
+    mkdirSync(agentsDir2);
+    const realAgentFiles = (require('fs').readdirSync(REAL_AGENTS) as string[]).filter(
+      (f: string) => f.endsWith('.md') && f !== 'AGENTS.md'
+    );
+    for (const f of realAgentFiles) {
+      writeFileSync(join(agentsDir2, f), `---\nname: ${f.replace('.md', '')}\n---\n`);
+    }
+
+    // -- teams dir with a team using the new action --
+    const teamsDir2 = join(tmpRoot, 'teams');
+    mkdirSync(teamsDir2);
+    writeFileSync(
+      join(teamsDir2, 'new-action.team.json'),
+      makeTeam({
+        steps: [
+          {
+            name: 'new-step',
+            agents: [],
+            execution: 'sequential',
+            type: 'orchestrator_action',
+            action: 'my-brand-new-action',
+            output: 'New action output',
+          },
+        ],
+      })
+    );
+
+    // -- patched validator + schema with the new action added --
+    const scriptsDir2 = join(tmpRoot, 'scripts');
+    mkdirSync(scriptsDir2);
+    const schemasDir2 = join(tmpRoot, 'schemas');
+    mkdirSync(schemasDir2);
+
+    // Write a schema that includes the new action in the enum
+    const realSchema = JSON.parse(readFileSync(join(REPO_ROOT, 'schemas', 'team.schema.json'), 'utf-8'));
+    const extendedEnum = [
+      ...(realSchema?.definitions?.workflowStep?.properties?.action?.enum ?? []),
+      'my-brand-new-action',
+    ];
+    if (!realSchema.definitions) realSchema.definitions = {};
+    if (!realSchema.definitions.workflowStep) realSchema.definitions.workflowStep = { properties: {} };
+    if (!realSchema.definitions.workflowStep.properties) realSchema.definitions.workflowStep.properties = {};
+    if (!realSchema.definitions.workflowStep.properties.action) realSchema.definitions.workflowStep.properties.action = {};
+    realSchema.definitions.workflowStep.properties.action.enum = extendedEnum;
+    writeFileSync(join(schemasDir2, 'team.schema.json'), JSON.stringify(realSchema, null, 2));
+
+    // Patch validator to point at temp dirs AND temp schema
+    const validatorSrc = readFileSync(VALIDATOR, 'utf-8');
+    const patched = validatorSrc
+      .replace(
+        /const agentsDir\s*=\s*join\(__dirname,\s*'\.\.'\s*,\s*'agents'\s*\);/,
+        `const agentsDir = ${JSON.stringify(agentsDir2)};`
+      )
+      .replace(
+        /const teamsDir\s*=\s*join\(__dirname,\s*'\.\.'\s*,\s*'teams'\s*\);/,
+        `const teamsDir = ${JSON.stringify(teamsDir2)};`
+      )
+      .replace(
+        /join\(__dirname,\s*'\.\.'\s*,\s*'schemas',\s*'team\.schema\.json'\)/,
+        JSON.stringify(join(schemasDir2, 'team.schema.json'))
+      );
+    writeFileSync(join(scriptsDir2, 'validate-teams.mjs'), patched);
+
+    const { exitCode } = runValidator(tmpRoot);
+    expect(exitCode).toBe(0);
+  });
+
+  it('validate-teams rejects an action that is NOT in the schema enum', () => {
+    // Even if a step uses a plausible-sounding action name,
+    // if it is not in the schema enum the validator must reject it.
+    const tmp = buildTempProject({
+      'unlisted-action.team.json': makeTeam({
+        steps: [
+          {
+            name: 'mystery-step',
+            agents: [],
+            execution: 'sequential',
+            type: 'orchestrator_action',
+            action: 'definitely-not-in-schema',
+            output: 'Mystery output',
+          },
+        ],
+      }),
+    });
+    const { exitCode, combined } = runValidator(tmp);
+    expect(exitCode).not.toBe(0);
+    expect(combined).toContain('definitely-not-in-schema');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // CRITERION 5: orchestrator_action allowlist check
 // ---------------------------------------------------------------------------
 describe('validate-teams.mjs — orchestrator_action allowlist', () => {

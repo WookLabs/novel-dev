@@ -225,3 +225,76 @@ describe('SHOULD: off mode exits 0 without analysis', () => {
     expect(result.status).toBe(0);
   });
 });
+
+// ─── U3 pin: severity field is sole authority for gate hard-fail ──────────────
+
+describe('U3 pin: severity field drives gate failure, not issue text', () => {
+  it('strict mode FAILS when manuscript has severity="high" plot-meta-leak (field only, no issue-string check)', () => {
+    // Prose with two high-severity meta-leak patterns in one paragraph.
+    // detectPlotMetaLeaks will assign severity: 'high' on the directive.
+    // The gate must fail on d.severity === 'high' alone.
+    const project = makeTempProject();
+    const prose = [
+      '빛이 창문으로 스며들었다. 조용한 아침이었다.',
+      '화면 페이드 아웃이 되었다. 메커닉을 확인하라.',
+      '그는 천천히 눈을 감았다.',
+    ].join('\n\n');
+
+    const inputPath = join(project, 'chapters', 'chapter_002.md');
+    writeFileSync(inputPath, prose, 'utf-8');
+
+    const result = runGate([
+      '--input', inputPath,
+      '--project', project,
+      '--chapter', '2',
+      '--mode', 'strict',
+    ]);
+
+    // MUST fail strict mode due to high-severity plot-meta-leak
+    expect(result.status, `stdout: ${result.stdout}\nstderr: ${result.stderr}`).toBe(1);
+
+    // Report must record the failure
+    const reportPath = join(project, 'reviews', 'quality', 'chapter_002_quality.json');
+    expect(existsSync(reportPath)).toBe(true);
+    const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
+    expect(report.failures).toBeGreaterThan(0);
+
+    // The failure reason should mention plot-meta-leak, not a string-match fallback
+    const combined = result.stdout + result.stderr;
+    expect(combined).toMatch(/plot-meta-leak/);
+  });
+
+  it('strict mode does NOT fail when directive has severity="low" with issue text containing "severity: high"', () => {
+    // A clean prose with only a single low-severity meta pattern (one match, not two).
+    // Gate should NOT hard-fail based on issue text — only on d.severity === 'high'.
+    const project = makeTempProject();
+    // Single low-severity meta leak pattern (one hit → low severity by detectPlotMetaLeaks logic)
+    const prose = [
+      '빛이 창문으로 스며들었다. 조용한 아침이었다.',
+      '이 장면의 메커닉은 간단하다.',   // one pattern → low or medium severity
+      '그는 천천히 눈을 감았다. 멀리서 새소리가 들렸다. 평화로운 풍경이었다.',
+    ].join('\n\n');
+
+    const inputPath = join(project, 'chapters', 'chapter_003.md');
+    writeFileSync(inputPath, prose, 'utf-8');
+
+    const result = runGate([
+      '--input', inputPath,
+      '--project', project,
+      '--chapter', '3',
+      '--mode', 'strict',
+    ]);
+
+    // A single meta-leak pattern should NOT trigger the high-severity hard-fail condition
+    // (it will still cause a REVISE verdict, but the hard-fail is specifically for severity==='high')
+    const reportPath = join(project, 'reviews', 'quality', 'chapter_003_quality.json');
+    expect(existsSync(reportPath)).toBe(true);
+    const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
+
+    // The directives in the report must NOT include any plot-meta-leak with severity 'high'
+    const highLeaks = (report.directives ?? []).filter(
+      (d: { type: string; severity: string }) => d.type === 'plot-meta-leak' && d.severity === 'high'
+    );
+    expect(highLeaks.length).toBe(0);
+  });
+});

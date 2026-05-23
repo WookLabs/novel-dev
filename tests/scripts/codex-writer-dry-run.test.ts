@@ -81,4 +81,27 @@ describe.skipIf(!projectExists)('codex-writer --dry-run: U4 writer brief builder
     const userPromptSection = output.split('=== USER PROMPT ===')[1] ?? '';
     expect(userPromptSection).not.toContain('화면 페이드');
   });
+
+  // ─── U5: Dead jsonContent branch regression (H7 fix) ─────────────────────
+  //
+  // Before the fix, characters without an agent .md file were rendered as
+  // raw JSON fences (### char_XXX followed by ```json {...}```).
+  // The fixed code builds a concise prose profile block instead.
+  // These assertions pin that the dead jsonContent rendering path is gone.
+
+  it('does not render character blocks as raw JSON fences (dead jsonContent path)', () => {
+    const { output, status } = runDryRun();
+    expect(status).toBe(0);
+    // No `### char_XXX` immediately followed by ```json
+    expect(output).not.toMatch(/### char_\d+\n+```json/);
+  });
+
+  it('does not embed role-shaped JSON in the user prompt section', () => {
+    const { output, status } = runDryRun();
+    expect(status).toBe(0);
+    // The user prompt section must not contain ```json fences with "role": keys
+    // (which would indicate a raw character JSON object was serialized into the prompt)
+    const userPromptSection = output.split('=== USER PROMPT ===')[1] ?? output;
+    expect(userPromptSection).not.toMatch(/```json[\s\S]*?"role":/m);
+  });
 });

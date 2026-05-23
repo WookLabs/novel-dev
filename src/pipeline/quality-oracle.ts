@@ -1235,10 +1235,10 @@ export function analyzeChapter(
   // 5c. Plot-meta leak detection (high severity directives are non-suppressible)
   const plotMetaDirectives = detectPlotMetaLeaks(content);
   const highSeverityMetaDirectives = plotMetaDirectives.filter(d =>
-    d.severity === 'high' || (d.issue && d.issue.includes('severity: high'))
+    d.severity === 'high'
   );
   const otherMetaDirectives = plotMetaDirectives.filter(d =>
-    !(d.severity === 'high' || (d.issue && d.issue.includes('severity: high')))
+    d.severity !== 'high'
   );
 
   // Non-suppressible high-severity meta-leak directives: collected separately,
