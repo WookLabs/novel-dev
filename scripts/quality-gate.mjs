@@ -132,13 +132,13 @@ async function main() {
     process.exit(1);
   }
 
-  // Check dist/ exists
+  // Check dist/ exists — aligned exit code with assertDistBuilt() in codex-exec.mjs (exit 2)
   if (!fs.existsSync(DIST_ORACLE)) {
     process.stderr.write(
       `[quality-gate] ERROR: dist/ not built — run \`npm run build\` first\n` +
       `  Expected: ${DIST_ORACLE}\n`
     );
-    process.exit(1);
+    process.exit(2);
   }
 
   // Read input file

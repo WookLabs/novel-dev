@@ -10,7 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { padChapter, assertDistBuilt, checkPrerequisites, runCodex } from '../codex-exec.mjs';
 import {
-  log, warn, error, colors,
+  log, error,
   loadContext, buildSystemPrompt, buildWriteUserPrompt,
   runQualityGate, saveResult,
 } from '../codex-writer-common.mjs';
