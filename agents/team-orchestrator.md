@@ -102,8 +102,8 @@ if (!args.chapter) {
 
 1. **byId** — `characters/*.json`에서 `id` 필드가 일치하는 파일 (예: `char_001`)
 2. **byStem** — 파일 이름(확장자 제외)이 일치 (예: `protagonist`)
-3. **byAlias** — `aliases` 배열에 포함된 항목과 일치 (예: `강윤`)
-4. **byName** — `name` 필드와 일치 (예: `서강윤`)
+3. **byAlias** — `aliases` 배열에 포함된 항목과 일치 (예: `수현이`)
+4. **byName** — `name` 필드와 일치 (예: `김수현`)
 
 > **중요**: id와 파일명이 다른 경우(예: `protagonist.json`의 `id`가 `char_001`)에도 byId로 정확히 해석됩니다.
 > 구현: `scripts/lib/character-resolver.mjs`의 `resolveCharacters()` 및 `scripts/lib/chapter-cast.mjs`의 `extractChapterCast()` 참조.
