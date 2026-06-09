@@ -87,21 +87,52 @@ if (!args.chapter) {
 
 팀 정의에 `"resolve": "from_scene_cast"`가 지정된 에이전트 항목이 있으면, 고정 에이전트 목록 대신 챕터의 씬 캐스트에서 동적으로 캐릭터 에이전트를 결정합니다.
 
+#### 씬 캐스트 추출 우선순위 (extractChapterCast)
+
+챕터 JSON에서 캐스트를 추출할 때 다음 우선순위를 따릅니다:
+
+1. `chapter.scene_cast` — 비어있지 않은 배열이면 최우선
+2. `chapter.scenes[].characters` — 각 씬의 characters 배열을 합산 (중복 제거, 첫 등장 순서 유지)
+3. `chapter.meta.characters` — 씬에 characters 배열이 없을 때 폴백
+4. `[]` — 위 3가지 모두 없을 때 빈 배열
+
+#### 캐릭터 데이터 해석 우선순위 (resolveCharacters)
+
+캐릭터 id/이름/스템으로 실제 캐릭터 JSON을 찾을 때 다음 순서로 시도합니다:
+
+1. **byId** — `characters/*.json`에서 `id` 필드가 일치하는 파일 (예: `char_001`)
+2. **byStem** — 파일 이름(확장자 제외)이 일치 (예: `protagonist`)
+3. **byAlias** — `aliases` 배열에 포함된 항목과 일치 (예: `수현이`)
+4. **byName** — `name` 필드와 일치 (예: `김수현`)
+
+> **중요**: id와 파일명이 다른 경우(예: `protagonist.json`의 `id`가 `char_001`)에도 byId로 정확히 해석됩니다.
+> 구현: `scripts/lib/character-resolver.mjs`의 `resolveCharacters()` 및 `scripts/lib/chapter-cast.mjs`의 `extractChapterCast()` 참조.
+
+누락된 캐릭터 id는 경고(warn)로 출력하고 건너뜁니다 — 집필을 중단하지 않습니다.
+
 #### 동작 흐름
 
 ```spec
 for (const agentEntry of teamDef.agents) {
   if (agentEntry.resolve !== 'from_scene_cast') continue;
 
-  // 1. chapter_{N}.json에서 씬 캐스트 추출
+  // 1. chapter_{N}.json에서 씬 캐스트 추출 (extractChapterCast 우선순위 적용)
   const chapterJson = Read(`chapters/chapter_${pad(chapterNum)}.json`);
-  const castIds = chapterJson.scene_cast ?? [];  // e.g. ["char_aria", "char_kael", "char_innkeeper"]
+  const castIds = extractChapterCast(chapterJson);
+  // extractChapterCast: scene_cast → scenes[].characters → meta.characters → []
 
-  // 2. 각 캐릭터에 대해 에이전트 파일 존재 여부 확인
+  // 2. 캐릭터 데이터 해석 (resolveCharacters 우선순위 적용: id > stem > alias > name)
+  const { resolved: resolvedChars, missing: missingChars } = await resolveCharacters(projectPath, castIds);
+  for (const missingId of missingChars) {
+    warn(`캐릭터를 찾을 수 없습니다 (건너뜀): ${missingId}`);
+  }
+
+  // 3. 각 캐릭터에 대해 에이전트 파일 존재 여부 확인
   const resolvedAgents = [];
-  for (const charId of castIds) {
-    const charName = charId.replace(/^char_/, '');           // "char_aria" → "aria"
-    const agentPath = `agents/characters/${charName}.md`;
+  for (const { requestedId, character } of resolvedChars) {
+    const charId = character.id || requestedId;
+    const charName = character.name ?? charId;
+    const agentPath = `agents/characters/${charId}.md`;
 
     let agentDef;
     if (exists(agentPath)) {
@@ -112,9 +143,8 @@ for (const agentEntry of teamDef.agents) {
       agentDef = buildCharacterAgentFromTemplate(charId, chapterJson);
     }
 
-    // 3. 역할 기반 모델 결정
-    const charData = Read(`characters/${charName}.json`);
-    agentDef.model = resolveCharacterModel(charData.role);
+    // 4. 역할 기반 모델 결정 (resolvedCharacters에서 이미 role을 갖고 있음)
+    agentDef.model = resolveCharacterModel(character.role);
 
     resolvedAgents.push(agentDef);
   }
@@ -384,6 +414,12 @@ for (const step of workflow.steps) {
   }
 
   // ── Case B-1: Orchestrator Action — codex-writer ─────────────────
+  //
+  // codex-writer는 raw chapter JSON을 직접 집필 프롬프트에 넣지 않습니다.
+  // 대신 scripts/lib/writer-brief-builder.mjs 의 buildWriterBrief()를 통해
+  // 스토리보드/메타 표현이 산문 지시문으로 치환된 '작가용 브리프(markdown)'를 생성하고,
+  // 해당 브리프를 집필 프롬프트의 '## 작가용 브리프' 섹션에 삽입합니다.
+  // 원본 chapter JSON 코드블록(## 플롯 json)은 사용하지 않습니다.
   else if (step.type === 'orchestrator_action' && step.action === 'codex-writer') {
     // Codex CLI(GPT-5.4)로 챕터 집필
     log(`Step '${step.name}': Codex CLI로 Chapter ${chapterNum} 집필 시작`);
@@ -394,6 +430,45 @@ for (const step of workflow.steps) {
       throw new Error(`codex-writer failed: ${result.stderr}\nClaude로 재시도하려면 --codex 없이 다시 실행하세요.`);
     }
     log(`Step '${step.name}': Codex 집필 완료`);
+    updateTeamState(step.name, 'completed');
+  }
+
+  // ── Case B-3: Orchestrator Action — quality-gate ─────────────────
+  //
+  // quality-gate는 초고(draft) 또는 병합(merged) 챕터의 산문 품질을 자동 검증합니다.
+  // scripts/quality-gate.mjs를 직접 실행하며, 기본 모드는 strict입니다.
+  //
+  // 실행 순서:
+  //   1. codex-writer / adult-rewriter / chapter-polisher-full 등 집필·폴리시 스텝 이후 실행
+  //   2. proofread / summarize 등 최종 스텝 이전에 실행
+  //
+  // 명령어 형식:
+  //   node scripts/quality-gate.mjs \
+  //     --input <draft-path> \
+  //     --project <project> \
+  //     --chapter <N> \
+  //     --mode strict \
+  //     --target-chars <N> \
+  //     --final-path <final-path>
+  else if (step.type === 'orchestrator_action' && step.action === 'quality-gate') {
+    const draftPath = context.previousStepOutput?.outputPath
+      ?? `chapters/chapter_${pad(chapterNum)}.md`;
+
+    log(`Step '${step.name}': quality-gate 실행 — input: ${draftPath}`);
+    const result = Bash(
+      `node scripts/quality-gate.mjs` +
+      ` --input "${draftPath}"` +
+      ` --project "${projectPath}"` +
+      ` --chapter ${chapterNum}` +
+      ` --mode strict` +
+      (context.targetChars ? ` --target-chars ${context.targetChars}` : '') +
+      (context.finalPath ? ` --final-path "${context.finalPath}"` : '')
+    );
+    if (result.exitCode !== 0) {
+      throw new Error(`quality-gate failed: ${result.stderr}`);
+    }
+    log(`Step '${step.name}': quality-gate 통과`);
+    context.previousStepOutput = { ...context.previousStepOutput, qualityGateOutput: result.stdout };
     updateTeamState(step.name, 'completed');
   }
 

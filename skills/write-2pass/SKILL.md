@@ -27,6 +27,26 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 # 이후 adult-rewriter.mjs로 Pass 2 (Grok 리라이트)
 ```
 
+## --quality-mode: 품질 게이트 (기본값: strict)
+
+2-pass 및 팀 집필 워크플로우에서는 `codex-writer.mjs`에 `--quality-mode strict`가 기본 적용됩니다.
+
+| 옵션 | 동작 |
+|------|------|
+| `--quality-mode strict` | **기본값** (2-pass/team). 품질 기준 미달 시 최종본 보존, exit 1 |
+| `--quality-mode warn` | 경고 출력 후 정상 저장, exit 0 |
+| `--quality-mode off` | 게이트 건너뜀 |
+
+**Strict 실패 시**: draft 파일(`chapter_NNN.md.draft.md`)이 저장되고 기존 최종본은 보존됩니다.
+
+하드-실패 조건 (strict):
+- Oracle verdict: `REVISE`
+- `plot-meta-leak` 디렉티브 (severity: high)
+- `consecutive-short-sentences` 디렉티브 (severity: high)
+- `--target-chars` 제공 시 출력 길이 < 80% of target
+
+보고서 위치: `<project>/reviews/quality/chapter_NNN_quality.json`
+
 ## Prerequisites
 
 `~/.env` 파일에 API 키 설정:

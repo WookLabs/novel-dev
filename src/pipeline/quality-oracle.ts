@@ -101,6 +101,87 @@ export const SENTENCE_ENDING_PATTERNS = [
 ];
 
 // ============================================================================
+// Em Dash Detection (HARD RULE 9)
+// ============================================================================
+
+/**
+ * Em dash and horizontal bar characters to detect.
+ * U+2014 = em dash (—), U+2015 = horizontal bar (―)
+ * Both are telltale AI-generation markers in Korean prose.
+ */
+export const EM_DASH_CHARS = ['—', '―'];
+
+/**
+ * Detect em dash (—, U+2014) and horizontal bar (―, U+2015) occurrences
+ * outside dialogue spans. These are HARD RULE 9 violations.
+ *
+ * @param content - Prose text to analyse
+ * @returns Array of SurgicalDirective, one per paragraph that contains a violation
+ */
+export function detectEmDashes(content: string): SurgicalDirective[] {
+  // Build dialogue exclusion spans
+  const dialogueSpans: Array<{ start: number; end: number }> = [];
+  const dqPattern = new RegExp('\\u0022[^\\u0022]*\\u0022|\\u201c[^\\u201d]*\\u201d', 'gu');
+  let m: RegExpExecArray | null;
+  while ((m = dqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+  const kqPattern = /「([^」]*)」/gu;
+  while ((m = kqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+
+  const isInDialogue = (pos: number): boolean =>
+    dialogueSpans.some(span => pos >= span.start && pos <= span.end);
+
+  const rawParas = content.split(/\n\n+/).filter(p => p.trim().length > 0);
+
+  interface EmDashMatch { char: string; position: number }
+  const matches: EmDashMatch[] = [];
+
+  for (const ch of EM_DASH_CHARS) {
+    let idx = 0;
+    while ((idx = content.indexOf(ch, idx)) !== -1) {
+      if (!isInDialogue(idx)) {
+        matches.push({ char: ch, position: idx });
+      }
+      idx++;
+    }
+  }
+
+  if (matches.length === 0) return [];
+
+  // Group by paragraph index, emit one directive per paragraph
+  const byParagraph = new Map<number, EmDashMatch[]>();
+  for (const match of matches) {
+    const paraIdx = paragraphIndexAt(rawParas, match.position, content);
+    if (!byParagraph.has(paraIdx)) byParagraph.set(paraIdx, []);
+    byParagraph.get(paraIdx)!.push(match);
+  }
+
+  const results: SurgicalDirective[] = [];
+  for (const [paraIdx, paraMatches] of byParagraph) {
+    const snippet = content.slice(
+      Math.max(0, paraMatches[0].position - 20),
+      paraMatches[0].position + 80
+    ).trim();
+    const directive = createDirective(
+      'filter-word-removal',
+      2,
+      { sceneNumber: 1, paragraphStart: paraIdx, paragraphEnd: paraIdx },
+      `em dash(${paraMatches.map(mm => mm.char).join('')}) ${paraMatches.length}건 감지 — HARD RULE 9 위반`,
+      snippet.slice(0, 300),
+      '`—`/`―`를 제거하고 문맥에 맞게 대체하세요: 쉼표(,)로 이어붙이기, 마침표(.)로 끊기, 문장 분리, 또는 괄호 사용.',
+      1
+    );
+    directive.severity = 'medium';
+    results.push(directive);
+  }
+
+  return results;
+}
+
+// ============================================================================
 // Dry Transition / Functional Narration Patterns
 // ============================================================================
 
@@ -214,6 +295,321 @@ export function detectFunctionalNarration(content: string): PatternMatch[] {
 }
 
 // ============================================================================
+// Korean Sentence Splitter
+// ============================================================================
+
+/**
+ * Split Korean prose content into individual sentences with start positions.
+ *
+ * Rules:
+ * - Splits on sentence-ending punctuation: . ? ! … and paragraph breaks.
+ * - Text inside double-quoted (“…”), Korean open-quotes (「…」), and
+ *   ASCII single-quoted ('…') spans is treated as a single unit (dialogue).
+ * - Returns trimmed, non-empty sentence objects with their start offset in content.
+ */
+export function splitKoreanSentences(content: string): Array<{ text: string; start: number }> {
+  // Step 1: Collect dialogue span offsets so we don't split inside them.
+  const dialogueSpans: Array<{ start: number; end: number }> = [];
+
+  // Collect “...” spans (ASCII straight double-quotes, U+0022) and “...” (Korean curly quotes)
+  // U+0022 = ASCII double-quote, U+201C = left curly “, U+201D = right curly “
+  const dqPattern = new RegExp('\\u0022[^\\u0022]*\\u0022|\\u201c[^\\u201d]*\\u201d', 'gu');
+  let m: RegExpExecArray | null;
+  while ((m = dqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+  // Collect 「...」 spans
+  const kqPattern = /「([^」]*)」/gu;
+  while ((m = kqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+  // Collect '...' (ASCII single-quote) spans — only when balanced
+  const sqPattern = /'([^']*)'/gu;
+  while ((m = sqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+
+  const isInDialogue = (pos: number): boolean =>
+    dialogueSpans.some(span => pos >= span.start && pos <= span.end);
+
+  // Step 2: Walk the string and record sentence boundaries.
+  // Terminators: . ? ! … (and \n\n counted as a paragraph break terminator)
+  const sentences: Array<{ text: string; start: number }> = [];
+  let sentenceStart = 0;
+
+  const flush = (end: number): void => {
+    const raw = content.slice(sentenceStart, end);
+    const trimmed = raw.trim();
+    if (trimmed.length > 0) {
+      // Compute the actual start of the trimmed text within content
+      const leadingSpace = raw.length - raw.trimStart().length;
+      sentences.push({ text: trimmed, start: sentenceStart + leadingSpace });
+    }
+  };
+
+  let i = 0;
+  while (i < content.length) {
+    const ch = content[i];
+
+    // Paragraph break — always a boundary
+    if (ch === '\n' && content[i + 1] === '\n') {
+      flush(i);
+      // Skip all consecutive newlines
+      while (i < content.length && content[i] === '\n') i++;
+      sentenceStart = i;
+      continue;
+    }
+
+    // Sentence-ending punctuation — only outside dialogue
+    if ((ch === '.' || ch === '?' || ch === '!' || ch === '…') && !isInDialogue(i)) {
+      flush(i + 1); // include the punctuation
+      sentenceStart = i + 1;
+    }
+
+    // Closing dialogue quote followed by non-quote content — sentence boundary
+    // Handles: “ (ASCII 34 = U+0022), “ (U+201D), 」 (U+300D)
+    const isCloseQuote = ch.charCodeAt(0) === 0x0022 || ch.charCodeAt(0) === 0x201d || ch.charCodeAt(0) === 0x300d;
+    if (isCloseQuote) {
+      // Only split when this closing quote terminates a dialogue span
+      const spanEnd = dialogueSpans.find(s => s.end === i);
+      if (spanEnd !== undefined) {
+        const afterQuote = i + 1;
+        // If there is more non-whitespace text after the closing quote
+        const remainder = content.slice(afterQuote).trimStart();
+        if (remainder.length > 0) {
+          flush(afterQuote);
+          sentenceStart = afterQuote;
+        }
+      }
+    }
+
+    i++;
+  }
+
+  // Flush remaining text
+  flush(content.length);
+
+  return sentences;
+}
+
+// ============================================================================
+// Paragraph Index Helper
+// ============================================================================
+
+/**
+ * Find the paragraph index (0-based) that contains the given character offset.
+ * Walks the paragraph list using cumulative positions from content.
+ */
+function paragraphIndexAt(paragraphs: string[], offset: number, content: string): number {
+  let cursor = 0;
+  for (let i = 0; i < paragraphs.length; i++) {
+    const para = paragraphs[i];
+    const start = content.indexOf(para, cursor);
+    if (start === -1) {
+      cursor += para.length;
+      continue;
+    }
+    const end = start + para.length;
+    if (offset >= start && offset <= end) return i;
+    cursor = end;
+  }
+  return 0;
+}
+
+// ============================================================================
+// Consecutive Short Sentences Detector
+// ============================================================================
+
+export interface ConsecutiveShortSentencesOpts {
+  maxChars?: number;
+  maxRun?: number;
+}
+
+/**
+ * Detect runs of consecutive short sentences (AI 끊어쓰기 pattern).
+ *
+ * @param content - Prose text to analyse
+ * @param opts - { maxChars: 20, maxRun: 4 } — runs of maxRun+ sentences each ≤ maxChars
+ * @returns Array of SurgicalDirective for each detected run
+ */
+export function detectConsecutiveShortSentences(
+  content: string,
+  opts: ConsecutiveShortSentencesOpts = {}
+): SurgicalDirective[] {
+  const { maxChars = 20, maxRun = 4 } = opts;
+  const sentences = splitKoreanSentences(content);
+  const results: SurgicalDirective[] = [];
+
+  let runStart = 0;
+  let runLen = 0;
+
+  const getSeverityLabel = (len: number): 'low' | 'medium' | 'high' => {
+    if (len >= 7) return 'high';
+    if (len >= 5) return 'medium';
+    return 'low';
+  };
+
+  // Raw paragraph strings for paragraphIndexAt
+  const rawParas = content.split(/\n\n+/).filter(p => p.trim().length > 0);
+
+  const emitDirective = (start: number, end: number, len: number): void => {
+    const severityLabel = getSeverityLabel(len);
+    const snippet = sentences.slice(start, end + 1).map(s => s.text).join(' ');
+    // Compute paragraph index from the start sentence's offset in content
+    const runOffset = sentences[start].start;
+    const paraIdx = paragraphIndexAt(rawParas, runOffset, content);
+    const directive = createDirective(
+      'consecutive-short-sentences',
+      4,
+      { sceneNumber: 1, paragraphStart: paraIdx, paragraphEnd: paraIdx },
+      `${len}개의 짧은 문장(≤${maxChars}자) 연속 감지 (severity: ${severityLabel})`,
+      snippet.slice(0, 300),
+      '복문으로 결합하거나 문장 길이를 변주하세요.',
+      2
+    );
+    directive.severity = severityLabel;
+    results.push(directive);
+  };
+
+  for (let i = 0; i < sentences.length; i++) {
+    // Korean codepoint-aware length
+    const len = [...sentences[i].text].length;
+    if (len <= maxChars) {
+      if (runLen === 0) runStart = i;
+      runLen++;
+    } else {
+      if (runLen >= maxRun) {
+        emitDirective(runStart, i - 1, runLen);
+      }
+      runLen = 0;
+    }
+  }
+  if (runLen >= maxRun) {
+    emitDirective(runStart, sentences.length - 1, runLen);
+  }
+
+  return results;
+}
+
+// ============================================================================
+// Plot-Meta Leak Detector
+// ============================================================================
+
+/**
+ * Patterns that indicate screenplay / storyboard meta language leaking into prose.
+ * All patterns are unicode-aware. They are tested outside dialogue spans only.
+ */
+const PLOT_META_PATTERNS: RegExp[] = [
+  // Timecode + production verb (e.g. "0.5초 침묵", "2초 페이드")
+  /\d+(\.\d+)?\s*초\s*(침묵|페이드|컷|블랙|정지)/u,
+  // Screen direction phrases
+  /(화면\s*페이드|페이드\s*인|페이드\s*아웃|블랙\s*컷|장면\s*전환)/u,
+  // Storyboard / plot meta terms
+  /(메커닉|정서\s*전환|첫\s*능청|권말\s*컷|호흡\s*전환)/u,
+  // Storyboard rhythm phrases
+  /한\s*박자(\s*[뒤후])?/u,
+];
+
+/**
+ * High-severity patterns — each match counts toward high-severity threshold
+ */
+const HIGH_SEVERITY_PATTERNS: RegExp[] = [
+  /(화면\s*페이드|페이드\s*인|페이드\s*아웃|블랙\s*컷)/u,
+  /(메커닉|권말\s*컷)/u,
+];
+
+/**
+ * Detect plot-meta language leaking into prose (outside dialogue).
+ *
+ * Skips matches inside `"..."` and `「...」` dialogue spans.
+ * Does NOT flag `한 줄` or `가사 한 줄` alone (only when paired with other meta).
+ *
+ * @returns Array of SurgicalDirective (usually 0 or 1 per call)
+ */
+export function detectPlotMetaLeaks(content: string): SurgicalDirective[] {
+  // Build dialogue exclusion spans
+  const dialogueSpans: Array<{ start: number; end: number }> = [];
+  // U+0022 = ASCII double-quote, U+201C = left curly “, U+201D = right curly “
+  const dqPattern = new RegExp('\\u0022[^\\u0022]*\\u0022|\\u201c[^\\u201d]*\\u201d', 'gu');
+  let m: RegExpExecArray | null;
+  while ((m = dqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+  const kqPattern = /「([^」]*)」/gu;
+  while ((m = kqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+
+  const isInDialogue = (pos: number): boolean =>
+    dialogueSpans.some(span => pos >= span.start && pos <= span.end);
+
+  // Strip dialogue spans from content for scanning (replace with spaces to preserve offsets)
+  let scanContent = content;
+  for (const span of dialogueSpans) {
+    const spaces = ' '.repeat(span.end - span.start + 1);
+    scanContent = scanContent.slice(0, span.start) + spaces + scanContent.slice(span.end + 1);
+  }
+
+  interface MetaMatch { matched: string; position: number; isHighSeverity: boolean }
+  const matches: MetaMatch[] = [];
+
+  for (const pattern of PLOT_META_PATTERNS) {
+    const gPattern = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g');
+    while ((m = gPattern.exec(scanContent)) !== null) {
+      if (!isInDialogue(m.index)) {
+        const isHighSeverity = HIGH_SEVERITY_PATTERNS.some(hp => hp.test(m![0]));
+        matches.push({ matched: m[0], position: m.index, isHighSeverity });
+      }
+    }
+  }
+
+  if (matches.length === 0) return [];
+
+  // Raw paragraph strings for paragraphIndexAt
+  const rawParas = content.split(/\n\n+/).filter(p => p.trim().length > 0);
+
+  // Group matches by paragraph index
+  const byParagraph = new Map<number, MetaMatch[]>();
+  for (const match of matches) {
+    const paraIdx = paragraphIndexAt(rawParas, match.position, content);
+    if (!byParagraph.has(paraIdx)) byParagraph.set(paraIdx, []);
+    byParagraph.get(paraIdx)!.push(match);
+  }
+
+  // Emit one directive per paragraph
+  const results: SurgicalDirective[] = [];
+  for (const [paraIdx, paraMatches] of byParagraph) {
+    const highCount = paraMatches.filter(mm => mm.isHighSeverity).length;
+    let severity: 'low' | 'medium' | 'high';
+    if (highCount >= 2) {
+      severity = 'high';
+    } else if (paraMatches.length > 1 || highCount === 1) {
+      severity = 'medium';
+    } else {
+      severity = 'low';
+    }
+
+    const matchedTexts = paraMatches.map(mm => mm.matched).join(', ');
+    const firstMatch = paraMatches[0];
+    const snippet = content.slice(Math.max(0, firstMatch.position - 30), firstMatch.position + 100).trim();
+
+    const directive = createDirective(
+      'plot-meta-leak',
+      1, // Highest priority — immersion breaking
+      { sceneNumber: 1, paragraphStart: paraIdx, paragraphEnd: paraIdx },
+      `플롯/스토리보드 메타 언어 감지: ${matchedTexts} (severity: ${severity})`,
+      snippet.slice(0, 300),
+      '스토리보드/영상 연출 언어를 소설 산문으로 교체하세요. 예: “화면 페이드” → 장면 전환 묘사.',
+      2,
+    );
+    directive.severity = severity;
+    results.push(directive);
+  }
+
+  return results;
+}
+
+// ============================================================================
 // Directive ID Generation
 // ============================================================================
 
@@ -253,9 +649,9 @@ export function countFilterWords(content: string): Array<{
 }> {
   const results: Array<{ word: string; position: number; inDialogue: boolean }> = [];
 
-  // Simple dialogue detection: text within quotes
+  // Simple dialogue detection: text within quotes (ASCII straight and Korean curly)
   const dialogueRanges: Array<{ start: number; end: number }> = [];
-  const quotePattern = /["""]([^"""]*)["""]/g;
+  const quotePattern = /"[^"]*"|“[^”]*”/gu;
   let match;
   while ((match = quotePattern.exec(content)) !== null) {
     dialogueRanges.push({ start: match.index, end: match.index + match[0].length });
@@ -804,7 +1200,7 @@ export function analyzeChapter(
         paragraphStart: paraIdx,
         paragraphEnd: paraIdx,
       },
-      `메타 내러티브 "${mn.matched}" 감지 — 캐릭터가 화수를 인식`,
+      `메타 내러티브 "${mn.matched}" 감지: 캐릭터가 화수를 인식`,
       para?.text || '',
       `"${mn.matched}"를 작중 시간 기준으로 교체하세요 (예: "사흘 전", "어제"). 화수/챕터 번호 참조 금지.`,
       1
@@ -909,8 +1305,41 @@ export function analyzeChapter(
     }
   }
 
+  // 5b. Consecutive short sentences detection
+  // Use maxRun: 4 (matches the plan MUST criterion: 4+ consecutive short sentences → directive).
+  const shortSentenceDirectives = detectConsecutiveShortSentences(content, { maxRun: 4 });
+  for (const dir of shortSentenceDirectives) {
+    if (directives.length >= MAX_DIRECTIVES_PER_PASS) break;
+    directives.push(dir);
+  }
+
+  // 5b-2. Em dash detection (HARD RULE 9 — severity: medium)
+  const emDashDirectives = detectEmDashes(content);
+  for (const dir of emDashDirectives) {
+    if (directives.length >= MAX_DIRECTIVES_PER_PASS) break;
+    directives.push(dir);
+  }
+
+  // 5c. Plot-meta leak detection (high severity directives are non-suppressible)
+  const plotMetaDirectives = detectPlotMetaLeaks(content);
+  const highSeverityMetaDirectives = plotMetaDirectives.filter(d =>
+    d.severity === 'high'
+  );
+  const otherMetaDirectives = plotMetaDirectives.filter(d =>
+    d.severity !== 'high'
+  );
+
+  // Non-suppressible high-severity meta-leak directives: collected separately,
+  // merged AFTER the cap-slice so they are never cut off.
+  // Others respect the cap.
+  for (const dir of otherMetaDirectives) {
+    if (directives.length >= MAX_DIRECTIVES_PER_PASS) break;
+    directives.push(dir);
+  }
+
   // 6. Calculate scores
-  const proseScore = Math.max(0, 100 - (filterWords.length * 5) - (rhythmIssues.length * 10));
+  const proseScore = Math.max(0, 100 - (filterWords.length * 5) - (rhythmIssues.length * 10)
+    - (plotMetaDirectives.length * 10) - (shortSentenceDirectives.length * 5));
   const proseIssues = [...filterWordIssues, ...rhythmProblems];
 
   const assessment: QualityAssessment = {
@@ -989,22 +1418,34 @@ export function analyzeChapter(
   // Check for critical banned expressions (any critical = must revise)
   const bannedExpressionPasses = bannedCounts.critical === 0 && bannedCounts.high <= 2;
 
+  // Check for plot-meta leaks (any = must revise)
+  const plotMetaPasses = plotMetaDirectives.length === 0;
+
+  // Check for em dash violations (HARD RULE 9: any = must revise)
+  const emDashPasses = emDashDirectives.length === 0;
+
   const verdict: 'PASS' | 'REVISE' = (
     avgScore >= 70 &&
     filterWords.length <= 5 &&
     rhythmIssues.length === 0 &&
     sensory.adequate &&
     honorificPasses &&
-    bannedExpressionPasses
+    bannedExpressionPasses &&
+    plotMetaPasses &&
+    emDashPasses
   ) ? 'PASS' : 'REVISE';
 
   // 7. Generate reader experience feedback
   const readerExperience = generateReaderExperience(assessment, verdict);
 
+  // Merge: cap the normal directives, then append non-suppressible high-severity meta-leaks
+  const cappedDirectives = directives.slice(0, MAX_DIRECTIVES_PER_PASS);
+  const finalDirectives = [...cappedDirectives, ...highSeverityMetaDirectives];
+
   return {
     verdict,
     assessment,
-    directives: directives.slice(0, MAX_DIRECTIVES_PER_PASS),
+    directives: finalDirectives,
     readerExperience,
   };
 }

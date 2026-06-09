@@ -19,6 +19,10 @@ import {
   createDirective,
   analyzeChapter,
   analyzeAndReport,
+  // New: Korean sentence splitter + new detectors
+  splitKoreanSentences,
+  detectConsecutiveShortSentences,
+  detectPlotMetaLeaks,
 } from '../../src/pipeline/quality-oracle.js';
 
 // ============================================================================
@@ -52,7 +56,7 @@ describe('Quality Oracle Constants', () => {
 
   it('should have correct limits', () => {
     expect(MAX_DIRECTIVES_PER_PASS).toBe(5);
-    expect(MIN_SENSES_PER_500_CHARS).toBe(2);
+    expect(MIN_SENSES_PER_500_CHARS).toBe(3);
     expect(MAX_CONSECUTIVE_SAME_ENDINGS).toBe(5);
   });
 });
@@ -418,12 +422,13 @@ describe('createDirective', () => {
 
 describe('analyzeChapter', () => {
   it('should return PASS for clean content', () => {
-    // Good prose: no filter words, varied rhythm, sensory content, with texture
-    const content = '빛이 창문으로 쏟아졌다. ' +
-      '소리가 들려왔는가? ' +
-      '차가운 바람이 피부를 스쳤네. ' +
-      '향긋한 냄새가 코를 간질였지. ' +
-      '단맛이 혀끝에 맴돌았다!';
+    // Good prose: no filter words, varied rhythm, sensory content, with texture.
+    // Sentences are long enough (>20 chars each) so detectConsecutiveShortSentences(maxRun:4) does not fire.
+    const content = '창문으로 쏟아지는 햇빛이 바닥을 가로질러 길게 뻗어 있었다. ' +
+      '멀리서 들려오는 새소리가 아침의 고요함을 깨웠는가? ' +
+      '차가운 바람이 피부를 부드럽게 스치고 지나갔다. ' +
+      '향긋한 꽃냄새가 코끝을 간질이며 퍼져 나갔다. ' +
+      '혀끝에 맴도는 단맛이 천천히 사라져 갔다!';
 
     // Disable texture assessment for this basic test
     const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
@@ -575,5 +580,354 @@ describe('Edge Cases', () => {
 
     // Should still detect Korean filter word
     expect(result.assessment.filterWordDensity.count).toBeGreaterThan(0);
+  });
+});
+
+// ============================================================================
+// splitKoreanSentences Tests
+// ============================================================================
+
+describe('splitKoreanSentences', () => {
+  it('should split on standard terminators', () => {
+    const content = '갔다. 봤다? 왔다!';
+    const sentences = splitKoreanSentences(content);
+    expect(sentences.length).toBe(3);
+  });
+
+  it('should not split inside double-quoted dialogue', () => {
+    const content = '"나는 갔다. 봤다." 그녀가 말했다.';
+    const sentences = splitKoreanSentences(content);
+    // The quoted part is one unit, plus the outside sentence
+    expect(sentences.length).toBe(2);
+  });
+
+  it('should split on paragraph breaks', () => {
+    const content = '첫 문장이다.\n\n두 번째 문장이다.';
+    const sentences = splitKoreanSentences(content);
+    expect(sentences.length).toBe(2);
+  });
+
+  it('should return only non-empty trimmed sentences', () => {
+    const content = '   갔다.   \n봤다.   ';
+    const sentences = splitKoreanSentences(content);
+    expect(sentences.every(s => s.text.length > 0)).toBe(true);
+    expect(sentences.every(s => s.text === s.text.trim())).toBe(true);
+  });
+
+  it('should return start offsets matching position in original content', () => {
+    const content = '첫 문장이다. 두 번째 문장이다.';
+    const sentences = splitKoreanSentences(content);
+    expect(sentences.length).toBeGreaterThanOrEqual(2);
+    // First sentence starts at 0 (trimmed)
+    expect(sentences[0].start).toBe(0);
+    // Second sentence should start after the first sentence's terminator
+    expect(sentences[1].start).toBeGreaterThan(0);
+    // The text at each start position matches the sentence text
+    for (const s of sentences) {
+      expect(content.slice(s.start, s.start + s.text.length)).toBe(s.text);
+    }
+  });
+});
+
+// ============================================================================
+// detectConsecutiveShortSentences Tests (MUST criteria)
+// ============================================================================
+
+describe('detectConsecutiveShortSentences', () => {
+  // MUST: Four or more consecutive sentences each under 20 characters triggers directive
+  it('MUST: 4+ consecutive sentences each ≤20 chars triggers consecutive-short-sentences directive', () => {
+    // Each Korean sentence is well under 20 chars
+    const content = '잡혔다.\n봤다.\n소용없었다.\n도망쳤다.';
+    const directives = detectConsecutiveShortSentences(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('consecutive-short-sentences');
+  });
+
+  it('should NOT trigger for 3 consecutive short sentences (below threshold)', () => {
+    const content = '잡혔다.\n봤다.\n소용없었다.';
+    const directives = detectConsecutiveShortSentences(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('should NOT trigger when short sentences are broken by a longer one', () => {
+    const content = '잡혔다.\n봤다.\n소용없었다.\n이것은 스무 자보다 긴 문장입니다.\n또 짧다.\n짧다.\n짧다.\n짧다.';
+    const directives = detectConsecutiveShortSentences(content);
+    // Should detect the second run (4 short after the long one), but not include
+    // the first 3 across the long sentence boundary
+    const runCovering4After = directives.find(d => d.issue.includes('연속'));
+    expect(runCovering4After).toBeDefined();
+  });
+
+  it('should scale severity: run of 4 → low, run of 5-6 → medium, 7+ → high', () => {
+    const shortLine = '짧다.\n';
+    const run4 = detectConsecutiveShortSentences(shortLine.repeat(4).trim());
+    const run6 = detectConsecutiveShortSentences(shortLine.repeat(6).trim());
+    const run7 = detectConsecutiveShortSentences(shortLine.repeat(7).trim());
+
+    expect(run4[0]?.issue).toMatch(/low|낮음/i);
+    expect(run6[0]?.issue).toMatch(/medium|중간/i);
+    expect(run7[0]?.issue).toMatch(/high|높음/i);
+  });
+});
+
+// ============================================================================
+// FIX B: detectConsecutiveShortSentences — paragraphStart location
+// ============================================================================
+
+describe('detectConsecutiveShortSentences — paragraph location', () => {
+  it('should set paragraphStart to the paragraph that actually contains the short run', () => {
+    // Paragraph 0: two long sentences (>20 chars each) — no short run
+    // Paragraph 1: one clearly long sentence (>20 chars) — no short run
+    // Paragraph 2: 4 consecutive short sentences — should fire with paragraphStart === 2
+    const para0 = '이것은 스무 자보다 훨씬 긴 첫 번째 문단의 문장이다. 역시 마찬가지로 긴 두 번째 문장이다.';
+    const para1 = '이것도 마찬가지로 충분히 길어서 짧은 문장 조건을 통과하지 못하는 두 번째 문단이다.';
+    const para2 = '잡혔다.\n봤다.\n소용없었다.\n도망쳤다.';
+    const content = `${para0}\n\n${para1}\n\n${para2}`;
+
+    const directives = detectConsecutiveShortSentences(content, { maxRun: 4 });
+    expect(directives.length).toBeGreaterThan(0);
+    // The short run is in paragraph index 2
+    expect(directives[0].location.paragraphStart).toBe(2);
+    expect(directives[0].location.paragraphEnd).toBe(2);
+  });
+});
+
+// ============================================================================
+// FIX A: directive.severity field — first-class severity on both directive types
+// ============================================================================
+
+describe('directive.severity — first-class field', () => {
+  it('detectConsecutiveShortSentences sets severity field to low/medium/high', () => {
+    const shortLine = '짧다.\n';
+    const run4 = detectConsecutiveShortSentences(shortLine.repeat(4).trim());
+    const run6 = detectConsecutiveShortSentences(shortLine.repeat(6).trim());
+    const run7 = detectConsecutiveShortSentences(shortLine.repeat(7).trim());
+
+    expect(run4[0]?.severity).toBe('low');
+    expect(run6[0]?.severity).toBe('medium');
+    expect(run7[0]?.severity).toBe('high');
+  });
+
+  it('detectPlotMetaLeaks sets severity field on each directive', () => {
+    // Single low-confidence match → low severity
+    const lowContent = '한 박자 뒤에 그가 말했다.';
+    const lowDirs = detectPlotMetaLeaks(lowContent);
+    if (lowDirs.length > 0) {
+      expect(['low', 'medium', 'high']).toContain(lowDirs[0].severity);
+    }
+
+    // Two high-severity matches → high severity
+    const highContent = '화면 페이드 아웃이 되었다. 메커닉을 확인하라.';
+    const highDirs = detectPlotMetaLeaks(highContent);
+    expect(highDirs.length).toBeGreaterThan(0);
+    // The directive(s) covering these high-severity patterns should have severity set
+    for (const d of highDirs) {
+      expect(['low', 'medium', 'high']).toContain(d.severity);
+    }
+    // At least one should be 'high' since both matches are high-severity
+    expect(highDirs.some(d => d.severity === 'high')).toBe(true);
+  });
+});
+
+// ============================================================================
+// FIX C: detectPlotMetaLeaks — per-paragraph directives
+// ============================================================================
+
+describe('detectPlotMetaLeaks — per-paragraph directives', () => {
+  it('returns 2 directives for meta patterns in distinct paragraphs with distinct paragraphStart values', () => {
+    // Paragraph 0: normal text
+    // Paragraph 1: contains 메커닉
+    // Paragraph 2: normal text
+    // Paragraph 3: normal text
+    // Paragraph 4: contains 화면 페이드
+    const para0 = '이것은 평범한 첫 번째 문단이다.';
+    const para1 = '이 장면의 메커닉은 간단하다.';
+    const para2 = '두 번째 평범한 문단이다.';
+    const para3 = '세 번째 평범한 문단이다.';
+    const para4 = '화면 페이드 아웃이 이루어졌다.';
+    const content = [para0, para1, para2, para3, para4].join('\n\n');
+
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(2);
+
+    const starts = directives.map(d => d.location.paragraphStart);
+    // Should be paragraph indices 1 and 4
+    expect(starts).toContain(1);
+    expect(starts).toContain(4);
+    // They must be distinct
+    expect(new Set(starts).size).toBe(2);
+  });
+});
+
+// ============================================================================
+// detectPlotMetaLeaks Tests (MUST criteria)
+// ============================================================================
+
+describe('detectPlotMetaLeaks', () => {
+  // MUST: Prose containing 화면 페이드, 0.5초, or 메커닉 outside dialogue triggers plot-meta-leak
+  it('MUST: 화면 페이드 outside dialogue triggers plot-meta-leak directive', () => {
+    const content = '그리고 화면 페이드 아웃이 되었다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('plot-meta-leak');
+  });
+
+  it('MUST: 0.5초 with storyboard context outside dialogue triggers plot-meta-leak directive', () => {
+    const content = '0.5초 침묵이 흘렀다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('plot-meta-leak');
+  });
+
+  it('MUST: 메커닉 outside dialogue triggers plot-meta-leak directive', () => {
+    const content = '이 장면의 메커닉은 간단하다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('plot-meta-leak');
+  });
+
+  // MUST: Prose containing only 가사 한 줄 (without timecodes or storyboard patterns) does NOT trigger
+  it('MUST: 가사 한 줄 alone does NOT trigger plot-meta-leak', () => {
+    const content = '"가사 한 줄이 머릿속을 맴돌았다."';
+    const directives = detectPlotMetaLeaks(content);
+    // Since it's inside dialogue, should not trigger
+    expect(directives.length).toBe(0);
+  });
+
+  it('한 줄 alone in narration does NOT trigger plot-meta-leak', () => {
+    const content = '가사 한 줄이 머릿속을 맴돌았다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('should NOT trigger for meta patterns inside dialogue', () => {
+    const content = '"화면 페이드 아웃이 뭔지 알아?" 그녀가 물었다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('페이드 인/페이드 아웃 triggers plot-meta-leak outside dialogue', () => {
+    const content = '페이드 인으로 장면이 시작되었다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBeGreaterThan(0);
+    expect(directives[0].type).toBe('plot-meta-leak');
+  });
+});
+
+// ============================================================================
+// Korean curly-quote dialogue detection regression tests
+// ============================================================================
+
+describe('curly-quote dialogue detection — FIX 1 regression', () => {
+  it('prose with curly-quote dialogue containing 화면 페이드를 보여줘 should NOT trigger plot-meta-leak', () => {
+    // "화면 페이드를 보여줘" is inside Korean curly quotes — should be treated as dialogue
+    const content = '그가 “화면 페이드를 보여줘”라고 말했다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('curly-quote dialogue containing 메커닉을 보여줘 should NOT trigger plot-meta-leak', () => {
+    const content = '그가 “메커닉을 보여줘”라고 말했다.';
+    const directives = detectPlotMetaLeaks(content);
+    expect(directives.length).toBe(0);
+  });
+
+  it('curly-quote dialogue in analyzeChapter should NOT trigger plot-meta-leak', () => {
+    // Good prose: only plot-meta patterns are inside curly-quote dialogue
+    const content = '빛이 창문으로 들어왔다. 그가 “화면 페이드를 보여줘”라고 말했다. 소리가 들렸다.';
+    const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
+    const metaLeakDirectives = result.directives.filter(d => d.type === 'plot-meta-leak');
+    expect(metaLeakDirectives.length).toBe(0);
+  });
+});
+
+// ============================================================================
+// analyzeChapter — plot-meta-leak integration + non-suppressible high severity
+// ============================================================================
+
+describe('analyzeChapter — plot-meta-leak integration', () => {
+  // SHOULD: High-severity plot-meta-leak directives are not suppressed by
+  //         lower-severity filter-word directive cap
+  it('SHOULD: high-severity plot-meta-leak is not suppressed by filter-word cap', () => {
+    // Create content that would normally fill all 5 directive slots with
+    // filter-word-removal/banned-expression directives, BUT also contains a high-severity
+    // plot-meta-leak paragraph (two high-severity patterns in the same paragraph → severity: high)
+    const content = [
+      '느꼈다. 보였다. 생각했다. 들렸다. 알 수 있었다.', // 5 filter words to fill cap
+      '화면 페이드 아웃이 되었다. 메커닉을 보여준다.',    // TWO high-severity patterns in one para → high
+    ].join('\n\n');
+
+    const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
+    const metaLeakDirectives = result.directives.filter(d => d.type === 'plot-meta-leak');
+    // High-severity meta-leak should appear in directives despite cap
+    expect(metaLeakDirectives.length).toBeGreaterThan(0);
+    // Verify at least one is high severity
+    expect(metaLeakDirectives.some(d => d.severity === 'high')).toBe(true);
+  });
+
+  it('analyzeChapter should return REVISE for content with plot-meta-leak patterns', () => {
+    const content = '화면 페이드 아웃.\n\n메커닉이 동작한다.\n\n장면 전환이 이루어진다.';
+    const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
+    expect(result.verdict).toBe('REVISE');
+  });
+
+  // U3 pin: high-severity bypass works via .severity field alone, not issue text
+  it('U3-pin: high-severity cap-bypass fires on .severity === "high" regardless of issue text', () => {
+    // Content that fills all 5 slots with filter-word directives, plus one high-severity meta-leak
+    const content = [
+      '느꼈다. 보였다. 생각했다. 들렸다. 알 수 있었다.', // fills cap with filter-word directives
+      '화면 페이드 아웃이 되었다. 메커닉을 보여준다.',   // two high-severity patterns → severity: 'high'
+    ].join('\n\n');
+
+    const result = analyzeChapter(content, 1, { assessKoreanTexture: false });
+    const highMeta = result.directives.filter(d => d.type === 'plot-meta-leak' && d.severity === 'high');
+
+    // Must survive the cap
+    expect(highMeta.length).toBeGreaterThan(0);
+    // The directive must carry severity field; issue text is irrelevant to bypass logic
+    expect(highMeta[0].severity).toBe('high');
+  });
+});
+
+// ============================================================================
+// U3 pin: severity-string fallback is dead — field is sole authority
+// ============================================================================
+
+describe('U3 pin: severity field is sole source of truth', () => {
+  it('synthetic directive with severity "high" and NO "severity: high" in issue text bypasses cap', () => {
+    // Build content that generates exactly one high-severity plot-meta-leak directive.
+    // The directive will have severity: 'high' set by detectPlotMetaLeaks, and its
+    // .issue text will NOT need to contain the string "severity: high" for bypass logic.
+    const metaContent = '화면 페이드 아웃이 되었다. 메커닉을 확인하라.'; // two high-severity patterns
+    const dirs = detectPlotMetaLeaks(metaContent);
+    const highDir = dirs.find(d => d.severity === 'high');
+    expect(highDir).toBeDefined();
+
+    // Confirm the issue field does not need to contain literal "severity: high"
+    // (the old fallback text) for the bypass to work in analyzeChapter.
+    // The bypass is based solely on d.severity === 'high'.
+    expect(highDir!.severity).toBe('high');
+
+    // Now run analyzeChapter with a cap-filling prefix to prove the bypass fires
+    const capFiller = '느꼈다. 보였다. 생각했다. 들렸다. 알 수 있었다.';
+    const full = `${capFiller}\n\n${metaContent}`;
+    const result = analyzeChapter(full, 1, { assessKoreanTexture: false });
+    const survived = result.directives.filter(d => d.type === 'plot-meta-leak' && d.severity === 'high');
+    expect(survived.length).toBeGreaterThan(0);
+  });
+
+  it('directive with severity undefined does NOT trigger high-severity bypass', () => {
+    // detectPlotMetaLeaks always assigns severity, so we test at the filter level:
+    // a directive that lacks severity 'high' should not survive the high-severity filter.
+    const dirs = detectPlotMetaLeaks('가사 한 줄이 머릿속을 맴돌았다.'); // no meta patterns
+    expect(dirs.length).toBe(0); // no leak → nothing to bypass
+
+    // Explicit check: if a directive has severity 'low', it is NOT treated as high
+    const lowContent = '이 장면의 메커닉은 간단하다.'; // single pattern → low/medium
+    const lowDirs = detectPlotMetaLeaks(lowContent);
+    // None of them should bypass as 'high' unless they actually are high
+    const wronglyHigh = lowDirs.filter(d => d.severity === 'high');
+    // Single pattern may be low or medium but not high
+    expect(wronglyHigh.length).toBe(0);
   });
 });

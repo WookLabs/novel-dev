@@ -9,3 +9,11 @@ hooks/__pycache__/
 .omc/
 nul
 .planning/
+test-workspace/novels/novel_20250117_100000/
+
+# User-generated novel content (workspace artifact, not source)
+novels/
+
+# Athanor session metadata (local-only work logs)
+.athanor/
+athanor.json

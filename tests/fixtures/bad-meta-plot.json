@@ -1,0 +1,36 @@
+{
+  "chapter_number": 7,
+  "chapter_title": "빈 작업실",
+  "meta": {
+    "pov_character": "char_001",
+    "characters": ["char_001"],
+    "locations": ["loc_studio", "loc_rooftop"],
+    "in_story_time": "2025년 1월 오전"
+  },
+  "word_count_target": 5500,
+  "continuity": "이전 회차에서 강윤은 사고 직전 상황으로 돌아왔다.",
+  "scenes": [
+    {
+      "scene_number": 1,
+      "title": "작업실 귀환",
+      "location": "loc_studio",
+      "characters": ["char_001"],
+      "objective": "강윤이 빈 스튜디오에서 회귀를 깨닫는다. 0.5초 침묵 후 화면 페이드.",
+      "conflict": "메커닉: 감정 노출 장치가 작동한다. 정서 전환 비트."
+    },
+    {
+      "scene_number": 2,
+      "title": "옥상의 결심",
+      "location": "loc_rooftop",
+      "characters": ["char_001"],
+      "objective": "한 박자 후 강윤이 새 목표를 세운다. 첫 능청 비트 삽입.",
+      "conflict": "0.3초 시선 처리 후 권말 컷으로 장면을 마무리한다."
+    }
+  ],
+  "required_facts": [
+    "강윤이 빈 작업실에서 회귀를 깨닫는다"
+  ],
+  "emotional_arc": "두려움 → 각성 → 결심",
+  "hooks": ["훅_001"],
+  "foreshadowing": ["복선_007"]
+}

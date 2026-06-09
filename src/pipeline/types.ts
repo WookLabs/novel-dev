@@ -44,7 +44,10 @@ export type DirectiveType =
   | 'style-alignment'
   | 'subtext-injection'
   | 'voice-drift'
-  | 'arc-alignment';
+  | 'arc-alignment'
+  // Prose pattern detection (Phase 5)
+  | 'consecutive-short-sentences'
+  | 'plot-meta-leak';
 
 /**
  * Location of a passage within chapter content
@@ -87,6 +90,8 @@ export interface SurgicalDirective {
   exemplarContent?: string;
   /** Maximum number of paragraphs this fix should touch (1-5) */
   maxScope: number;
+  /** Severity of the directive (optional; set by pattern-based detectors) */
+  severity?: 'low' | 'medium' | 'high';
 }
 
 // ============================================================================

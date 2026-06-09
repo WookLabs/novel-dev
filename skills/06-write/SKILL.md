@@ -25,6 +25,23 @@ user-invocable: true
 Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode write")
 ```
 
+## --quality-mode: 품질 게이트 (codex-writer.mjs 전용)
+
+`codex-writer.mjs`에 `--quality-mode` 옵션을 추가하여 집필 후 자동 품질 검사를 제어합니다:
+
+| 옵션 | 동작 |
+|------|------|
+| `--quality-mode strict` | 기본값. 품질 기준 미달 시 최종본 덮어쓰기 안 함, exit 1 |
+| `--quality-mode warn` | 경고만 출력, 최종본 정상 저장, exit 0 |
+| `--quality-mode off` | 게이트 건너뜀 |
+
+```spec
+Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode write --quality-mode strict")
+```
+
+**Strict 실패 시**: draft 파일(`chapter_NNN.md.draft.md`)이 저장되고 기존 최종본은 보존됩니다.
+보고서 위치: `<project>/reviews/quality/chapter_NNN_quality.json`
+
 ## Writer Mode
 
 `meta/project.json`의 `writer_mode` 필드를 확인합니다:
@@ -121,7 +138,11 @@ Task(subagent_type="novel-dev:summarizer", model="haiku", prompt="
 - `completed_chapters`에 N 추가
 - `last_checkpoint`: 현재 시각
 
-**3-3. 품질 검토 (선택)**
+**3-3. 품질 검토**
+
+`--team` 플래그 또는 `/write-all` 루프 내에서는 품질 검토가 자동으로 실행됩니다 (기본값: strict).
+단독 `--solo` 집필 시 사용자가 명시적으로 `--quality-mode off`를 지정하지 않는 한 게이트가 적용됩니다.
+게이트를 건너뛰려면 `--quality-mode off`를 명시하세요.
 
 사용자가 요청하면 또는 `/write-all` 루프 내에서:
 

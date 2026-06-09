@@ -1,6 +1,6 @@
 ---
 name: arc-designer
-description: "서브아크, 복선, 훅/클리프행어 설계 전문 에이전트"
+description: "서브아크, 복선, 훅/클리프행어를 설계하고 장기 플롯 정합성과 회차별 긴장 흐름을 관리하는 전문 에이전트"
 model: sonnet
 color: blue
 tools:

@@ -162,6 +162,20 @@
             }
           ],
           "description": "스킬 ID(문자열) 또는 에이전트별 스킬 매핑(객체). 문자열: 모든 에이전트에 동일 스킬 주입. 객체: {\"agent-name\": \"skill-id\"} 형태로 에이전트별 개별 스킬 주입"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["orchestrator_action"],
+          "description": "특수 단계 유형. \"orchestrator_action\"이면 에이전트 대신 오케스트레이터 액션을 실행함"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["codex-writer", "adult-rewriter", "chapter-polisher-full", "quality-gate"],
+          "description": "오케스트레이터 액션 이름. type이 \"orchestrator_action\"일 때 사용. 새 액션 추가 시 이 enum에 추가할 것"
+        },
+        "skip_if": {
+          "type": "string",
+          "description": "이 조건이 충족되면 단계를 건너뜀 (예: \"no_adult_markers\")"
         }
       }
     },

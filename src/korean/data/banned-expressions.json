@@ -130,9 +130,21 @@
       ]
     },
     "punctuation": {
-      "description": "AI-characteristic comma placement",
+      "description": "AI-characteristic comma placement and punctuation",
       "severity": "medium",
       "expressions": [
+        {
+          "pattern": "—",
+          "replacements": [",", "."],
+          "context": "any",
+          "reason": "em dash(U+2014)는 AI 생성 텍스트의 전형적 마커. 한국어 소설에서 사용하지 않음. HARD RULE 9 위반."
+        },
+        {
+          "pattern": "―",
+          "replacements": [",", "."],
+          "context": "any",
+          "reason": "horizontal bar(U+2015)는 em dash 혼용 마커. 한국어 소설에서 사용하지 않음. HARD RULE 9 위반."
+        },
         {
           "pattern": ", 그리고 ",
           "replacements": ["그리고 ", " 그리고 "],
