@@ -101,6 +101,87 @@ export const SENTENCE_ENDING_PATTERNS = [
 ];
 
 // ============================================================================
+// Em Dash Detection (HARD RULE 9)
+// ============================================================================
+
+/**
+ * Em dash and horizontal bar characters to detect.
+ * U+2014 = em dash (—), U+2015 = horizontal bar (―)
+ * Both are telltale AI-generation markers in Korean prose.
+ */
+export const EM_DASH_CHARS = ['—', '―'];
+
+/**
+ * Detect em dash (—, U+2014) and horizontal bar (―, U+2015) occurrences
+ * outside dialogue spans. These are HARD RULE 9 violations.
+ *
+ * @param content - Prose text to analyse
+ * @returns Array of SurgicalDirective, one per paragraph that contains a violation
+ */
+export function detectEmDashes(content: string): SurgicalDirective[] {
+  // Build dialogue exclusion spans
+  const dialogueSpans: Array<{ start: number; end: number }> = [];
+  const dqPattern = new RegExp('\\u0022[^\\u0022]*\\u0022|\\u201c[^\\u201d]*\\u201d', 'gu');
+  let m: RegExpExecArray | null;
+  while ((m = dqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+  const kqPattern = /「([^」]*)」/gu;
+  while ((m = kqPattern.exec(content)) !== null) {
+    dialogueSpans.push({ start: m.index, end: m.index + m[0].length - 1 });
+  }
+
+  const isInDialogue = (pos: number): boolean =>
+    dialogueSpans.some(span => pos >= span.start && pos <= span.end);
+
+  const rawParas = content.split(/\n\n+/).filter(p => p.trim().length > 0);
+
+  interface EmDashMatch { char: string; position: number }
+  const matches: EmDashMatch[] = [];
+
+  for (const ch of EM_DASH_CHARS) {
+    let idx = 0;
+    while ((idx = content.indexOf(ch, idx)) !== -1) {
+      if (!isInDialogue(idx)) {
+        matches.push({ char: ch, position: idx });
+      }
+      idx++;
+    }
+  }
+
+  if (matches.length === 0) return [];
+
+  // Group by paragraph index, emit one directive per paragraph
+  const byParagraph = new Map<number, EmDashMatch[]>();
+  for (const match of matches) {
+    const paraIdx = paragraphIndexAt(rawParas, match.position, content);
+    if (!byParagraph.has(paraIdx)) byParagraph.set(paraIdx, []);
+    byParagraph.get(paraIdx)!.push(match);
+  }
+
+  const results: SurgicalDirective[] = [];
+  for (const [paraIdx, paraMatches] of byParagraph) {
+    const snippet = content.slice(
+      Math.max(0, paraMatches[0].position - 20),
+      paraMatches[0].position + 80
+    ).trim();
+    const directive = createDirective(
+      'filter-word-removal',
+      2,
+      { sceneNumber: 1, paragraphStart: paraIdx, paragraphEnd: paraIdx },
+      `em dash(${paraMatches.map(mm => mm.char).join('')}) ${paraMatches.length}건 감지 — HARD RULE 9 위반`,
+      snippet.slice(0, 300),
+      '`—`/`―`를 제거하고 문맥에 맞게 대체하세요: 쉼표(,)로 이어붙이기, 마침표(.)로 끊기, 문장 분리, 또는 괄호 사용.',
+      1
+    );
+    directive.severity = 'medium';
+    results.push(directive);
+  }
+
+  return results;
+}
+
+// ============================================================================
 // Dry Transition / Functional Narration Patterns
 // ============================================================================
 
@@ -381,7 +462,7 @@ export function detectConsecutiveShortSentences(
       'consecutive-short-sentences',
       4,
       { sceneNumber: 1, paragraphStart: paraIdx, paragraphEnd: paraIdx },
-      `${len}개의 짧은 문장(≤${maxChars}자) 연속 감지 — severity: ${severityLabel}`,
+      `${len}개의 짧은 문장(≤${maxChars}자) 연속 감지 (severity: ${severityLabel})`,
       snippet.slice(0, 300),
       '복문으로 결합하거나 문장 길이를 변주하세요.',
       2
@@ -516,7 +597,7 @@ export function detectPlotMetaLeaks(content: string): SurgicalDirective[] {
       'plot-meta-leak',
       1, // Highest priority — immersion breaking
       { sceneNumber: 1, paragraphStart: paraIdx, paragraphEnd: paraIdx },
-      `플롯/스토리보드 메타 언어 감지: ${matchedTexts} — severity: ${severity}`,
+      `플롯/스토리보드 메타 언어 감지: ${matchedTexts} (severity: ${severity})`,
       snippet.slice(0, 300),
       '스토리보드/영상 연출 언어를 소설 산문으로 교체하세요. 예: “화면 페이드” → 장면 전환 묘사.',
       2,
@@ -1119,7 +1200,7 @@ export function analyzeChapter(
         paragraphStart: paraIdx,
         paragraphEnd: paraIdx,
       },
-      `메타 내러티브 "${mn.matched}" 감지 — 캐릭터가 화수를 인식`,
+      `메타 내러티브 "${mn.matched}" 감지: 캐릭터가 화수를 인식`,
       para?.text || '',
       `"${mn.matched}"를 작중 시간 기준으로 교체하세요 (예: "사흘 전", "어제"). 화수/챕터 번호 참조 금지.`,
       1
@@ -1232,6 +1313,13 @@ export function analyzeChapter(
     directives.push(dir);
   }
 
+  // 5b-2. Em dash detection (HARD RULE 9 — severity: medium)
+  const emDashDirectives = detectEmDashes(content);
+  for (const dir of emDashDirectives) {
+    if (directives.length >= MAX_DIRECTIVES_PER_PASS) break;
+    directives.push(dir);
+  }
+
   // 5c. Plot-meta leak detection (high severity directives are non-suppressible)
   const plotMetaDirectives = detectPlotMetaLeaks(content);
   const highSeverityMetaDirectives = plotMetaDirectives.filter(d =>
@@ -1333,6 +1421,9 @@ export function analyzeChapter(
   // Check for plot-meta leaks (any = must revise)
   const plotMetaPasses = plotMetaDirectives.length === 0;
 
+  // Check for em dash violations (HARD RULE 9: any = must revise)
+  const emDashPasses = emDashDirectives.length === 0;
+
   const verdict: 'PASS' | 'REVISE' = (
     avgScore >= 70 &&
     filterWords.length <= 5 &&
@@ -1340,7 +1431,8 @@ export function analyzeChapter(
     sensory.adequate &&
     honorificPasses &&
     bannedExpressionPasses &&
-    plotMetaPasses
+    plotMetaPasses &&
+    emDashPasses
   ) ? 'PASS' : 'REVISE';
 
   // 7. Generate reader experience feedback

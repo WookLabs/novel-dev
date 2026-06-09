@@ -61,8 +61,9 @@ All output MUST conform to `schemas/surgical-directive.schema.json`
 | `voice-consistency` | 8 | Character voice drift |
 | `proofreading` | 9 | Grammar, spacing, punctuation |
 | `consecutive-short-sentences` | 4 | 20자 이하 단문 4개 이상 연속 → 복문 결합/길이 변주 |
-| `plot-meta-leak` | 1 | 스토리보드/영상 연출 언어(`화면 페이드`, `0.5초`, `메커닉` 등) 산문 내 누출 — 고심각 시 cap 무시 |
+| `plot-meta-leak` | 1 | 스토리보드/영상 연출 언어(`화면 페이드`, `0.5초`, `메커닉` 등) 산문 내 누출 (고심각 시 cap 무시) |
 | `list-monologue` | 3 | 리스트형 독백 (하나/둘/셋, 첫째/둘째) → 자유간접화법 |
+| `em-dash-usage` | 2 | `—` (U+2014) 또는 `―` (U+2015) 사용 감지. HARD RULE 9 위반. 쉼표, 마침표, 문장 분리로 대체. 1건이라도 발견 시 REVISE. |
 
 ## Detection Heuristics
 

@@ -155,7 +155,7 @@ Your mission:
 | 0.5초 침묵이 흘렀다. | 짧은 침묵이 두 사람 사이에 가라앉았다. |
 | 이 장면의 메커닉은 긴장감 조성이다. | (삭제 또는 긴장감 묘사로 교체) |
 
-- **High-severity directives bypass the 5-directive cap** — always executed
+- **High-severity directives bypass the 5-directive cap** (always executed)
 - Replace all timecodes, screen directions, and storyboard terms
 - `한 박자` alone is usually acceptable; only flag when paired with other meta patterns
 
