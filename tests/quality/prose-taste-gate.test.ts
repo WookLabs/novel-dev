@@ -2890,4 +2890,20 @@ describe('StyleStageEvaluator prose taste integration', () => {
     expect(proseTasteDirective?.issue).toMatch(/문장 \d+/);
     expect(proseTasteDirective?.currentText.length).toBeGreaterThan(0);
   });
+
+  it('turns immersive rhythm flatlines into scene-anchored rewrite directives', async () => {
+    const directives = await StyleStageEvaluator.generateDirectives(IMMERSIVE_RHYTHM_FLATLINE_PROSE);
+    const directive = directives.find(item =>
+      item.type === 'style-alignment' &&
+      item.issue.includes('문단 리듬이 평평합니다')
+    );
+
+    expect(directive).toBeDefined();
+    expect(directive?.currentText).toContain('단순한 오해가 아니라고 생각했다');
+    expect(directive?.instruction).toContain('장면 진행');
+    expect(directive?.instruction).toContain('물증');
+    expect(directive?.instruction).toContain('선택 비용');
+    expect(directive?.instruction).toContain('단문 나열로 해결하지 마세요');
+    expect(directive?.maxScope).toBe(3);
+  });
 });

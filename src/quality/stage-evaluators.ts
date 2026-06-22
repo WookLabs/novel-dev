@@ -457,8 +457,8 @@ function proseTasteIssueToDirective(
     },
     `문체 취향 게이트 실패${formatProseTasteIssueLocation(issue)}: ${issue.message}`,
     issue.targetText || issue.evidence || paragraph?.text.slice(0, 300) || '',
-    issue.suggestion,
-    2
+    proseTasteIssueInstruction(issue),
+    proseTasteIssueMaxScope(issue)
   );
 }
 
@@ -468,6 +468,28 @@ function formatProseTasteIssueLocation(issue: ProseTasteIssue): string {
   if (issue.sentenceNumber !== undefined) parts.push(`문장 ${issue.sentenceNumber}`);
   if (issue.lineNumber !== undefined) parts.push(`줄 ${issue.lineNumber}`);
   return parts.length > 0 ? ` (${parts.join(', ')})` : '';
+}
+
+function proseTasteIssueInstruction(issue: ProseTasteIssue): string {
+  if (issue.code === 'immersive-rhythm-flatline') {
+    return [
+      '이 문단을 설명/판단 요약이 아니라 장면 진행으로 다시 구성하세요.',
+      '최소 두 개의 구체 앵커(물증, 손동작, 대사 반응, 감각 변화, 선택 비용)를 넣고, 각 앵커가 다음 선택이나 위험을 밀어야 합니다.',
+      '상태를 해설하는 문장은 삭제하거나 인물의 행동/대사/사물 변화로 치환하세요.',
+      '문장 길이는 단문-중문-긴 호흡-단문처럼 변주하되, 단문 나열로 해결하지 마세요.',
+      issue.suggestion,
+    ].join(' ');
+  }
+
+  return issue.suggestion;
+}
+
+function proseTasteIssueMaxScope(issue: ProseTasteIssue): number {
+  if (issue.code === 'immersive-rhythm-flatline') {
+    return 3;
+  }
+
+  return 2;
 }
 
 /**
