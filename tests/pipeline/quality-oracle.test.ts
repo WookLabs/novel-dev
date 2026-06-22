@@ -52,7 +52,7 @@ describe('Quality Oracle Constants', () => {
 
   it('should have correct limits', () => {
     expect(MAX_DIRECTIVES_PER_PASS).toBe(5);
-    expect(MIN_SENSES_PER_500_CHARS).toBe(2);
+    expect(MIN_SENSES_PER_500_CHARS).toBe(3);
     expect(MAX_CONSECUTIVE_SAME_ENDINGS).toBe(5);
   });
 });

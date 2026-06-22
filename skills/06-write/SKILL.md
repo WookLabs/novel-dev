@@ -40,11 +40,37 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 
 ## 실행 흐름
 
+### Phase 0: 집필 전 설계 게이트
+
+원고를 생성하기 전에 설계 단계의 전제 매력 readiness를 반드시 확인합니다. `/verify-design`을 이미 실행했더라도 최신 benchmark source와 `meta/design-strategy.json`이 바뀌었을 수 있으므로, 집필 시작 직전에 실행 게이트를 다시 적용합니다.
+
+```spec
+Bash("node dist/cli/apply-design-gate.js --project {projectPath} --fail-on-blocked --json")
+```
+
+- `reviews/design-gate-report.json`의 `passed`가 `true`이고 `status == "PASS"`일 때만 Phase 1로 진행합니다.
+- `premise-appeal-not-ready`, `weak-promise-evidence`, `premise-appeal-false-positive`, `premise-behavioral-intent-weak`, `premise-appeal-split-leakage`, `premise-appeal-holdout-weak`, `premise-appeal-report-stale`, `premise-appeal-source-missing`이 있으면 원고를 쓰지 않습니다.
+- 차단되면 `recommendedCommands`의 `run-premise-appeal-benchmark`와 `apply-design-gate`를 실행해 전제 샘플과 설계 약속을 보강한 뒤 다시 시도합니다.
+
+### Phase 0.5: 집필 전 문체 취향 게이트
+
+설계가 통과해도 독자가 거슬린다고 느낀 문체가 재발하면 대작 기준을 만족할 수 없습니다. 원고를 생성하기 전에 prose taste benchmark가 현재 문체 샘플, `meta/style-guide.json`, 관련 원고 source와 일치하는지 확인합니다.
+
+```spec
+Bash("node dist/cli/apply-style-gate.js --project {projectPath} --fail-on-blocked --json")
+```
+
+- `reviews/style-gate-report.json`의 `passed`가 `true`이고 `status == "PASS"`일 때만 Phase 1로 진행합니다.
+- `prose-taste-not-ready`, `prose-taste-failing-samples`, `prose-taste-false-classification`, `prose-taste-missing-issue`, `style-friction-evidence-weak`, `style-highlight-evidence-weak`, `style-fingerprint-weak`, `authorial-style-drift`, `prose-taste-report-stale`, `prose-taste-source-missing`이 있으면 원고를 쓰지 않습니다.
+- 차단되면 `recommendedCommands`의 `run-prose-taste-benchmark`와 `apply-style-gate`를 실행해 선호/비선호 문체 샘플, friction/highlight annotation, holdout evidence를 보강한 뒤 다시 시도합니다.
+
 ### Phase 1: 준비
 
 1. `meta/ralph-state.json` 읽어 현재 챕터 번호 확인 (인자 없으면)
 2. `meta/project.json` 읽어 `writer_mode` 확인
 3. `chapters/chapter_XXX.json` (플롯 파일) 존재 확인
+4. `chapters/chapter_XXX.md` 원고 본문 저장/갱신 대상 확인
+5. `meta/design-strategy.json`, `plot/plot-strategy.json`의 독자 약속 계약을 로드
 
 ### Phase 2: 캐릭터 협업 집필 (기본값)
 
@@ -80,6 +106,12 @@ Task(subagent_type="novel-dev:novelist", model="opus", prompt="
 ## 플롯
 {currentPlot}
 
+## 독자 약속 계약
+{readerPromiseContract}
+
+## 회차 fun_spec / reader_experience 목표
+{chapterFunSpec}
+
 ## 이전 회차 요약
 {previousSummaries}
 
@@ -92,8 +124,32 @@ Task(subagent_type="novel-dev:novelist", model="opus", prompt="
 ## 문체 가이드
 {styleGuide}
 
+문체 주의:
+- `prose_taste_profile.max_short_sentence_run` 기준을 넘는 연속 단문 끊어쓰기를 피하세요. 짧은 문장은 타격점에만 남기고, 원인/대조/결과가 이어지는 문장은 중문이나 복문으로 묶어 문장 리듬을 변주합니다.
+- `monotone-short-sentence-run`이 나오면 짧은 서술문이 기계적으로 끊어진 AI 문체로 판정됩니다.
+- `prose_taste_profile.max_hedged_perception_density_per_1000` 기준을 넘는 듯했다/것 같았다/느껴졌다/어쩐지/묘하게/희미하게 같은 완충 표현 반복을 피하세요. `hedged-perception-haze`가 나오면 인물이 실제로 본 것, 한 선택, 틀린 판단의 결과를 문장에 직접 세워 다시 씁니다.
+- `prose_taste_profile.max_sensory_wallpaper_run` 기준을 넘는 차가운 빛, 비릿한 냄새, 축축한 바람, 희미한 그림자식 감각 묘사 연쇄를 피하세요. `sensory-wallpaper-run`이 나오면 감각 묘사 일부를 새 단서 확인, 인물의 선택, 위험 변화, 관계 반응, 즉각적 결과로 바꿔 감각이 장면 상태를 움직이게 씁니다.
+- `prose_taste_profile.max_gaze_choreography_density_per_1000` 또는 `max_gaze_choreography_run` 기준을 넘는 시선/눈길/눈빛/고개/바라봄 beat 연쇄를 피하세요. `gaze-choreography-loop`이 나오면 반복 시선 연출 일부를 새 단서 확인, 선택 비용, 거절의 결과, 상대 조건 변화로 바꿔 장면 상태가 움직이게 씁니다.
+- `prose_taste_profile.max_emotion_label_run` 기준을 넘는 불안했다/후회했다/당황했다/분노했다 같은 감정 라벨 연쇄를 피하세요. `emotion-label-carousel`이 나오면 감정명 일부를 선택, 늦어진 반응, 잘못된 판단, 관계 비용, 즉각적 결과로 바꿔 감정이 장면을 움직이게 씁니다.
+- `prose_taste_profile.max_rote_dialogue_reply_ratio` 또는 `max_rote_dialogue_reply_run` 기준을 넘는 “네/그래/알겠어/맞아”식 짧은 반응 연쇄를 피하세요. `rote-dialogue-response-chain`이 나오면 확인·동의 대답 일부를 침묵, 회피, 반박, 조건 제시, 행동 비트로 바꿔 대화의 힘과 관계 상태가 움직이게 씁니다.
+- `prose_taste_profile.max_neutral_dialogue_tag_ratio` 또는 `max_neutral_dialogue_tag_run` 기준을 넘는 말했다/물었다/대답했다식 중립 대사 태그 연쇄를 피하세요. `mechanical-dialogue-tag-chain`이 나오면 화자가 분명한 턴의 태그를 덜고, 필요한 곳은 행동 비트, 침묵, 시선, 사물 조작으로 화자와 서브텍스트를 함께 드러냅니다.
+- `prose_taste_profile.max_ambiguous_reference_density_per_1000` 또는 `max_ambiguous_reference_run` 기준을 넘는 “그는/그녀는/그것은/그 말은”식 지시어 연쇄를 피하세요. `ambiguous-reference-chain`이 나오면 일부 문장 첫머리에 인물명, 역할, 물건명, 구체 행동 주체를 다시 세워 독자가 참조 대상을 다시 추적하지 않게 씁니다.
+- `prose_taste_profile.max_lore_term_density_per_1000` 또는 `max_lore_term_run` 기준을 넘는 왕국/교단/마탑/게이트/스킬/시스템/프로토콜식 설정어 폭주를 피하세요. `lore-name-overload`가 나오면 한 장면에는 필요한 새 개념 하나만 남기고, 나머지는 인물이 만지는 물건, 선택 비용, 상대 반응, 다음 장면의 단서로 나눠 심습니다.
+- `prose_taste_profile.max_time_skip_summary_density_per_1000` 또는 `max_time_skip_summary_run` 기준을 넘는 “며칠이 지났다/준비는 끝났다/계획은 완성됐다/상황은 달라졌다”식 시간 경과 결과 보고를 피하세요. `time-skip-summary-chain`이 나오면 시간 점프 뒤 무엇이 바뀌었는지 물증, 선택 비용, 실패 조건, 이동 경로, 다음 장면의 달라진 행동으로 장면화합니다.
+- `prose_taste_profile.max_contrastive_reframe_density_per_1000` 또는 `max_contrastive_reframe_run` 기준을 넘는 “그건 X가 아니었다. Y였다”식 대비 단정 반복을 피하세요. `contrastive-reframe-cadence`가 나오면 대비 문장은 한두 번만 남기고, 나머지는 직접적인 긍정문, 구체 물증, 인물 행동, 선택 비용, 상대 반응으로 바꿔 장면이 결론을 증명하게 씁니다.
+- `prose_taste_profile.max_system_stat_block_density_per_1000` 또는 `max_system_stat_block_run` 기준을 넘는 상태창/스탯/레벨/보상/퀘스트 갱신 수치 나열을 피하세요. `system-stat-block-dump`가 나오면 필요한 숫자만 남기고, 나머지는 자원 소모, 실패 조건, 제한 시간, 신체/공간 변화, 관계 위험, 다음 선택 비용으로 바꿔 시스템 알림이 장면을 움직이게 씁니다.
+- `prose_taste_profile.max_declared_resolve_density_per_1000` 또는 `max_declared_resolve_run` 기준을 넘는 결심했다/다짐했다/각오했다/해야 했다식 의지 선언 반복을 피하세요. `declared-resolve-loop`가 나오면 결심 문장을 실제 선택, 되돌릴 수 없는 행동, 물증 조작, 대가 발생, 상대 반응으로 바꿔 장면이 전진하게 씁니다.
+- `prose_taste_profile.max_revelation_summary_density_per_1000` 또는 `max_revelation_summary_run` 기준을 넘는 모든 단서가 이어졌다/진실은 명확했다/의문이 풀렸다/답이 보였다식 폭로 요약 반복을 피하세요. `revelation-summary-leap`가 나오면 어떤 단서가 어떤 기록과 충돌했는지, 무엇을 다시 확인해 오독이 풀렸는지, 결론이 어떤 행동 비용을 낳는지 장면 안에 씁니다.
+- `prose_taste_profile.max_procedural_checklist_density_per_1000` 또는 `max_procedural_checklist_run` 기준을 넘는 확인했다/검토했다/대조했다/정리했다/분류했다식 조사 절차 나열을 피하세요. `procedural-checklist-cadence`가 나오면 일부 조사 동작을 가설 변화, 단서 불일치, 용의자 재정렬, 상대의 거짓말, 위험/비용, 다음 행동으로 바꿔 수사가 장면을 움직이게 씁니다.
+- `prose_taste_profile.max_action_choreography_density_per_1000` 또는 `max_action_choreography_run` 기준을 넘는 휘둘렀다/피했다/막았다/찔렀다식 전투 동작 나열을 피하세요. `action-choreography-loop`가 나오면 일부 동작을 부상, 무기/공간 파손, 거리/위치 변화, 목표 확보/실패, 감정 압박, 전세 반전으로 바꿔 싸움이 장면을 움직이게 씁니다.
+- `max_static_description_density_per_1000` 기준을 넘는 있었다/없었다/보였다식 배경 목록을 피하고, `min_viewpoint_anchor_density_per_1000` 기준에 맞게 인물의 감각·판단·말투 앵커를 장면 안에 붙이세요. `detached-camera-description`이 나오면 배경을 POV 인물이 실제로 본 순서, 오해한 판단, 감춘 반응, 달라진 행동으로 다시 묶습니다.
+- `max_abstract_noun_density_per_1000`, `max_cognitive_filter_density_per_1000`, `max_nominalized_explanation_density_per_1000`, `max_translationese_formula_density_per_1000`, `max_connective_starter_density_per_1000`, `max_comma_density_per_1000`, `max_reporting_tail_density_per_1000`, `max_repeated_subject_run`, `max_repeated_connective_starter_run` 기준을 넘기지 마세요. `abstract-exposition-drift`, `cognitive-filtering-overload`, `nominalized-explanation-chain`, `translationese-formula-drift`, `connective-crutch-rhythm`, `comma-rhythm-overload`, `reporting-tail-summary`, `repeated-subject-rhythm`이 나오면 추상 설명, 인식 필터, 명사화 설명, 번역투 공식 표현, 접속 부사 시작, 쉼표 호흡, 사실/의미/상황을 보였다·드러났다로 닫는 보고식 종결, 같은 주어 반복을 줄이고 사물·행동·상대 반응으로 문장을 다시 세웁니다.
+- 결정적 폭로·해결·체포·구출을 "조사 끝에 밝혀졌다", "결국 해결됐다", "며칠 뒤 정리됐다"처럼 장면 밖 사후 요약으로 넘기지 마세요. `offscreen-resolution-summary`가 나오면 단서 확인, 선택, 충돌, 폭로 순간, 즉시 달라진 행동을 원고 안 장면으로 복구합니다.
+
 위 정보를 바탕으로 Chapter {chapterNumber}를 작성해주세요.
 목표 분량: {targetWords}자
+완성 원고 본문은 `chapters/chapter_XXX.md` manuscript로 저장하세요.
+반드시 `chapters/chapter_XXX.json`의 `reader_experience`를 완성 원고 기준으로 갱신하세요.
 ")
 ```
 
@@ -114,14 +170,252 @@ Task(subagent_type="novel-dev:summarizer", model="haiku", prompt="
 
 결과를 `context/summaries/chapter_XXX_summary.md`에 저장합니다.
 
-**3-2. 상태 업데이트**
+**3-2. Engagement Contract 평가 및 추세 기록**
 
-`meta/ralph-state.json` 업데이트:
-- `current_chapter`: N + 1
-- `completed_chapters`에 N 추가
-- `last_checkpoint`: 현재 시각
+완성 원고와 `chapters/chapter_XXX.json`의 `reader_experience`를 기준으로 독자 몰입 계약을 평가합니다.
 
-**3-3. 품질 검토 (선택)**
+**실행 명령:**
+```spec
+Bash("node dist/cli/record-engagement.js --project {projectPath} --chapter {N} --version {chapterVersion} --json")
+```
+
+이 CLI는 내부적으로 `evaluateEngagementContract`와 `recordEngagementEvaluation`을 호출합니다.
+
+```spec
+const engagement = evaluateEngagementContract({
+  design: "meta/design-strategy.json",
+  plot: "plot/plot-strategy.json",
+  chapter: "chapters/chapter_XXX.json",
+  manuscript: "chapters/chapter_XXX.md"
+});
+
+const engagementRecord = recordEngagementEvaluation({
+  projectDir: projectPath,
+  projectId,
+  chapterNumber: N,
+  version: chapterVersion,
+  evaluation: engagement
+});
+```
+
+- 결과는 `meta/quality-trend.json`에 저장합니다.
+- `engagementRecord.regression.alertLevel`이 `warning` 이상이면 해당 회차는 완료 처리하지 말고 `/verify-chapter` 또는 `/act-review` 입력에 회귀 경고를 포함합니다.
+- `reader_experience` 누락, `fun_spec` 이탈, must-click ending 약화는 대작 모드에서 품질 게이트 실패로 취급합니다.
+- `reader_promise_contract`가 일반어 중심이면 `reader-promise-generic`, 구체적 필드들이 같은 전제 앵커로 결합되지 않으면 `reader-promise-premise-not-integrated`, `per_chapter_guide`가 없으면 `missing-chapter-guide`, 회차 `promise_fulfillment`가 `core_hook`을 잃으면 `missing-core-hook`으로 실패합니다.
+- foundational scene gates: scene evidence가 없으면 `missing-scene-evidence`, concrete pressure가 있는 장면 갈등이 75% 미만이면 `weak-scene-conflict`, `cliffhanger_strength`가 7 미만이면 `weak-cliffhanger`, high-tension peak 대비 `cliffhanger_strength`가 약하면 `weak-peak-cliffhanger`로 실패합니다.
+- core reader_experience drift는 `fun_spec`과 회차 `reader_experience`의 핵심 약속이 끊기는지 확인합니다. `reader_reward`/`chapter_reward`가 설계 보상과 어긋나면 `reader-reward-drift`, `page_turn_question`/`page_turner_question`이 중심 질문과 어긋나면 `page-turner-question-drift`, `character_appeal_moment`가 주인공 매력과 어긋나면 `character-appeal-drift`, `must_click_ending`이 연속 클릭 이유와 어긋나면 `must-click-ending-drift`, `drop_off_risk`가 이탈 위험 대응과 어긋나면 `drop-off-risk-drift`로 실패합니다.
+- core scene staging은 핵심 약속이 장면에 실제로 들어갔는지 확인합니다. final scene이 `must_click_ending`을 stage하지 못하면 `must-click-ending-not-staged`, scene beat가 `chapter_reward`를 보상 사건으로 stage하지 못하면 `chapter-reward-not-staged`, `drop_off_risk` 완화 전략이 scene evidence에 보이지 않으면 `drop-off-risk-not-mitigated`, `tension_curve` peak event가 scene purpose/beat에 보이지 않으면 `tension-peak-not-staged`로 실패합니다.
+- manuscript tension peak는 `tension_curve`의 high-tension peak event가 원고에서 실제 압박/행동/결과 전환으로 터지는지 확인합니다. peak를 "긴장감이 고조된다"처럼 요약만 하고 같은 1~3문장 안에 구체 위험 또는 장애물, 주인공 행동/강제 선택, 되돌릴 수 없는 결과/폭로/새 질문이 없으면 `manuscript-tension-peak-not-evidenced`로 실패합니다.
+- manuscript tension wave / 원고 긴장 파형은 high-tension 회차에서 초반 압박과 열린 질문, 중반 악화와 선택지 축소, 말미 고점과 열린 질문을 순서대로 분산했는지 확인합니다. 긴장 요소를 말미에 한꺼번에 몰아넣거나 초반/중반이 평평하면 `manuscript-tension-wave-not-evidenced`로 실패합니다.
+- `reader_promise_contract.irresistible_question` 중심 질문은 `page_turn_question`과 `reader_experience.page_turner_question`의 페이지터너 질문으로 유지되어야 합니다. 이탈하면 `irresistible-question-drift`로 실패합니다.
+- `page_turn_question`과 `reader_experience.page_turner_question`은 답을 설명하지 않는 open-loop 미해결 질문이어야 합니다. "설명된다", "밝혀진다", "해결된다", "때문이다"처럼 정답/해결을 닫는 문장이면 `page-turn-question-closed`로 실패합니다.
+- `page_turn_question`과 `reader_experience.page_turner_question`은 좁혀진 정보 공백이어야 합니다. "앱과 사건은 왜 연결되는가?"처럼 넓은 명사만 남기지 말고 로고+사건 번호, 이름+좌표, 다음 수신자+사진, 규칙+대가 같은 구체 앵커를 최소 두 개 결합해야 하며, 부족하면 `page-turn-question-too-broad`로 실패합니다.
+- 마지막 scene beat는 `reader_experience.page_turner_question`을 낳는 구체 단서/폭로/위협/사물/사건을 stage해야 합니다. 질문이 메타데이터에만 있고 final scene에서 단서로 보이지 않으면 `page-turn-question-not-staged`로 실패합니다.
+- `reader_promise_contract.binge_reason`은 `must_click_ending`과 마지막 scene evidence의 회차 말미 연속 클릭 이유로 보여야 합니다. 이탈하면 `binge-reason-not-staged`로 실패합니다.
+- `reader_promise_contract.protagonist_appeal`은 `character_appeal_moment`와 scene evidence의 주인공 매력 선택/행동/비용으로 유지되어야 합니다. 이탈하면 `protagonist-appeal-drift`로 실패합니다.
+- `characters/*.json`의 주인공 `inner.want`(욕망)와 `inner.need`(결핍)는 회차 context, `character_development`, `character_appeal_moment`, scene conflict/beat의 선택/대가/도움 요청/포기/달라진 행동으로 이어져야 합니다. 메타데이터에 보이지 않으면 `character-drive-not-staged`로 실패합니다.
+- character drive carryover / 내적 변화 이월은 직전 내적 변화가 다음 회차 행동으로 남는지 보는 규칙입니다. 직전 내적 변화가 도움 요청, 습관 내려놓기, 통제권 나누기, 달라진 행동으로 `previous_summary`, `current_plot`, `reader_experience`, opening scene에 살아 있지 않으면 `character-drive-carryover-not-staged`, `chapters/chapter_XXX.md` 원고 본문 manuscript 초반에서 빠지면 `manuscript-character-drive-carryover-not-evidenced`로 실패합니다.
+- `characters/*.json`의 antagonist/villain/opponent/rival 또는 반대세력 캐릭터가 `inner.want`나 `inner.fatal_flaw`를 가지면 antagonist strategy를 회차 context, reader_experience, scene conflict/beat에 이름/별칭이 있는 반대세력의 목표, 함정, 조작, 표적화, countermove로 stage해야 합니다. 메타데이터에 보이지 않으면 `antagonist-strategy-not-staged`로 실패합니다.
+- antagonist countermove carryover / 반대세력 대응 이월은 전 회차 주인공 행동이 반대세력 계획을 흔든 뒤 다음 회차에 반격, 전술 변경, 표적 재설정, 증거 삭제, 접근 권한 회수로 돌아오는지 확인합니다. 전 회차 주인공 행동이 다음 회차 `previous_summary`, `current_plot`, `reader_experience`, opening scene에 반대세력의 현재 대응으로 보이지 않으면 `antagonist-countermove-carryover-not-staged`, `chapters/chapter_XXX.md` 원고 본문 manuscript 초반에서 빠지면 `manuscript-antagonist-countermove-carryover-not-evidenced`로 실패합니다.
+- `reader_promise_contract.novelty_angle`은 `promise_fulfillment`, `chapter_reward`, scene evidence의 신선한 차별점으로 유지되어야 합니다. 이탈하면 `novelty-angle-drift`로 실패합니다.
+- `reader_promise_contract.emotional_payoff`는 `promise_fulfillment`, `chapter_reward`, scene evidence의 감정 보상으로 유지되어야 합니다. 이탈하면 `emotional-payoff-drift`로 실패합니다.
+- `reader_promise_contract.long_series_engine`은 `binge_architecture.long_hook_threads`, `promise_fulfillment`, scene evidence의 장기 미스터리 엔진으로 유지되어야 합니다. 이탈하면 `long-series-engine-drift`로 실패합니다.
+- `binge_architecture.long_hook_threads` 중 최소 하나는 scene evidence의 장기 훅으로 보여야 합니다. 보이지 않으면 `long-hook-thread-not-staged`로 실패합니다.
+- scene evidence에 보이는 장기 훅은 새 단서, 좁혀진 가설, 위험/대가 변화, 다음 검증 행동 중 하나로 전진해야 합니다. 이름만 반복하면 `long-hook-thread-not-advanced`로 실패합니다.
+- `binge_architecture.payoff_cadence`는 `chapter_reward`와 `must_click_ending`의 보상 주기로 유지되어야 합니다. 이탈하면 `payoff-cadence-drift`로 실패합니다.
+- `binge_architecture.fatigue_controls`는 promise_fulfillment, drop_off_risk, scene evidence에서 피로도 방지 장치로 보여야 합니다. 관계 압박, 장소 변주, 행동 방식 변주, 감정 리셋 없이 조사/대화/전투 반복을 그대로 두면 `fatigue-control-not-staged`로 실패합니다.
+- `binge_architecture.tension_reset_plan`은 promise_fulfillment, drop_off_risk, scene evidence에서 고강도 사건 뒤 호흡/완급/정적/추리 호흡을 낮추고 새 질문, 새 알림, 새 위협으로 긴장을 재점화하는 리듬으로 보여야 합니다. 보이지 않으면 `tension-reset-not-staged`로 실패합니다.
+- serial escalation variety는 회차 간 반복 보상, 조사, 알림, 현장 실패 패턴을 원고에서 그대로 재생하지 않는 규칙입니다. 이전 1~2회차와 같은 보상/조사/알림/장소 구조를 쓰면 새 갈등 축(관계 파열, 반대세력 countermove, 장소/행동 방식 변주, 규칙 변화, 대가 상승, 되돌릴 수 없는 판도 변화)을 scene evidence와 manuscript에 stage해야 하며, 누락 시 `serial-escalation-variety-not-staged`, 원고 본문에서 누락 시 `manuscript-serial-escalation-variety-not-evidenced`로 실패합니다.
+- serial reward pattern variation은 회차 간 보상 전달 방식 자체를 원고에서 변주하는 규칙입니다. 새 갈등 축이 있어도 `chapter_reward`나 원고 보상 순간이 전 회차와 같은 로그-기록 대조/알림-규칙 증명을 이름만 바꿔 반복하면 `serial-reward-pattern-repetition-not-staged`, `manuscript-serial-reward-pattern-repetition-not-evidenced`로 실패합니다. 보상은 관계 배신, 반대세력 countermove, 행동 방식 반전, 대가 상승, 규칙 변이, 구체 사물 폭로 등 새 reward mode로 도착해야 합니다.
+- series retention funnel은 남은 독자 평점이 아니라 시작 독자가 완독하고 다음 회차로 넘어가는지를 기준으로 봅니다. `series-retention-benchmark`가 `reader-funnel-drop`을 보고하면 최신 회차 말미의 구체 질문, 다음 행동 압박, 보상 변주, 중도 이탈/훑어읽기 지점을 먼저 고쳐 continuation rate가 회복되게 씁니다.
+- cliffhanger carryover는 직전 회차의 prior must_click_ending을 다음 회차 current_plot, reader_experience, opening scene, 원고 초반에서 즉시 이어받는 규칙입니다. previous_summary에만 적고 현재 장면으로 실행하지 않거나 직전 말미 단서/위협/질문을 버리고 새 줄거리로 건너뛰는 미끼식 클리프행어는 `cliffhanger-carryover-not-staged`, planning에는 있지만 opening scene / first staged turn을 지나서야 처리하면 `cliffhanger-carryover-delayed`, 원고 초반에서 누락되면 `manuscript-cliffhanger-carryover-not-evidenced`, 첫 두 문장을 지나서야 처리하면 `manuscript-cliffhanger-carryover-delayed`로 실패합니다.
+- scene choice-cost tradeoff는 핵심 scene conflict/beat와 원고 장면에 경쟁 선택지, 포기되는 대안, 선택-대가 비용을 함께 실행하는 규칙입니다. 단순히 위험을 감수하고 조사/발견/추격만 하면 `scene-choice-tradeoff-not-staged`, 원고에서 누락되면 `manuscript-choice-tradeoff-not-evidenced`로 실패합니다.
+- choice-cost lock / 선택-대가 잠금은 주인공 선택의 대가가 선택지/관계/증거/시간/경로 중 하나를 되돌릴 수 없는 상태로 닫는지 확인하는 규칙입니다. scene conflict/beat에서 선택 후 닫힘, 차단, 사라짐, 노출, 확정이 없으면 `scene-choice-cost-lock-not-staged`, 원고 본문 manuscript에서 빠지면 `manuscript-choice-cost-lock-not-evidenced`로 실패합니다.
+- choice-cost lock carryover / 선택-대가 잠금 이월은 전 회차의 잠긴 선택지가 다음 회차 압박으로 살아 있는지 확인하는 규칙입니다. 전 회차 `context.next_plot` 또는 마지막 scene에서 닫힌 선택지/관계/증거/시간/경로가 다음 회차 `previous_summary`, `current_plot`, `reader_experience`, opening scene에 현재 제약으로 보이지 않으면 `choice-cost-lock-carryover-not-staged`, 원고 초반에서 빠지면 `manuscript-choice-cost-lock-carryover-not-evidenced`로 실패합니다.
+- revelation consequence carryover / 폭로 결과 이월은 전 회차 폭로가 다음 회차의 계획 변경, 새 압박, 용의자 지도, 관계 판단, 다음 질문으로 이어지는지 보는 규칙입니다. 전 회차 `chapter_reward`, `must_click_ending`, `context.next_plot`의 폭로가 다음 회차 `previous_summary`, `current_plot`, `reader_experience`, opening scene에 현재 행동 변화로 보이지 않으면 `revelation-consequence-carryover-not-staged`, `chapters/chapter_XXX.md` 원고 본문 manuscript 초반에서 빠지면 `manuscript-revelation-consequence-carryover-not-evidenced`로 실패합니다.
+- mystery hypothesis carryover / 추리 가설 이월은 직전 단서가 다음 회차의 가설 수정, 용의자 순위 재정렬, 용의자 제외/승격, 다음 검증 행동으로 이어지는지 보는 규칙입니다. 직전 단서가 다음 회차 `previous_summary`, `current_plot`, `reader_experience`, opening scene에 추론 상태 변화로 보이지 않으면 `mystery-hypothesis-carryover-not-staged`, `chapters/chapter_XXX.md` 원고 본문 manuscript 초반에서 빠지면 `manuscript-mystery-hypothesis-carryover-not-evidenced`로 실패합니다.
+- scene causal escalation은 장면 간 인과를 실행하는 규칙입니다. 이전 scene 결과가 `직후`, `그 결과`, `이어` 같은 인과 연결로 다음 scene 압박, 행동, 결과를 밀어야 하며, scene metadata에서 끊기면 `scene-causal-escalation-not-staged`로 실패합니다.
+- scene goal-tactic turn / 장면 목표-전술 전환은 핵심 scene conflict/beat가 주인공의 구체 목표, 방해하는 힘, 보이는 전술 또는 전술 전환, 바뀐 결과를 함께 실행하는지 보는 규칙입니다. 압박과 결과만 있고 주인공이 무엇을 원해 어떤 방법으로 밀거나 바꾸는지 없으면 `scene-goal-tactic-turn-not-staged`로 실패합니다.
+- spatial blocking은 액션/위기 원고의 공간 블로킹을 실행하는 규칙입니다. 장소 기준점, 동선, 차단물, 거리 압박이 같은 장면 흐름에 보이지 않으면 `manuscript-spatial-blocking-not-evidenced`로 실패합니다.
+- ending hook reaction은 마지막 scene beat와 원고 말미의 `must_click_ending`에 주인공의 몸감각, 물리적 행동, 즉각 위험 반응을 붙이는 규칙입니다. scene metadata에서 빠지면 `ending-hook-reaction-not-staged`, 원고에서 빠지면 `manuscript-ending-hook-reaction-not-evidenced`로 실패합니다.
+- 일반어 fun_spec 금지: "흥미로운 사건", "강한 반전", "다음 화가 궁금해지는 질문", "주인공이 매력을 보여준다"처럼 일반어만 있으면 `fun-spec-generic`으로 실패합니다. 구체적 fun_spec은 고유 장치/단서, 주인공 선택/비용, 결과/악화, must-click hook 증거를 포함해야 합니다.
+- `character_appeal_moment`의 주인공 매력은 실제 scene evidence에서 선택/행동/비용으로 보여야 합니다. 메타데이터에만 있고 장면에 없으면 `character-appeal-not-staged`로 실패합니다. character appeal signature / 주인공 매력 시그니처 행동은 고유 방식/특성, 주체적 행동, 비용 또는 취약성, visible story/social reaction을 같은 scene conflict/beat 안에 결합해야 하며, 얇은 매력 선언이면 `character-appeal-signature-not-staged`로 실패합니다.
+- 추상 scene evidence 금지: "흥미로운 사건이 있다", "주인공 매력을 설명한다", "위기와 반전을 제시한다" 같은 메타 설명이면 `scene-evidence-generic`으로 실패합니다. `scene.conflict`/`scene.beat`는 구체적 장면 실행으로 행동/장애물/결과, 사물/단서, 상황 변화를 줘야 합니다.
+- `scene.beat`가 정적인 확인/대조/메모/계획에 머물고 새 사건, 폭로, 위협, 대가, 손실, 회복 불가 변화 같은 결과/악화를 만들지 않으면 `weak-scene-turn`으로 실패합니다.
+- scene state delta / 장면 상태 변화는 `scene.conflict`와 `scene.beat` 사이의 전후 상태 변화를 확인합니다. 확인, 발견, 연결 같은 사건 단어가 있어도 장면 뒤 독자 지식, 위험, 관계 상태, 닫힌 선택지, 세계 규칙, 다음 행동 중 하나가 바뀌지 않으면 `scene-state-delta-not-staged`로 실패합니다. 원고 본문에서 같은 장면 상태 변화가 before 압박과 after 결과로 실행되지 않으면 `manuscript-scene-state-delta-not-evidenced`로 실패합니다.
+- signature scene image는 회차마다 기억 가능한 시그니처 장면 이미지를 원고에 남기는 규칙입니다. 최소 한 핵심 보상/반전/말미 훅 장면은 사물/공간/몸동작, 시각 디테일, 이야기 전환, story-impact lift를 같은 1~2문장 안에 결합해야 하며, 메타데이터에서 없으면 `signature-scene-image-not-staged`, 원고에서 빠지면 `manuscript-signature-scene-image-not-evidenced`로 실패합니다. story-impact lift는 선택 비용, 규칙 변화, 단서 재해석, 관계/정체성 변화, 되돌릴 수 없는 결과 중 하나로 장면 이후의 판단이나 상태를 바꿔야 합니다. 기능 비트만 처리하거나 분위기 좋은 이미지로 끝내지 말고 독자가 떠올릴 한 컷이 서사를 실제로 밀게 씁니다.
+- motif resonance seed / 잔향 모티프 씨앗은 `narrative_elements.resonance_seed`에 적힌 사물/공간/몸동작 이미지를 원고에서 실제 모티프로 살리는 규칙입니다. 같은 1~2문장 창 안에 씨앗 앵커, 시각 이미지, 몸감각/감정 잔향, 의미 변화, 이야기 결과가 묶이지 않으면 `motif-resonance-not-staged` 또는 `manuscript-motif-resonance-not-evidenced`로 실패합니다. 테마 문장을 직접 설명하지 말고 이미지가 선택 비용, 관계 변화, 규칙 변화, 단서 재해석, 되돌릴 수 없는 결과를 밀게 씁니다.
+- scene novelty matrix / 장면 신선도 매트릭스는 기능은 맞지만 밋밋한 장면을 막는 규칙입니다. `chapters/chapter_XXX.json`의 핵심 scene conflict/beat는 `reward_mode`, `conflict_mode`, `setting_mode`, `opposition_mode` 중 최소 3축을 결합해야 하며, `setting_mode`는 장소명만이 아니라 장소 제약/동선/차단물/거리 압박/잠긴 접근/우회/침투/탈출 같은 공간 affordance로 작동해야 합니다. 보상 확인/선택 비용/숨은 방해만 있고 장소명만 붙였거나 실제 장소 제약이나 새 보상 전달 방식이 없으면 `scene-novelty-matrix-not-staged`로 실패합니다. 원고 본문에서 그 축들이 같은 장면 창 안의 보상 전달 방식, 갈등/전술, 공간 제약, 반대세력 대응으로 실제 실행되지 않고 사건 정보 설명으로 납작해지면 `manuscript-scene-novelty-matrix-not-evidenced`로 실패합니다.
+- 1~5화는 `first_five_chapter_retention_plan`의 해당 초반 5화 유지 비트가 scene evidence에 보이지 않으면 `retention-plan-drift`로 실패합니다.
+- 1화 `chapters/chapter_XXX.md` 원고 본문 manuscript의 첫 문단이 `core_hook` 또는 `novelty_angle`을 즉시 보여주지 않으면 `opening-hook-not-evidenced`로 실패합니다.
+- 1화 첫 문단 안에 훅이 있어도 첫 문장/첫 비트가 평범한 일상, 날씨, 분위기로 먼저 열리고 `core_hook` 또는 `novelty_angle`을 늦게 보여주면 `opening-hook-delayed`로 실패합니다.
+- 1화 첫 문장에 `core_hook` 또는 `novelty_angle`이 있어도 첫 1~2문장 안에 주인공의 행동/선택 압박, 감각 또는 POV 앵커, 미해결 위험/질문이 함께 없으면 `opening-hook-not-embodied`로 실패합니다. 전제 설명문으로 시작하지 말고 첫 화면에서 인물이 무엇을 보고, 무엇을 누르거나 붙잡고, 어떤 선택지가 닫히는지 보여주세요.
+- 2화 이후 `chapters/chapter_XXX.md` 원고 본문 manuscript의 오프닝이 지난 사건 정리, 이전 회차 요약, 차분한 회상으로 시작하고 즉각적인 행동, 위협, 질문, 감각 반응이 없으면 `manuscript-opening-momentum-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `reader_promise_contract.irresistible_question`과 `reader_experience.page_turner_question`의 중심 질문을 왜/어떻게/누가 같은 미해결 질문으로 장면 안에 열어 두지 않으면 `manuscript-irresistible-question-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `drop_off_risk`의 이탈 방지 전략을 순서와 행동으로 실행하지 않으면 `manuscript-drop-off-mitigation-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에 `chapter_reward`가 실제 사건/발견/결과로 보이지 않으면 `manuscript-reward-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에 `chapter_reward`가 있더라도 주인공의 단서 처리와 추론/선택 없이 자동 파일, 안내문, 보고서, 타인의 설명 같은 수동 설명으로 도착하면 earned reward/벌어낸 보상이 아니므로 `manuscript-earned-reward-not-evidenced`로 실패합니다.
+- reward freshness/보상 신선도는 벌어낸 보상이 단순 기록 일치나 단서 확인으로 멈추지 않는지 보는 규칙입니다. `chapter_reward`가 고유 장치, 규칙 변화, 장르 보상 체감, 다음 행동 압박을 함께 만들지 않으면 `manuscript-reward-freshness-not-evidenced`로 실패합니다.
+- payoff delight / 보상 쾌감은 벌어낸 보상을 대작급 고점으로 터뜨리는 규칙입니다. `chapter_reward`가 신선하더라도 압박 축적, 벌어낸 단서 해소, 의미 변화 또는 반전, 몸 반응, 즉시 새 결과나 질문이 같은 보상 순간에 결합되지 않으면 `manuscript-payoff-delight-not-evidenced`로 실패합니다.
+- genre-specific delight / 장르 쾌감은 `emotional_payoff`가 약속한 장르 보상을 원고 장면 문법으로 터뜨리는 규칙입니다. 미스터리는 단서 결합, 주인공 추론/행동, 더 날카로운 미해결 의문이 함께 있어야 하고, 로맨스는 거리 변화 또는 접촉, 취약한 대화, 관계 선택/비용, 몸의 설렘이 함께 있어야 합니다. 액션은 추격 동선, 공간 제약, 전술 반전, 신체 결과가 함께 있어야 하고, 스릴러는 조여드는 위협, 덫 확대, 거짓 반전, 강제 선택, 몸의 공포가 함께 있어야 하며, 현대판타지는 시스템 피드백, 스킬 활용, 대가/한계, 현실 결과나 등급 변화가 함께 있어야 합니다. 판타지/성장물은 마법 규칙 발현, 대가/한계, 경이 이미지, 능력 변화나 결과가 함께 있어야 합니다. 감정명과 몸반응만 있고 장르별 독자 쾌감 장치가 없으면 `manuscript-genre-delight-not-evidenced`로 실패합니다.
+- question ladder/질문 사다리는 벌어낸 보상 뒤의 답, 폭로, 규칙 증명이 다음 질문을 여는지 보는 규칙입니다. 답 직후가 모든 의문 해결/설명 완료/안도처럼 닫히고 새 미해결 왜/어떻게/누가/다음 표적/남은 대가를 만들지 않으면 `manuscript-question-ladder-not-evidenced`로 실패합니다.
+- forecast revision / 서사 예측 수정은 반전, 예상 뒤집힘, 오판, 가설 수정, 재해석이 원고에서 실제 독해 변화를 만드는지 보는 규칙입니다. 회차가 반전을 약속하거나 원고가 예상을 세우면 독자/주인공의 예상, 그 예상을 깨는 구체 단서나 사건, 바뀐 가설/용의자 순위/단서 의미/계획/다음 검증 행동이 모두 보여야 하며, 놀랐다는 말만 있고 해석이 바뀌지 않으면 `manuscript-forecast-revision-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript의 마지막 구간에 `must_click_ending`이 보이지 않으면 `manuscript-ending-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `must_click_ending`을 중간에 언급만 하고 마지막 구간의 새 사건, 폭로, 위협, 미해결 질문으로 장면화하지 않으면 `manuscript-ending-hook-not-staged`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `must_click_ending`을 마지막 구간에 배치하더라도 같은 회차 말미에서 해결, 종결, 범인 확정, 설명 완료, 안도 같은 폐쇄 신호로 열린 루프를 닫으면 `manuscript-ending-hook-closed`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript의 마지막 열린 질문이 "이 사건의 진실은 무엇인가?"처럼 넓고 로고+사건 번호, 다음 수신자+사진, 이름+좌표, 규칙+대가 같은 구체 앵커를 최소 두 개 보존하지 못하면 `manuscript-ending-hook-question-too-broad`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `must_click_ending` 말미 훅을 사건 정보로만 끝내고 주인공의 몸감각, 물리적 행동, 즉각 위험 반응을 붙이지 않으면 `manuscript-ending-hook-reaction-not-evidenced`로 실패합니다.
+- ending hook setup / 말미 훅 준비 단서는 말미 훅의 좌표, 사진, 명명 장소, 신원, 특수 물건 앵커를 앞선 장면에 구체 단서로 심는 규칙입니다. 앞선 장면의 발견/확인/기록/흔적 없이 마지막 구간에서만 새 좌표나 사진을 던지면 `manuscript-ending-hook-setup-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript의 말미 반전은 fair twist여야 합니다. 앞선 장면에 번호, 파일, 로그, 로고, 목소리, 녹음, 서명, 배지 같은 반전 준비 단서가 없는데 마지막 구간에서만 정체/배후/범인을 새로 밝히면 `manuscript-fair-twist-setup-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에 `character_appeal_moment`의 주인공 매력 선택/행동/비용이 보이지 않으면 `manuscript-appeal-not-evidenced`로 실패합니다. 키워드는 있지만 고유 방식/특성, 주체적 행동, 비용 또는 취약성, visible story/social reaction이 같은 1~2문장에 결합되지 않으면 `manuscript-character-appeal-signature-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `narrative_elements.character_development`의 인물 변화를 선택, 인정, 사과, 공개, 대가, 관계 행동, 달라진 행동으로 실제 장면에 실행하지 않으면 `manuscript-character-development-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 주인공 `inner.want` 욕망 또는 `inner.need` 결핍을 장면 동기로 실행하지 않고, 그 욕망/결핍이 선택, 대가, 도움 요청, 포기, 달라진 행동을 압박하지 않으면 `manuscript-character-drive-not-evidenced`로 실패합니다.
+- character drive carryover / 내적 변화 이월은 직전 내적 변화가 원고 초반의 실제 행동을 바꿔야 하는 규칙입니다. 직전 내적 변화 때문에 주인공이 도움 요청, 습관 내려놓기, 통제권 나누기, 달라진 행동을 하지 않고 단독 행동으로 리셋되면 `character-drive-carryover-not-staged` 또는 `manuscript-character-drive-carryover-not-evidenced`로 실패합니다.
+- `narrative_elements.character_development`가 관계 변화(신뢰, 불신, 화해, 배신, 고백, 사과, 약점 공개)를 선언하면 `chapters/chapter_XXX.json`의 scene conflict/beat가 상호 반응을 stage해야 하며, 없으면 `relationship-shift-not-staged`로 실패합니다. 원고 본문 manuscript에서도 한 인물의 공개/사과/거절 뒤 상대가 침묵, 반박, 수락, 보호, 동행, 배신, 행동 변화로 응답해야 하며, 관계 변화가 선언문으로만 처리되면 `manuscript-relationship-shift-not-evidenced`로 실패합니다. relationship turning point / 관계 전환점은 약점 공개·비밀·사과·거절 같은 취약성/관계 위험, 상대의 선택/반응, 신뢰/불신/거리 변화, 즉시 달라진 행동 결과가 같은 1-2문장 또는 scene window에 묶여야 하며, 빠지면 `relationship-turning-point-not-staged`와 `manuscript-relationship-turning-point-not-evidenced`로 실패합니다. relationship mind inference / 관계 마음 추론은 숨김, 오해, 진심, 망설임, 바뀐 속내가 시선, 침묵, 회피, 대화, POV 해석으로 읽혀야 하며, 빠지면 `relationship-mind-inference-not-staged`와 `manuscript-relationship-mind-inference-not-evidenced`로 실패합니다. relationship mutual pressure / 관계 상호 압박은 상대가 조건, 거절, 요구, 경쟁 목표, 개인적 대가, 비밀, 위험 중 하나를 들고 협상에 들어오는지 확인합니다. 상대가 그저 돕거나 용서만 하면 `relationship-mutual-pressure-not-staged`, 원고에서 빠지면 `manuscript-relationship-mutual-pressure-not-evidenced`로 실패합니다.
+- 관계 변화는 `characters/relationships.json`의 `evolution`에 chapter와 관계 변화 기록으로 반영해 다음 회차가 장기 상태를 이어받게 합니다. 장면과 원고에 관계 변화가 있는데 이 장기 상태 기록이 없으면 `relationship-evolution-not-recorded`로 실패합니다.
+- relationship evolution carryover / 관계 장기 상태 이월은 전 회차 관계 변화가 다음 회차 대화, 행동, 불신/신뢰, 거리, 동행 압박으로 이어지는지 보는 규칙입니다. 이전 `evolution.change`가 현재 회차 `previous_summary`, `current_plot`, `reader_experience`, opening scene에 살아 있지 않으면 `relationship-evolution-carryover-not-staged`, `chapters/chapter_XXX.md` 원고 본문 manuscript 초반에서 빠지면 `manuscript-relationship-evolution-carryover-not-evidenced`로 실패합니다.
+- 복선 장부는 `plot/plot-strategy.json`의 `foreshadowing_schedule`이 canonical입니다. 회차의 `foreshadowing_plant` 또는 `foreshadowing_payoff`에 장부 없는 ID를 쓰면 `foreshadowing-ledger-missing`으로 실패하고, `foreshadowing_payoff`가 예정된 `payoff_chapter`보다 먼저 회수되면 `foreshadowing-payoff-timing-mismatch`로 실패합니다.
+- foreshadowing plant concreteness / 복선 단서 구체화는 선언한 `foreshadowing_plant`가 실제 장면과 원고 본문 manuscript의 로고, 번호, 표식, 파일, 상처, 목소리, 사물, 감각 디테일 같은 물증으로 심겼는지 확인합니다. 복선을 "나중에 밝혀질 단서"처럼 추상 선언만 하면 `foreshadowing-plant-not-staged`, 원고 본문에서 빠지면 `manuscript-foreshadowing-plant-not-evidenced`로 실패합니다.
+- foreshadowing payoff resolution / 복선 회수 장면화는 선언한 `foreshadowing_payoff`가 단서를 다시 보여주는 데서 끝나지 않고, 그 단서의 의미를 밝히고 원인/배후/숨은 연결을 드러낸 뒤 결과적으로 주인공의 행동, 위험, 관계, 다음 목표를 바꾸는지 확인합니다. 의미와 결과 없는 반복 단서면 `foreshadowing-payoff-not-staged`, 원고 본문에서 빠지면 `manuscript-foreshadowing-payoff-not-evidenced`로 실패합니다.
+- 훅 장부는 `plot/hooks.json`의 `mystery_hooks`가 canonical입니다. 회차의 `hooks_plant` 또는 `hooks_reveal`에 장부 없는 ID를 쓰면 `hook-ledger-missing`으로 실패하고, `hooks_reveal`이 예정된 `reveal_chapter`보다 먼저 공개되면 `hook-reveal-timing-mismatch`로 실패합니다.
+- `plot/plot-strategy.json`의 회차별 `arc_beats`는 큰 줄거리를 전진시키는 필수 약속입니다. `chapters/chapter_XXX.json`의 context.current_plot, reader_experience, scene conflict/beat에 구체 발견/결정/반전/손실/되돌릴 수 없는 상태 변화로 보이지 않으면 `arc-beat-not-staged`로 실패하고, 원고 본문 manuscript에서 실행되지 않으면 `manuscript-arc-beat-not-evidenced`로 실패합니다. 큰 줄거리 변화 없이 보상/대화만 소비하는 필러 회차를 쓰지 마세요.
+- `characters/*.json` 또는 `characters/index.json`에 실명/별칭이 있는 캐릭터를 `주인공`, `조력자`, `남주`, `여주` 같은 설계 라벨로 반복해 최종 원고에 쓰면 `manuscript-generic-character-label-not-evidenced`로 실패합니다. 원고 본문은 실명 또는 별칭을 사용해야 합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `지적 쾌감`, `보상 주기`, `장기 미스터리`, `독자 보상`, `클리프행어` 같은 설계어/평가어를 지문에 직접 쓰면 `manuscript-design-jargon-not-evidenced`로 실패합니다. 설계어는 구체 단서, 행동, 몸감각, 대화 서브텍스트로 장면화해야 합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에서 주인공 능동성이 보이지 않고 주인공이 직접 결정하고 대가를 감수하는 선택/행동/비용이 없으면 `manuscript-protagonist-agency-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에서 주인공 행동이 경쟁 선택지와 포기되는 대안이 보이는 선택-대가 딜레마 없이 "위험을 감수하고 결정했다" 수준으로만 처리되면 `manuscript-choice-tradeoff-not-evidenced`로 실패합니다.
+- choice cost carryover는 선택 비용 여파가 다음 압박으로 이어지는지 보는 규칙입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript에서 주인공이 포기한 대안, 신고 기록, 알리바이, 증거, 시간, 관계 같은 비용을 치른 뒤 그 비용이 선택지 축소, 길 차단, 의심 증가, 증거 상실, 시간 단축으로 돌아오지 않으면 `manuscript-choice-cost-carryover-not-evidenced`로 실패합니다.
+- choice-cost lock / 선택-대가 잠금은 선택 비용이 단순 압박으로 끝나지 않고 선택지/관계/증거/시간/경로 중 하나를 되돌릴 수 없는 상태로 닫는지 보는 규칙입니다. 원고에서 선택 직후 닫힘, 차단, 사라짐, 노출, 확정이 보이지 않으면 `scene-choice-cost-lock-not-staged` 또는 `manuscript-choice-cost-lock-not-evidenced`로 실패합니다.
+- choice-cost lock carryover / 선택-대가 잠금 이월은 전 회차에서 잠긴 선택지, 관계, 증거, 시간, 경로가 다음 회차 압박으로 돌아오는지 보는 규칙입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript 초반에서 그 잠긴 선택지가 현재 행동을 좁히거나 의심, 감시, 경로 차단, 신뢰 붕괴를 만들지 않으면 `choice-cost-lock-carryover-not-staged` 또는 `manuscript-choice-cost-lock-carryover-not-evidenced`로 실패합니다.
+- revelation consequence carryover / 폭로 결과 이월은 전 회차 폭로를 다음 회차 원고 초반의 계획 변경, 새 압박, 용의자 판단, 관계 불신, 다음 질문으로 장면화하는 규칙입니다. 폭로를 요약만 하고 현재 행동이 그대로라면 `revelation-consequence-carryover-not-staged` 또는 `manuscript-revelation-consequence-carryover-not-evidenced`로 실패합니다.
+- mystery hypothesis carryover / 추리 가설 이월은 직전 단서를 다음 회차 원고 초반의 가설 수정, 용의자 순위, 알리바이 재검증, 다음 검증 행동으로 장면화하는 규칙입니다. 단서를 요약만 하고 새 조사로 건너뛰면 `mystery-hypothesis-carryover-not-staged` 또는 `manuscript-mystery-hypothesis-carryover-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에서 돌이킬 수 없는 행동 전에 구체 손실 대상(피해자, 조력자, 가족, 정체, 목숨, 증거 등)과 닥친 위협/비용이 보이는 stakes clarity가 없으면 `manuscript-stakes-not-evidenced`로 실패합니다.
+- stakes subject specificity / 스테이크 대상 개인화는 `피해자`, `표적`, `대상`, `수신자`, `사람` 같은 일반 명사가 독자가 걱정할 대상이 되도록 만드는 기준입니다. 첫 압박 창에서 이름, 관계, 역할, 소지품, 목소리, 메시지, 신분증, 사진, 사건/파일 번호 같은 구체 흔적이 없으면 `manuscript-stakes-subject-not-personalized`로 실패합니다.
+- reader desire intensity / 독자 욕망은 사건을 확인하는 기능 비트가 아니라 독자가 바라는 결과를 만드는 기준입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript에서 구체 손실 대상, 주인공 의도(구함/보호/되찾음/증명), 실패 비용, 차단된 선택지가 같은 회차 흐름에 보이지 않으면 `manuscript-reader-desire-not-evidenced`로 실패합니다.
+- scene active opposition / 능동 반대세력은 scene conflict/beat의 장면 압박 뒤에 적대적 의지(범인, 가해자, 적대 시스템, 내부자, 조작된 앱 등)를 두는 규칙입니다. 적대적 의지의 의도적 방해/조작/협박/표적화가 보이지 않고 날씨/정전/잠긴 문 같은 비의지적 장애물뿐이면 `scene-active-opposition-not-staged`, `chapters/chapter_XXX.md` 원고 본문 manuscript에서 빠지면 `manuscript-active-opposition-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에서 antagonist strategy가 이름/별칭이 있는 반대세력의 함정, 조작, 표적화, countermove로 장면화되지 않으면 `manuscript-antagonist-strategy-not-evidenced`로 실패합니다.
+- antagonist countermove carryover / 반대세력 대응 이월은 전 회차 주인공 행동 때문에 반대세력이 원고 초반에서 반격, 전술 변경, 표적 재설정, 증거 삭제, 접근 권한 회수로 현재 압박을 바꾸는지 보는 규칙입니다. 주인공이 지난 회차에 이겼는데 반대세력이 같은 함정만 반복하면 `antagonist-countermove-carryover-not-staged` 또는 `manuscript-antagonist-countermove-carryover-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에서 장면 압박, 장애물, 저항이 실제 압박/장애물로 보이지 않고 주인공 행동이 순조롭게 흘러가면 `manuscript-pressure-not-evidenced`로 실패합니다.
+- temporal pressure / 시간 압박은 제한 시간, 카운트다운, 남은 n분, 기한, 사망 시각 같은 ticking-clock 표식이 실제 행동과 선택지를 좁히는지 보는 규칙입니다. 원고가 시간 압박을 말하지만 같은 장면 흐름에서 주인공 대응, 늦어짐/놓침/닫힌 선택지/사라진 증거/줄어든 기한 같은 결과를 만들지 않으면 `manuscript-temporal-pressure-not-evidenced`로 실패합니다.
+- tactical adaptation은 장면 반전 뒤 전술 재계산이 보이는지 확인하는 규칙입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript에서 장애물/반격/차단이 첫 계획을 막았는데도 주인공이 계획 변경, 우회, 수단 전환, 새 단서 활용, 다음 행동 변경 없이 처음 계획대로 진행하면 `manuscript-tactical-adaptation-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에서 장면 압박 뒤에 결과 악화가 없고 대가, 손실, 회복 불가 변화, 새 위협이 보이지 않으면 `manuscript-consequence-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 압박, 행동, 결과를 각각 말하지만 원인과 결과의 사슬로 묶지 않으면 `manuscript-causal-chain-not-evidenced`로 실패합니다. 압박이 행동을 바꾸고, 행동이 결과를 만들고, 결과가 다음 비트를 여는 인과를 문장 안에 보여줘야 합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 위기 해결을 우연한 해결, 갑작스러운 외부 구조, 마침 도착한 증거/조력자에 맡기면 `manuscript-convenient-resolution-not-evidenced`로 실패합니다. 구조, 체포, 탈출, 증거 발견은 사전 설치, 주인공이 작동시킨 선택/행동, 해결 뒤 대가가 함께 있어야 earned resolution으로 인정합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 사건/단서/보상/말미 훅을 객관 정보처럼 나열하고 POV 시점 앵커와 몸감각, 시선, 해석, 미해결 의문을 같은 장면 문장에 붙이지 않으면 `manuscript-pov-focalization-not-evidenced`로 실패합니다.
+- narrative transportation / 체험 몰입은 독자가 줄거리를 심상으로 떠올리고 인물 압박을 함께 느끼게 만드는 기준입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript가 사건 증거는 갖췄지만 구체 공간/사물/행동, POV 감정 반응, 집중점이 인접 장면 문장에 묶이지 않고 추상 기능 요약으로 흐르면 `manuscript-narrative-transportation-not-evidenced`로 실패합니다.
+- premise engine / 전제 엔진은 `reader_promise_contract.core_hook`과 `novelty_angle`이 원고 장면을 실제로 움직이는지 보는 기준입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript가 고유 전제를 설정/소재/컨셉으로만 말하고 그 전제의 규칙, 장치, 조건, 금기가 선택을 좁히거나 전술을 바꾸거나 위험을 만들고 다음 질문을 열지 않으면 `manuscript-premise-engine-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에 `emotional_payoff`의 감정 보상이 실제 독자 체감으로 보이지 않으면 `manuscript-payoff-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `emotional_payoff`의 장르별 보상어(쾌감/긴장감/설렘/따뜻함 등)를 감정 보상 장면화 없이 감정명으로만 말하고 몸감각, 감각 디테일, 행동 반응을 붙이지 않으면 `manuscript-payoff-embodiment-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 감정 보상을 몸감각으로는 처리했지만 genre-specific delight / 장르 쾌감을 만들지 못하면 `manuscript-genre-delight-not-evidenced`로 실패합니다. 미스터리 보상은 단서 결합과 추론, 남는 의문을 장면화하고, 로맨스 보상은 거리 변화/접촉, 취약한 대화, 관계 선택/비용을 장면화하며, 액션 보상은 추격 동선/전술 반전/신체 결과를 장면화해야 합니다. 스릴러 보상은 조여드는 위협/덫 확대/거짓 반전/강제 선택을 장면화하고, 현대판타지 보상은 시스템 피드백/스킬 활용/대가/현실 결과를 장면화하며, 판타지 보상은 마법 규칙 발현과 대가/한계, 경이 이미지, 능력 변화나 결과를 장면화해야 합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `narrative_elements.emotional_goal`과 각 `scene.emotional_tone`의 감정선을 감정명, 몸감각, 행동 반응으로 실제 장면에 실행하지 않으면 `manuscript-emotional-arc-not-evidenced`로 실패합니다.
+- emotional progression은 감정선이 단순 등장에 머물지 않고 감정 전환/누적으로 읽히는지 보는 규칙입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript에서 선언된 감정 상태 사이의 전환 계기, 선택/사건, 관계 반응, 행동 반응이 장면 안에 없으면 `manuscript-emotional-progression-not-evidenced`로 실패합니다.
+- affective choice turn / 감정 선택 전환은 감정 변화가 실제 선택, 행동, 관계 태도, 결과를 바꾸는지 보는 규칙입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript가 죄책감, 결심, 두려움, 안도 같은 감정 전환을 말하지만 그 감정 때문에 선택지가 닫히거나 행동이 바뀌거나 관계/위험 상태가 달라지지 않으면 `manuscript-affective-choice-turn-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에 `binge_architecture.long_hook_threads` 중 최소 하나가 실제 단서/미스터리/결과로 보이지 않으면 `manuscript-long-hook-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 장기 훅을 추상 연결로만 말하고 번호, 파일, 로그, 로고 같은 구체 단서를 붙이지 않으면 `manuscript-long-hook-clue-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 장기 훅 구체 단서를 반복만 하고 새 발견, 가설 축소, 위험 변화, 다음 검증 행동으로 상태를 바꾸지 않으면 `manuscript-long-hook-thread-not-advanced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에 `binge_architecture.payoff_cadence`의 보상 주기가 실제 회차 보상 리듬으로 보이지 않으면 `manuscript-payoff-cadence-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `binge_architecture.fatigue_controls`를 장면화하지 않고 같은 조사/대화/전투 비트를 반복하면 `manuscript-fatigue-control-not-evidenced`로 실패합니다. 관계 압박, 장소 변주, 행동 방식 변주, 감정 리셋 중 최소 하나로 피로도와 반복감을 끊어야 합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `binge_architecture.tension_reset_plan`을 장면화하지 않고 위기, 경보, 추격, 폭로를 계속 고조만 시키면 `manuscript-tension-reset-not-evidenced`로 실패합니다. 고강도 비트 뒤에는 짧은 호흡, 감각 정적, 단서 해석, 감정 리셋을 둔 다음 새 질문/새 위협으로 재점화해야 합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 high-tension 회차의 tension wave / 긴장 파형을 만들지 못해 초반 압박, 중반 악화, 말미 고점, 열린 질문이 순서대로 보이지 않으면 `manuscript-tension-wave-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 `chapters/chapter_XXX.json`의 `scene.conflict` 장면 갈등과 `scene.beat` 장면 전환을 실제 원고 실행으로 보여주지 않으면 `manuscript-scene-intent-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript에 각 scene의 증거가 있더라도 장면 순서가 `chapters/chapter_XXX.json`의 scene 번호 순서와 다르게 실행되면 `manuscript-scene-order-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 scene conflict/beat 키워드를 포함해도 같은 장면 창 안에서 before 압박과 after 결과가 이어져 독자 지식, 위험, 관계 상태, 닫힌 선택지, 세계 규칙, 다음 행동 중 하나를 바꾸지 않으면 `manuscript-scene-state-delta-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 독자 보상/훅/갈등을 설명으로만 나열한 요약문형 원고이고 장면 질감(감각, 행동, 대화)이 부족하면 `manuscript-summary-prose`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 고유 단서/현장 키워드는 포함하지만 현장 기록, 분석, 항목, 결론 같은 보고서형 원고로 장면 밀도를 대체하고 직접 행동, 몸감각, 대화/서브텍스트가 같은 장면 흐름에 부족하면 `manuscript-scene-density-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript가 행동과 압박은 있지만 독자가 어디서 어디로 움직이고 무엇에 막혔는지 따라갈 수 없는 공간 블로킹 결손이면 `manuscript-spatial-blocking-not-evidenced`로 실패합니다. 장소 기준점, 동선, 차단물, 거리 압박을 같은 장면 흐름에 붙입니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript의 대화문이 독자 보상, 핵심 질문, 장기 미스터리, 보상 주기, 주인공 매력 같은 설계 정보를 직접 설명하고 갈등, 회피, 반박, 침묵, 행동 비트 같은 대화 서브텍스트가 부족하면 `manuscript-dialogue-subtext-not-evidenced`로 실패합니다.
+- `chapters/chapter_XXX.md` 원고 본문 manuscript의 3턴 이상 대화가 확인, 동의, 지시, 수행만 반복하고 반박, 거부, 회피, 위협, 침묵, 힘의 균형을 바꾸는 행동 비트 같은 대화 갈등이 없으면 `manuscript-dialogue-conflict-not-evidenced`로 실패합니다.
+- dialogue turn은 논쟁성 대화가 끝난 뒤 이야기 상태가 바뀌는지 보는 규칙입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript의 3턴 이상 논쟁 대화가 대화 전환 없이 말싸움에 머물고, 새 단서/폭로 같은 정보 변화, 주도권/선택 조건 같은 권력 변화, 신뢰/불신/동행 같은 관계 상태 변화, 또는 다음 행동을 만들지 않으면 `manuscript-dialogue-turn-not-evidenced`로 실패합니다.
+- dialogue state carryover는 대화 전환으로 바뀐 이야기 상태가 바로 다음 행동 또는 다음 압박에 상태 누적되는지 보는 규칙입니다. 논쟁 대화가 파일, 로그, 조건, 관계, 권력, 열린 문 같은 상태를 바꾼 뒤 원고가 그 변화와 무관하게 원래처럼 진행하면 `manuscript-dialogue-state-carryover-not-evidenced`로 실패합니다.
+- character voice differentiation은 인물별 대사 음성을 분리하는 규칙입니다. `chapters/chapter_XXX.md` 원고 본문 manuscript에서 화자 귀속이 가능한 다중 화자 대화가 같은 말투, 어휘, 문장 리듬, 반응 전술, 담화 표지, 동일한 대사를 반복해 서로 바꿔 말해도 구분되지 않으면 `manuscript-character-voice-not-differentiated`로 실패합니다.
+- character voice profile drift는 캐릭터 파일의 말투 설정을 원고 대사와 연결하는 규칙입니다. `characters/{id}.json`의 `basic.voice.formality_level` 또는 기존 top-level `speech_pattern`이 존댓말/반말/격식 말투를 지정했는데, `chapters/chapter_XXX.md`의 화자 귀속 대사가 장면상 근거 없이 다른 register로 반복되면 `manuscript-character-voice-profile-drift`로 실패합니다. 또한 다른 캐릭터의 고유 `signature_phrases`를 빌려 쓰거나, 명시된 표준어/방언 프로필과 반복적으로 충돌하는 대사도 같은 issue로 실패합니다. `basic.voice.vocabulary`는 `선호 어휘: 현장로그, 증거번호; 금지 어휘: 운명, 대충`처럼 기록하고, 원고에서 금지 어휘를 반복하거나 다른 인물의 고유 선호 어휘를 빌려 쓰면 같은 issue로 실패합니다. 어휘·시그니처 표현·방언은 profile context로 함께 전달되어 퇴고 지시의 기준이 됩니다.
+- CLI JSON의 `revisionDirectives`는 실패 원인을 바로 퇴고 지시로 바꾼 목록입니다. `engagement.revisionDirectives` 상위 항목을 **Engagement Revision Directives** 섹션으로 editor, `/act-review`, 또는 revision-team 입력에 포함합니다.
+- `readerResponse.revisionDirectives`가 있으면 **Reader Response Revision Directives** 섹션으로 함께 전달합니다. 위치 기반 `friction_annotations`와 `drop_off_annotations`에서 온 지시는 독자가 실제로 멈추거나 이탈한 장면/문단/말미와 reader segment를 가리키므로, 추상적인 점수 해석보다 먼저 반영합니다.
+- CLI JSON의 `recurringEngagementDirectives`는 여러 회차에서 반복된 퇴고 지시입니다. 비어 있지 않으면 **Repeated Engagement Directives** 섹션으로 분리해 우선 수정합니다.
+- `recurringEngagementDirectives` 중 같은 지시가 3회 이상 반복되면 단일 회차 재시도를 계속하지 않습니다. **구조적 재검토**로 전환해 `USER_INTERVENTION` 상태로 일시정지하고, `plot/plot-strategy.json`의 fun_spec/tension/binge 설계와 `chapters/chapter_XXX.json`의 reader_experience/final scene evidence를 함께 고칩니다.
+
+**3-3. 상태 업데이트**
+
+품질 평가가 있는 경우 `evaluateChapterGate`로 총점과 독자 몰입 계약을 함께 판정하고, `scripts/checkpoint.mjs`의 `applyChapterGateDecision`으로 `meta/ralph-state.json`에 반영합니다.
+
+**권장 실행 명령:**
+```spec
+Bash("node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {N} --version {chapterVersion} --quality-score {qualityScore} --threshold {threshold} --json")
+```
+
+이 CLI는 내부적으로 `recordEngagementFromProject` → `analyzeChapter` 기반 `proseCraft` 원고 문장 품질 평가 → `evaluateChapterGate` → `applyChapterGateState` 순서로 실행하여 `meta/quality-trend.json`과 `meta/ralph-state.json`을 함께 갱신합니다.
+`proseCraft.passed == false`이면 외부 품질 점수와 engagement가 통과해도 회차 완료로 처리하지 않습니다.
+
+```spec
+const gateDecision = evaluateChapterGate({
+  chapterNumber: N,
+  attemptNumber: retryCount + 1,
+  maxRetries: 3,
+  lastScore: qualityScore,
+  threshold: N === 1 ? 90 : 85,
+  engagement: {
+    passed: engagement.passed,
+    score: engagement.score,
+    alertLevel: engagementRecord.regression.alertLevel,
+    regressionDetected: engagementRecord.regression.regressionDetected,
+    issues: engagement.issues
+  },
+  proseCraft: {
+    passed: proseCraft.passed,
+    verdict: proseCraft.verdict,
+    score: proseCraft.score,
+    issues: proseCraft.issues,
+    revisionDirectives: proseCraft.revisionDirectives
+  },
+  requireEngagement: true,
+  requireProseCraft: true
+});
+
+await applyChapterGateDecision(projectPath, N, gateDecision);
+```
+
+```spec
+const engagementRevisionDirectives = engagement.revisionDirectives;
+const repeatedEngagementDirectives = engagement.recurringEngagementDirectives;
+
+if (engagementRevisionDirectives.length > 0) {
+  diagnostic.add(
+    "Engagement Revision Directives",
+    engagementRevisionDirectives
+      .slice(0, 5)
+      .map(directive => `- [${directive.priority}] ${directive.target}: ${directive.action}`)
+      .join("\n")
+  );
+}
+
+if (repeatedEngagementDirectives.length > 0) {
+  diagnostic.add(
+    "Repeated Engagement Directives",
+    repeatedEngagementDirectives
+      .slice(0, 5)
+      .map(directive => `- [${directive.priority}] ${directive.target}: ${directive.action} (${directive.count}x)`)
+      .join("\n")
+  );
+}
+
+if (proseCraft.passed === false) {
+  diagnostic.add(
+    "Prose Craft Revision Directives",
+    proseCraft.revisionDirectives
+      .slice(0, 5)
+      .map(directive => `- [P${directive.priority}] ${directive.type}: ${directive.issue}`)
+      .join("\n")
+  );
+  diagnostic.add("원고 문장 품질", proseCraft.issues.slice(0, 5).join("\n"));
+}
+```
+
+- `PASS`: `current_chapter`를 N + 1로 이동하고 `completed_chapters`에 N 추가
+- `RETRY`: N을 `failed_chapters`에 남기고 `retry_count` 증가
+- `USER_INTERVENTION`: `ralph_active=false`, `requires_user_intervention=true`로 일시정지
+- `proseCraft` 실패: 필터워드, 감각 grounding, 감각 장식 연쇄(`sensory-wallpaper-run`), 문장 리듬, 연속 단문 끊어쓰기(`monotone-short-sentence-run`), 완충 인식 표현 과밀(`hedged-perception-haze`), 감정 라벨 연쇄(`emotion-label-carousel`), 추상·상징어 누적(`symbolic-abstraction-stack`), 장면 밖 해결 요약(`offscreen-resolution-summary`), 기계적 확인·동의 대사 연쇄(`rote-dialogue-response-chain`), 중립 대사 태그 연쇄(`mechanical-dialogue-tag-chain`), 지시어 연쇄(`ambiguous-reference-chain`), 금지/AI체 표현 등 원고 문장 품질을 `Prose Craft Revision Directives` 기준으로 수정
+- 반복 독자 몰입 실패가 3회 이상이면 `retry_count`가 남아 있어도 `USER_INTERVENTION`입니다. 이때 `gateDecision.retryPrompt`의 **구조적 재검토** 지시를 우선 적용합니다.
+
+**3-4. 품질 검토 (선택)**
 
 사용자가 요청하면 또는 `/write-all` 루프 내에서:
 

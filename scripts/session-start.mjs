@@ -7,8 +7,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
-import { findStateFile, readState } from './lib/state-utils.mjs';
-import { checkRecoveryState, formatRecoveryMessage } from './session-recovery.mjs';
+import { inspectRecoveryState, formatRecoveryMessage } from './session-recovery.mjs';
 import { readStdinSafe, parseHookInput, isSubagentSession } from './lib/hook-utils.mjs';
 
 function readJsonFile(path) {
@@ -18,6 +17,26 @@ function readJsonFile(path) {
   } catch {
     return null;
   }
+}
+
+function formatRalphActiveNotice(isRalphActive, hasRecovery, recoveryState) {
+  if (!isRalphActive) {
+    return '';
+  }
+  if (!hasRecovery) {
+    return '⚠️ **Ralph Loop가 활성 상태입니다.** 중단하려면 `/cancel-ralph`를 사용하세요.';
+  }
+  const preflightPassed =
+    recoveryState?.designGate?.passed === true &&
+    recoveryState.designGate.status === 'PASS' &&
+    recoveryState?.styleGate?.passed === true &&
+    recoveryState.styleGate.status === 'PASS' &&
+    recoveryState?.summaryMemoryGate?.passed === true &&
+    recoveryState.summaryMemoryGate.status === 'PASS';
+  if (preflightPassed) {
+    return '⚠️ **Ralph Loop가 활성 상태로 남아 있습니다.** 새 세션에서 이어가려면 `/write-all --resume`을 사용하세요.';
+  }
+  return '⚠️ **Ralph Loop가 활성 상태로 남아 있습니다.** 설계/문체/요약 메모리 게이트가 모두 PASS가 된 뒤 `/write-all --resume`으로 재개하세요.';
 }
 
 async function main() {
@@ -90,13 +109,21 @@ async function main() {
 
     // Ralph Loop 상태 확인 - 프로젝트 경로 사용 (워크스페이스 경로 아님)
     const projectPath = join(novelsDir, latestProject);
-    const stateInfo = findStateFile(projectPath);
-    const ralphState = stateInfo ? readState(projectPath) : null;
+    const recoveryInspection = await inspectRecoveryState(projectPath);
+    const ralphState = recoveryInspection.state;
     const isRalphActive = ralphState?.ralph_active === true;
 
     // Session recovery check
-    const recoveryState = await checkRecoveryState(projectPath);
-    const hasRecovery = recoveryState !== null && !isRalphActive;
+    const recoveryState = recoveryInspection.recovery;
+    const hasRecovery = recoveryState !== null;
+    const recoveryWarning = recoveryInspection.warning
+      ? `${recoveryInspection.warning}\n`
+      : '';
+    const ralphActiveNotice = formatRalphActiveNotice(
+      isRalphActive,
+      hasRecovery,
+      recoveryState
+    );
 
     // 상태 메시지 생성
     let statusIcon = '';
@@ -151,10 +178,11 @@ ${statusIcon} **현재 활성 프로젝트**: ${project.title} (\`${latestProjec
 | 상태 | ${project.status || 'planning'} |
 ${isRalphActive ? `| Ralph Loop | 활성 (막 ${ralphState.current_act || 1}) |` : ''}
 
-${isRalphActive ? '⚠️ **Ralph Loop가 활성 상태입니다.** 중단하려면 `/cancel-ralph`를 사용하세요.' : ''}
+${recoveryWarning}
+${ralphActiveNotice}
 ${hasRecovery ? formatRecoveryMessage(recoveryState) : ''}
 
-사용 가능한 커맨드: \`/init\`, \`/design_*\`, \`/write\`, \`/write_all\`, \`/stats\`, \`/export\`
+사용 가능한 커맨드: \`/init\`, \`/design_*\`, \`/write\`, \`/write-all\`, \`/stats\`, \`/export\`
 
 </novel-session>
 ${sopBlock}

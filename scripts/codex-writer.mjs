@@ -11,6 +11,9 @@
  *   node scripts/codex-writer.mjs --chapter 5 --project ./novels/my-novel --model gpt-5.4
  *   node scripts/codex-writer.mjs --chapter 1 --project ./novels/my-novel --dry-run
  *
+ * Manuscript modes(write/revise/polish) require design/style gate PASS and
+ * fresh prior-chapter summaries unless --dry-run is used for prompt inspection.
+ *
  * Options:
  *   --chapter N        회차 번호 (필수)
  *   --project PATH     소설 프로젝트 경로 (필수)
@@ -26,6 +29,7 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { assertWritingPreflight } from './writing-preflight.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -87,10 +91,16 @@ ${colors.yellow}Options:${colors.reset}
   --chapter N        회차 번호 (필수)
   --project PATH     소설 프로젝트 경로 (필수)
   --model MODEL      GPT 모델 (기본: gpt-5.4)
-  --mode MODE        write(초고, 기본) | revise(퇴고)
+  --mode MODE        write(초고, 기본) | revise(퇴고) | polish(산문 폴리시) | design | gen-plot | blueprint
   --feedback PATH    퇴고 시 리뷰 피드백 JSON 경로
   --dry-run          프롬프트 생성만, Codex 호출 안 함
   --help, -h         도움말
+
+${colors.yellow}Preflight:${colors.reset}
+  write/revise/polish는 실행 전 reviews/design-gate-report.json 및
+  reviews/style-gate-report.json의 passed=true, status=PASS와
+  직전 3회차 요약의 존재/신선도/최소 충실도를 요구합니다.
+  실패 시 recommendedCommands의 benchmark/gate 명령을 먼저 실행하세요.
 
 ${colors.yellow}Environment:${colors.reset}
   Codex CLI가 자체적으로 인증 처리 (별도 API 키 불필요)
@@ -406,6 +416,16 @@ async function main() {
 
   const CHAPTER_MODES = ['write', 'revise', 'polish'];
   const PROJECT_MODES = ['design', 'gen-plot', 'blueprint'];
+  const ALL_MODES = [...CHAPTER_MODES, ...PROJECT_MODES];
+
+  if (!ALL_MODES.includes(args.mode)) {
+    error(`--mode는 ${ALL_MODES.join(', ')} 중 하나여야 합니다.`); process.exit(1);
+  }
+
+  args.project = path.resolve(args.project);
+  if (!fs.existsSync(args.project)) {
+    error(`프로젝트 경로를 찾을 수 없습니다: ${args.project}`); process.exit(1);
+  }
 
   if (CHAPTER_MODES.includes(args.mode) && !args.chapter) {
     error(`--chapter N 필수 (mode: ${args.mode})`); process.exit(1);
@@ -413,6 +433,19 @@ async function main() {
 
   const modeLabels = { write: '집필', revise: '퇴고', design: '설계', 'gen-plot': '플롯 생성', blueprint: '기획서 생성', polish: '산문 폴리시' };
   log(`${modeLabels[args.mode] || args.mode} 시작 (model: ${args.model}, mode: ${args.mode})`);
+
+  if (CHAPTER_MODES.includes(args.mode) && !args.dryRun) {
+    try {
+      assertWritingPreflight(args.project, {
+        actionLabel: modeLabels[args.mode] || args.mode,
+        chapterNumber: args.chapter,
+      });
+      log('집필 전 설계/문체/요약 컨텍스트 gate PASS 확인');
+    } catch (err) {
+      error(err.message);
+      process.exit(2);
+    }
+  }
 
   let systemPrompt, userPrompt;
 

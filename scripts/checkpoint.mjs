@@ -7,6 +7,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
+import { assertValidRalphState } from './lib/ralph-state-validation.mjs';
 
 // Circuit Breaker State
 const CIRCUIT_BREAKER = {
@@ -34,6 +35,8 @@ export async function saveCheckpoint(projectPath, state) {
     last_updated: new Date().toISOString(),
     can_resume: true
   };
+
+  assertValidRalphState(checkpointData, checkpointPath);
 
   // Save current state
   writeFileSync(checkpointPath, JSON.stringify(checkpointData, null, 2));
@@ -114,6 +117,137 @@ export async function markChapterFailed(projectPath, chapter, reason = '') {
 }
 
 /**
+ * Apply a unified chapter gate decision to Ralph Loop state.
+ * @param {string} projectPath
+ * @param {number} chapter
+ * @param {object} decision - Result from evaluateChapterGate()
+ */
+export async function applyChapterGateDecision(projectPath, chapter, decision) {
+  const statePath = join(projectPath, 'meta', 'ralph-state.json');
+
+  if (!existsSync(statePath)) return null;
+
+  try {
+    const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+    const normalizedDecision = normalizeChapterGateDecision(decision);
+    const blockingReasons = normalizedDecision.blockingReasons;
+    const shouldRetry = normalizedDecision.shouldRetry;
+    const retryPrompt = normalizedDecision.retryPrompt;
+    const failureReason =
+      blockingReasons.join('; ') || `Chapter gate failed: ${normalizedDecision.status}`;
+
+    if (!state.completed_chapters) state.completed_chapters = [];
+    if (!state.failed_chapters) state.failed_chapters = [];
+
+    state.last_gate = {
+      chapter,
+      status: normalizedDecision.status,
+      passed: normalizedDecision.passed,
+      should_retry: shouldRetry === true,
+      strategy: normalizedDecision.strategy,
+      score: normalizedDecision.score,
+      blocking_reasons: blockingReasons,
+      retry_prompt: retryPrompt,
+      decided_at: new Date().toISOString()
+    };
+
+    if (typeof normalizedDecision.score === 'number') {
+      state.last_quality_score = normalizedDecision.score;
+    }
+
+    const gatePassed =
+      normalizedDecision.status === 'PASS' &&
+      normalizedDecision.passed === true &&
+      normalizedDecision.shouldRetry === false &&
+      normalizedDecision.blockingReasons.length === 0;
+
+    if (gatePassed) {
+      if (!state.completed_chapters.includes(chapter)) {
+        state.completed_chapters.push(chapter);
+        state.completed_chapters.sort((a, b) => a - b);
+      }
+      state.failed_chapters = state.failed_chapters.filter(c => c !== chapter);
+      if ((state.current_chapter || chapter) <= chapter) {
+        state.current_chapter = chapter + 1;
+      }
+      state.retry_count = 0;
+      delete state.last_failure_reason;
+      delete state.requires_user_intervention;
+      delete state.pause_reason;
+    } else {
+      if (!state.failed_chapters.includes(chapter)) {
+        state.failed_chapters.push(chapter);
+        state.failed_chapters.sort((a, b) => a - b);
+      }
+      state.completed_chapters = state.completed_chapters.filter(c => c !== chapter);
+      if (!state.current_chapter || state.current_chapter > chapter) {
+        state.current_chapter = chapter;
+      }
+      state.last_failure_reason = failureReason;
+
+      if (shouldRetry) {
+        state.retry_count = (state.retry_count || 0) + 1;
+      } else {
+        state.requires_user_intervention = true;
+        state.pause_reason = failureReason;
+        state.ralph_active = false;
+        state.can_resume = true;
+      }
+    }
+
+    await saveCheckpoint(projectPath, state);
+    return state;
+  } catch (error) {
+    console.error('[Checkpoint] Failed to apply chapter gate decision:', error.message);
+    return null;
+  }
+}
+
+function normalizeChapterGateDecision(decision) {
+  const blockingReasons = decision.blockingReasons ?? decision.blocking_reasons ?? [];
+  const shouldRetry = (decision.shouldRetry ?? decision.should_retry ?? false) === true;
+  const strategy = decision.strategy ?? 'none';
+  const retryPrompt = decision.retryPrompt ?? decision.retry_prompt ?? '';
+  const score = decision.score ?? null;
+  const isSuccessfulPass =
+    decision.status === 'PASS' &&
+    decision.passed === true &&
+    shouldRetry === false &&
+    strategy === 'none' &&
+    blockingReasons.length === 0;
+
+  if (isSuccessfulPass) {
+    return {
+      status: 'PASS',
+      passed: true,
+      shouldRetry: false,
+      strategy: 'none',
+      blockingReasons,
+      retryPrompt,
+      score
+    };
+  }
+
+  return {
+    status: shouldRetry ? 'RETRY' : 'USER_INTERVENTION',
+    passed: false,
+    shouldRetry,
+    strategy: shouldRetry
+      ? strategy === 'none' || strategy === 'user_intervention'
+        ? 'revise'
+        : strategy
+      : 'user_intervention',
+    blockingReasons: blockingReasons.length > 0
+      ? blockingReasons
+      : [
+          `Chapter gate decision inconsistent: status=${decision.status}, passed=${decision.passed === true}, shouldRetry=${shouldRetry}`
+        ],
+    retryPrompt,
+    score
+  };
+}
+
+/**
  * Initialize write-all mode checkpoint
  * @param {string} projectPath
  * @param {object} options - { totalChapters, totalActs, projectId }
@@ -122,13 +256,18 @@ export async function initWriteAllCheckpoint(projectPath, options) {
   const { totalChapters, totalActs, projectId } = options;
 
   const state = {
+    $schema: '../../../schemas/ralph-state.schema.json',
+    schema_version: '2.0',
+    novel_id: projectId,
     ralph_active: true,
     mode: 'write-all',
     project_id: projectId,
     current_act: 1,
     current_chapter: 1,
+    last_safe_chapter: 0,
     total_chapters: totalChapters,
     total_acts: totalActs,
+    quality_retries: 0,
     completed_chapters: [],
     failed_chapters: [],
     retry_count: 0,
@@ -156,9 +295,9 @@ export async function finalizeWriteAll(projectPath) {
 
     state.ralph_active = false;
     state.can_resume = false;
-    state.mode = null;
+    state.mode = 'idle';
     state.completed_at = new Date().toISOString();
-
+    assertValidRalphState(state, statePath);
     writeFileSync(statePath, JSON.stringify(state, null, 2));
   } catch (error) {
     console.error('[Checkpoint] Failed to finalize:', error.message);
@@ -267,6 +406,7 @@ export function saveCircuitBreakerState(projectPath) {
   try {
     const state = JSON.parse(readFileSync(statePath, 'utf-8'));
     state.circuit_breaker = getCircuitBreakerStatus();
+    assertValidRalphState(state, statePath);
     writeFileSync(statePath, JSON.stringify(state, null, 2));
   } catch (e) {
     console.error('[Checkpoint] Failed to save circuit breaker state:', e.message);

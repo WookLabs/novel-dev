@@ -9,7 +9,7 @@
 
 각 스킬(`/design`, `/write`, `/plot-review`, `/act-review` 등)이 해당 팀을 자동으로 호출합니다. `team-orchestrator` 에이전트가 팀 정의를 로드하여 자동으로 에이전트를 조직화하고 워크플로우를 실행합니다.
 
-## Preset Teams (13개)
+## Preset Teams (15개)
 
 | File | Name | Category | Agents | Workflow | 용도 |
 |------|------|----------|--------|----------|------|
@@ -24,8 +24,10 @@
 | `revision-team.team.json` | 퇴고 팀 | revision | critic, editor, proofreader, consistency-verifier | pipeline | 피드백 기반 퇴고 |
 | `writing-team-collab.team.json` | 캐릭터 협업 집필 팀 | writing | narrator, characters/*, proofreader, summarizer | collaborative (hybrid) | 캐릭터 에이전트 co-write |
 | `writing-team-collab-2pass.team.json` | 캐릭터 협업 2-Pass 집필 팀 | writing | narrator, characters/*, proofreader, summarizer | collaborative (hybrid) | 캐릭터 co-write + Grok 리라이트 |
+| `writing-team-collab-3pass.team.json` | 캐릭터 협업 3-Pass 집필 팀 | writing | narrator, characters/*, extras, proofreader, summarizer | collaborative (hybrid) | 캐릭터 co-write + full polish + adult rewrite |
 | `writing-team-codex-2pass.team.json` | Codex 2-Pass 집필 팀 | writing | GPT-5.4(codex-writer), proofreader, summarizer | hybrid | Codex CLI + Grok 리라이트 (비용 절감) |
-| `plot-generation-team.team.json` | 플롯 생성 팀 | planning | plot-architect, arc-designer, lore-keeper, character-designer | collaborative | 회차별 플롯 팀 기반 생성+검증 |
+| `writing-team-parallel.team.json` | Claude-Codex 병렬 협업 팀 | writing | narrator, characters/*, extras, chapter-merger, proofreader, summarizer | collaborative (hybrid) | Claude/Codex 병렬 초고 + 병합 |
+| `plot-generation-team.team.json` | 플롯 생성 팀 | planning | plot-architect, arc-designer, lore-keeper, character-designer, engagement-optimizer | collaborative | 회차별 플롯 팀 기반 생성+검증 |
 
 ## Workflow Types
 
@@ -34,7 +36,7 @@
 | `parallel` | 모든 에이전트 동시 실행 + 결과 집계 | verification-team, deep-review-team, design-review-team, plot-review-team |
 | `sequential` | 순차 체인 (이전 출력 → 다음 입력) | writing-team |
 | `pipeline` | 단계별 순차 + 품질 게이트 + 재시도 | writing-team-2pass, revision-team |
-| `collaborative` | 자율 협업 (lead가 SendMessage로 조율) | planning-team, writing-team-collab, writing-team-collab-2pass, design-execution-team |
+| `collaborative` | 자율 협업 (lead가 SendMessage로 조율) | planning-team, writing-team-collab, writing-team-collab-2pass, writing-team-collab-3pass, writing-team-parallel, design-execution-team, plot-generation-team |
 
 ## Quality Gates
 
@@ -73,8 +75,24 @@ Task({
 
 1. `teams/{name}.team.json` 파일 생성 (team.schema.json 준수)
 2. agents, workflow, coordination, quality_gates 정의
-3. 이 AGENTS.md 문서 업데이트
-4. 관련 스킬의 팀 참조 업데이트
+3. `quality_gates.enabled`가 true이면 `quality_gates.issue_policy` 정의
+4. 이 AGENTS.md 문서 업데이트
+5. 관련 스킬의 팀 참조 업데이트
+
+### Quality Gate Issue Policy
+
+품질 게이트가 켜진 팀은 점수뿐 아니라 검증 에이전트가 반환한 issue code provenance를 보존해야 합니다.
+
+필수 규칙:
+- `preserve_issue_codes: true`
+- `required_issue_fields`: `code`, `severity`, `source_agent`, `evidence`, `directive`
+- `merge_strategy: "dedupe_by_code_highest_severity"`
+- `severity_order`: `critical`, `major`, `minor`
+- `critical_blocks_pass: true`
+- `directive_priority: "critical_first"`
+- `provenance_required: true`
+
+pipeline 팀은 `critical_action: "retry"` 또는 `"block_or_retry"`를 쓰는 경우 `retry_from_step`도 지정합니다. parallel 검증 팀은 일반적으로 `critical_action: "block"`을 사용합니다.
 
 ## Dependencies
 

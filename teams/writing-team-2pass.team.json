@@ -74,6 +74,17 @@
     "consensus": "all_pass",
     "thresholds": {
       "quality-oracle": 80
+    },
+    "issue_policy": {
+      "preserve_issue_codes": true,
+      "required_issue_fields": ["code", "severity", "source_agent", "evidence", "directive"],
+      "merge_strategy": "dedupe_by_code_highest_severity",
+      "severity_order": ["critical", "major", "minor"],
+      "critical_blocks_pass": true,
+      "directive_priority": "critical_first",
+      "provenance_required": true,
+      "critical_action": "retry",
+      "retry_from_step": "draft"
     }
   },
   "cost_estimate": {

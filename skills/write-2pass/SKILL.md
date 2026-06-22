@@ -36,6 +36,19 @@ XAI_API_KEY=xai-xxxxxxxxxxxx
 
 ## 실행 단계
 
+### Phase 0: 집필 전 설계 게이트
+
+Pass 1을 시작하기 전에 전제 매력 readiness hard gate를 먼저 실행합니다.
+
+```spec
+Bash("node dist/cli/apply-design-gate.js --project {projectPath} --fail-on-blocked --json")
+```
+
+- `reviews/design-gate-report.json`의 `passed == true`이고 `status == "PASS"`일 때만 2-Pass 집필을 시작합니다.
+- `premise-appeal-not-ready`, `weak-promise-evidence`, `premise-appeal-false-positive`, `premise-behavioral-intent-weak`, `premise-appeal-split-leakage`, `premise-appeal-report-stale`, `premise-appeal-source-missing`이 남아 있으면 Claude/Codex 초안도 만들지 않습니다.
+- 차단되면 `recommendedCommands`의 `run-premise-appeal-benchmark`와 `apply-design-gate`를 먼저 처리합니다.
+- 이어서 `node dist/cli/apply-style-gate.js --project {projectPath} --fail-on-blocked --json`을 실행해 `reviews/style-gate-report.json`의 `passed == true`, `status == "PASS"`를 확인합니다. `prose-taste-not-ready`, `prose-taste-failing-samples`, `prose-taste-false-classification`, `prose-taste-missing-issue`, `style-friction-evidence-weak`, `style-highlight-evidence-weak`, `style-fingerprint-weak`, `authorial-style-drift`, `prose-taste-report-stale`, `prose-taste-source-missing`이 있으면 Claude/Codex 초안도 만들지 않고 `recommendedCommands`의 `run-prose-taste-benchmark`와 `apply-style-gate`를 먼저 처리합니다.
+
 ### 기본 집필: 캐릭터 협업 + 2-Pass
 
 기본적으로 Pass 1을 캐릭터 협업 팀으로 실행합니다.

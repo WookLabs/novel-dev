@@ -11,7 +11,7 @@ user-invocable: true
 ## Quick Start
 ```bash
 /resume              # 자동 감지 후 복구 옵션 제공
-/resume --continue   # 즉시 이어서 집필
+/resume --continue   # 설계/문체/요약 메모리 게이트 PASS 확인 후 즉시 이어서 집필
 /resume --status     # 진행 상황만 확인
 /resume --reset      # 세션 초기화
 ```
@@ -61,6 +61,7 @@ else:
 - `last_checkpoint` → 마지막 체크포인트 시간
 - `last_quality_score` → 마지막 품질 점수
 - `failed_chapters` → 실패한 챕터 목록
+- `pause_reason` 또는 `last_failure_reason` → 수동 개입/반복 한도 등 일시정지 사유
 - `circuit_breaker` → Circuit Breaker 상태
 
 ### Step 4: 복구 정보 표시
@@ -81,8 +82,43 @@ else:
 
 **추가 정보** (해당 시):
 - 실패 챕터가 있으면: `실패 챕터: {failed_chapters}`
+- 일시정지 사유가 있으면: `일시정지 사유: {pause_reason}`
 - Circuit Breaker 발동 시: `Circuit Breaker 활성: {failure_count}회 실패`
 - Wisdom 존재 시: `이전 세션에서 {count}건의 지혜가 축적되었습니다`
+
+### Step 4.5: 복구 전 설계/문체/요약 메모리 게이트 확인
+
+`/resume`, `/resume --continue`, `/write-all --resume`은 중단된 세션을 이어도 새 원고를 생성하는 집필 진입점입니다. 따라서 재개 직전에 `reviews/design-gate-report.json`, `reviews/style-gate-report.json`, 그리고 직전 원고 요약 메모리를 모두 확인합니다.
+
+**PASS 조건**:
+
+- `reviews/design-gate-report.json.passed == true`
+- `reviews/design-gate-report.json.status == "PASS"`
+- `reviews/style-gate-report.json.passed == true`
+- `reviews/style-gate-report.json.status == "PASS"`
+- 현재 회차가 2화 이상이면 직전 최대 3개 원고(`chapters/chapter_NNN.md` 또는 `chapters/chNNN.md`)마다 `context/summaries/chapter_NNN_summary.md` 요약 존재
+- 각 요약이 원고보다 최신
+- 각 요약의 compact text가 100자 이상
+
+**차단 조건**:
+
+- `reviews/design-gate-report.json` 없음
+- `reviews/style-gate-report.json` 없음
+- 두 리포트 중 하나라도 `status != "PASS"` 또는 `passed != true`
+- `premise-appeal-not-ready`, `weak-promise-evidence`, `premise-appeal-false-positive`, `premise-behavioral-intent-weak`, `premise-appeal-split-leakage`, `premise-appeal-report-stale`, `premise-appeal-source-missing` 등 critical issue 존재
+- `prose-taste-not-ready`, `prose-taste-failing-samples`, `prose-taste-false-classification`, `prose-taste-missing-issue`, `style-friction-evidence-weak`, `style-highlight-evidence-weak`, `style-fingerprint-weak`, `authorial-style-drift`, `prose-taste-report-stale`, `prose-taste-source-missing` 등 critical issue 존재
+- `summary-memory-missing`, `summary-memory-stale`, `summary-memory-too-thin`, `summary-memory-malformed` 등 직전 회차 요약 메모리 issue 존재
+
+차단되면 `/write-all --resume`을 즉시 실행하지 않습니다. 먼저 다음 명령을 실행해 전제 benchmark, 설계 게이트, 문체 취향 benchmark, 문체 게이트를 최신화합니다:
+
+```bash
+node dist/cli/run-premise-appeal-benchmark.js --project novels/{novel_id} --json
+node dist/cli/apply-design-gate.js --project novels/{novel_id} --fail-on-blocked --json
+node dist/cli/run-prose-taste-benchmark.js --project novels/{novel_id} --json
+node dist/cli/apply-style-gate.js --project novels/{novel_id} --fail-on-blocked --json
+```
+
+요약 메모리 issue가 있으면 해당 직전 회차 원고를 다시 요약하고 `/verify-chapter N`으로 회차 요약/검증 산출물을 최신화합니다. `apply-design-gate`, `apply-style-gate`, 요약 메모리 게이트가 모두 PASS한 뒤에만 중단 지점에서 재개합니다.
 
 ### Step 5: 복구 옵션 제공
 
@@ -102,13 +138,15 @@ AskUserQuestion으로 사용자에게 옵션을 제공합니다:
 #### 옵션 1 - 이어서 집필
 
 1. Circuit Breaker 상태 확인 및 복원
-2. `/write-all --resume` 실행
-3. `current_chapter`부터 자동 재개
+2. `reviews/design-gate-report.json`, `reviews/style-gate-report.json`, 직전 최대 3개 회차 요약 메모리 PASS 확인
+3. PASS가 아니면 `run-premise-appeal-benchmark`, `apply-design-gate --fail-on-blocked`, `run-prose-taste-benchmark`, `apply-style-gate --fail-on-blocked`, 누락/오래된 `context/summaries/chapter_NNN_summary.md` 재생성을 먼저 안내하고 중단
+4. 세 gate가 모두 PASS이면 `/write-all --resume` 실행
+5. `current_chapter`부터 자동 재개
 
 #### 옵션 2 - 현재 챕터 재시작
 
 1. `current_chapter`에서 해당 챕터 번호 추출
-2. `/write {current_chapter}` 실행
+2. `/write {current_chapter}`의 집필 전 설계/문체/요약 메모리 게이트를 실행
 3. 단일 챕터만 재작성
 
 #### 옵션 3 - 상태만 확인
@@ -151,9 +189,10 @@ AskUserQuestion으로 사용자에게 옵션을 제공합니다:
    {
      "ralph_active": false,
      "can_resume": false,
-     "mode": null,
+     "act_complete": false,
+     "mode": "idle",
      "reset_at": "{timestamp}",
-     "reset_reason": "user_requested"
+     "reset_reason": "recovery_state_cleared"
    }
    ```
 3. "세션이 초기화되었습니다. /write-all로 새 세션을 시작하세요." 출력
@@ -176,7 +215,7 @@ AskUserQuestion으로 사용자에게 옵션을 제공합니다:
 
 | 옵션 | 동작 |
 |------|------|
-| `--continue` | 옵션 1 (이어서 집필) 즉시 실행 |
+| `--continue` | 설계/문체/요약 메모리 게이트 PASS 시 옵션 1 (이어서 집필) 즉시 실행 |
 | `--status` | 옵션 3 (상태만 확인) 즉시 실행 |
 | `--reset` | 옵션 4 (세션 초기화) 즉시 실행 |
 

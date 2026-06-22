@@ -4,10 +4,44 @@
   "title": "PlotStrategy",
   "description": "Phase 0 플롯 전략 문서. plot-architect가 설계 산출물을 분석하여 생성.",
   "type": "object",
+  "required": [
+    "chapter_allocation",
+    "binge_architecture",
+    "foreshadowing_schedule",
+    "tension_curve",
+    "pov_rotation",
+    "subplot_integration",
+    "per_chapter_guide"
+  ],
   "properties": {
     "chapter_allocation": {
       "type": "object",
       "description": "총 회차 및 막별 배분"
+    },
+    "binge_architecture": {
+      "type": "object",
+      "description": "장편 연독을 위한 장기 훅, 보상 주기, 피로도 제어 전략",
+      "required": ["long_hook_threads", "payoff_cadence", "tension_reset_plan", "fatigue_controls"],
+      "properties": {
+        "long_hook_threads": {
+          "type": "array",
+          "description": "10화 이상 지속될 장기 궁금증/관계/목표 스레드",
+          "items": { "type": "string" }
+        },
+        "payoff_cadence": {
+          "type": "string",
+          "description": "독자 보상 제공 주기와 강도 설계"
+        },
+        "tension_reset_plan": {
+          "type": "string",
+          "description": "고강도 사건 후 피로를 낮추고 다음 고조를 준비하는 완급 전략"
+        },
+        "fatigue_controls": {
+          "type": "array",
+          "description": "반복, 정체, 과설명, 감정 과부하를 막는 통제 장치",
+          "items": { "type": "string" }
+        }
+      }
     },
     "foreshadowing_schedule": {
       "type": "array",
@@ -27,7 +61,53 @@
     },
     "per_chapter_guide": {
       "type": "array",
-      "description": "회차별 간략 가이드"
+      "description": "회차별 간략 가이드",
+      "items": {
+        "type": "object",
+        "required": ["chapter", "arc_beats", "hooks", "pacing", "emotional_target", "fun_spec"],
+        "properties": {
+          "chapter": { "type": "integer", "minimum": 1 },
+          "arc_beats": { "type": "string" },
+          "foreshadowing_plant": { "type": "array", "items": { "type": "string" } },
+          "foreshadowing_collect": { "type": "array", "items": { "type": "string" } },
+          "hooks": { "type": "string" },
+          "pacing": { "type": "string" },
+          "emotional_target": { "type": "string" },
+          "fun_spec": {
+            "type": "object",
+            "description": "이 회차가 독자에게 제공해야 하는 구체적 재미 사양. Generic promises are invalid: include concrete device/clue/object, protagonist choice/cost, outcome/escalation, and must-click hook evidence.",
+            "required": [
+              "reader_reward",
+              "page_turn_question",
+              "character_appeal_moment",
+              "drop_off_risk",
+              "must_click_ending"
+            ],
+            "properties": {
+              "reader_reward": {
+                "type": "string",
+                "description": "Concrete reader reward, such as a specific clue, reveal, rule proof, relationship shift, or irreversible result"
+              },
+              "page_turn_question": {
+                "type": "string",
+                "description": "Specific page-turn question anchored in this novel's device, clue, threat, or relationship pressure"
+              },
+              "character_appeal_moment": {
+                "type": "string",
+                "description": "Visible protagonist choice/action/cost that makes the character appealing"
+              },
+              "drop_off_risk": {
+                "type": "string",
+                "description": "Specific drop-off risk and concrete mitigation staged as action, pressure, or alternation"
+              },
+              "must_click_ending": {
+                "type": "string",
+                "description": "Specific final hook with new event, revelation, threat, clue, or unresolved question"
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

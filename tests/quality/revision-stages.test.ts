@@ -52,7 +52,7 @@ describe('REVISION_STAGES', () => {
   it('should have increasing pass thresholds', () => {
     expect(REVISION_STAGES[0].passThreshold).toBe(70);  // draft
     expect(REVISION_STAGES[1].passThreshold).toBe(75);  // tone
-    expect(REVISION_STAGES[2].passThreshold).toBe(80);  // style
+    expect(REVISION_STAGES[2].passThreshold).toBe(88);  // style
     expect(REVISION_STAGES[3].passThreshold).toBe(95);  // final
   });
 

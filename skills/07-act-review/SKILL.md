@@ -47,6 +47,7 @@ Codex CLI가 자체 인증을 처리하므로 별도 API 키가 필요하지 않
 ### Step 1: 막 범위 확인
 
 `plot/structure.json`에서 해당 막의 회차 범위를 확인합니다.
+`meta/quality-trend.json`이 있으면 함께 로드하여 회차별 독자 몰입 점수와 회귀 경고를 확인합니다.
 
 ### Step 2: 거시 평가 (deep-review-team, 6명 병렬)
 
@@ -64,6 +65,7 @@ Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
 - 감정 곡선 흐름
 - 회차 간 일관성
 - 페이싱 밸런스
+- `quality-trend.json` 기반 독자 몰입 추세와 Engagement Trend 회귀
 - 캐릭터 보이스 일관성
 - 산문 품질 전반
 ")
@@ -83,6 +85,7 @@ Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
 거시 평가에서 점수가 낮거나 이슈가 집중된 회차를 식별합니다:
 - Quality gate 미달 회차
 - 에이전트 2명 이상이 지적한 회차
+- `meta/quality-trend.json`에서 독자 몰입 점수가 연속 하락하거나 regression alert가 발생한 회차
 - 일관성/보이스 이탈이 감지된 회차
 
 ### Step 4: 선택적 심층 리뷰
@@ -115,6 +118,7 @@ for chapter in flagged_chapters:
 
 - 막 전체 거시 리포트 (6관점 점수 + 피드백)
 - 문제 회차 심층 리포트 (해당 시)
+- 독자 몰입 추세 요약: `quality-trend.json`의 engagement 평균, 최저 회차, 회귀 경고
 - 원고 수정 **없음** — 수정이 필요하면 `/revise`를 사용하세요
 - 결과 파일: `reviews/act-review_act{N}_{timestamp}.json`
 

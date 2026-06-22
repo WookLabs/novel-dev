@@ -26,12 +26,14 @@
 | style-curator | 분류된 스타일 예시 컬렉션 | sonnet | default | cyan |
 | team-orchestrator | 팀 실행 계획 + 병렬/순차 에이전트 조율 | sonnet | default | blue |
 | narrator | 협업 집필 리더 — 씬 브리핑 + 캐릭터 출력 통합 산문 직조 | opus | default | cyan |
-| character-designer | 캐릭터 프로필 설계 + collaborative용 에이전트 파일 생성 | opus | default | pink |
+| character-designer | 캐릭터 프로필 설계 + collaborative용 에이전트 파일 생성 | opus | default | magenta |
 | arc-designer | 서브아크/복선/훅 설계 전문 | sonnet | default | blue |
+| chapter-merger | 병렬 생성 챕터 비교 + 최종 원고 병합 | opus | default | magenta |
+| extras | 엑스트라/단역 캐릭터의 대사·반응 생성 | sonnet | default | cyan |
 
 ## Purpose
 
-Contains prompt definitions for the specialized agents used in the novel writing workflow. After consolidation, the plugin has **21 functional agents**. Each agent is defined in a Markdown file with frontmatter specifying the agent name, description, Claude model tier (opus/sonnet/haiku), color, permissionMode, and a comprehensive prompt that defines their role, constraints, guidelines, and output format.
+Contains prompt definitions for the specialized agents used in the novel writing workflow. After consolidation, the plugin has **22 functional agents**. Each agent is defined in a Markdown file with frontmatter specifying the agent name, description, Claude model tier (opus/sonnet/haiku), color, permissionMode, and a comprehensive prompt that defines their role, constraints, guidelines, and output format.
 
 Agents are invoked via the Task tool by commands and orchestration workflows. They operate with specific domain expertise while maintaining consistency with the overall project structure.
 
@@ -64,8 +66,8 @@ The following agents were merged and their stub files removed:
 
 ### Model Selection Rationale
 
-- **Opus (novelist, critic, plot-architect, quality-oracle, prose-surgeon)**: Complex creative tasks requiring deep reasoning, narrative understanding, and quality judgment
-- **Sonnet (editor, lore-keeper, beta-reader, genre-validator, chapter-verifier, consistency-verifier, engagement-optimizer, character-voice-analyzer, style-curator, team-orchestrator)**: Balanced tasks needing both creativity and analytical skills, fast validation workflows
+- **Opus (novelist, critic, plot-architect, quality-oracle, prose-surgeon, narrator, character-designer, chapter-merger)**: Complex creative tasks requiring deep reasoning, narrative understanding, and quality judgment
+- **Sonnet (editor, lore-keeper, beta-reader, genre-validator, chapter-verifier, consistency-verifier, engagement-optimizer, character-voice-analyzer, style-curator, team-orchestrator, arc-designer, extras)**: Balanced tasks needing both creativity and analytical skills, fast validation workflows
 - **Haiku (proofreader, summarizer)**: Fast, focused tasks with clear criteria and limited scope
 
 ### Agent Interaction Patterns

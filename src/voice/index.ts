@@ -90,6 +90,7 @@ export {
   checkVocabularyConsistency,
   checkVerbalHabits,
   checkSentenceStructure,
+  checkHonorificConsistency,
 } from './voice-metrics.js';
 
 // ============================================================================

@@ -15,6 +15,79 @@
       "maximum": 100,
       "description": "전체 독자 몰입도 점수 (0-100)"
     },
+    "category_scores": {
+      "type": "object",
+      "description": "베타리더 4대 몰입 축 세부 점수",
+      "properties": {
+        "curiosity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 30,
+          "description": "호기심 유발 점수"
+        },
+        "character_appeal": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 25,
+          "description": "캐릭터 매력 점수"
+        },
+        "page_turner": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 25,
+          "description": "페이지 터너 점수"
+        },
+        "emotional_immersion": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20,
+          "description": "감정 이입 점수"
+        }
+      },
+      "additionalProperties": false
+    },
+    "high_point_assessment": {
+      "type": "object",
+      "description": "결함 없음과 대작 고점을 분리하기 위한 주관적 고점 평가",
+      "properties": {
+        "memorable_scene_lift": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "기억 가능한 장면 이미지와 서사 상태 변화의 결합 강도"
+        },
+        "character_appeal_signature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "주인공 고유 매력이 행동, 비용/취약성, 반응으로 입증되는 강도"
+        },
+        "payoff_delight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "압박 축적 이후 보상 쾌감의 강도"
+        },
+        "genre_specific_delight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "장르 독자가 기대한 쾌감 경로의 충족도"
+        },
+        "next_click_compulsion": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "다음 화 클릭 압력"
+        },
+        "score_cap_reason": {
+          "type": "string",
+          "description": "90점 이상 제한을 적용한 이유",
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    },
     "drop_off_risk": {
       "type": "array",
       "description": "독자 이탈 위험 지점들",
@@ -39,6 +112,11 @@
             "description": "이탈 위험 이유",
             "minLength": 1,
             "maxLength": 500
+          },
+          "type": {
+            "type": "string",
+            "enum": ["boring", "confusing", "predictable", "emotionally flat"],
+            "description": "이탈 위험 유형"
           }
         }
       },
@@ -59,7 +137,7 @@
           },
           "type": {
             "type": "string",
-            "enum": ["mystery", "question", "revelation", "cliffhanger", "tension", "curiosity"],
+            "enum": ["mystery", "question", "revelation", "cliffhanger", "tension", "curiosity", "emotional"],
             "description": "훅의 종류"
           },
           "strength": {
@@ -123,8 +201,8 @@
     },
     "verdict": {
       "type": "string",
-      "enum": ["ENGAGING", "MODERATE", "AT_RISK", "BORING"],
-      "description": "전체 몰입도 판정 (ENGAGING=매우 몰입적, MODERATE=보통, AT_RISK=이탈 위험, BORING=지루함)"
+      "enum": ["COMPELLING", "ENGAGING", "READABLE", "MODERATE", "WEAK", "AT_RISK", "BORING"],
+      "description": "전체 몰입도 판정 (COMPELLING=대단히 몰입적, ENGAGING=강한 독자 견인, READABLE=계속 읽을 수 있음, MODERATE=보통, WEAK/AT_RISK/BORING=이탈 위험)"
     },
     "improvement_hints": {
       "type": "array",

@@ -201,6 +201,8 @@ Create team state file at `.omc/state/novel-team-{id}.json` (prefixed with `nove
     "completed_steps": 0,
     "current_step": "validate"
   },
+  "handoff_contracts": [],
+  "execution_trace": [],
   "started_at": "2026-02-17T14:30:00Z"
 }
 ```
@@ -450,15 +452,45 @@ for (const step of workflow.steps) {
 If `quality_gates.enabled`:
 
 ```spec
+const blockingContextEntries = context_manifest.filter(
+  entry => entry.required && (entry.blocking || ['missing', 'stale', 'superseded'].includes(entry.status))
+);
+if (blockingContextEntries.length > 0) {
+  appendTraceEvent({
+    event_type: 'block',
+    step_id: 'context_freshness_check',
+    step_name: 'context_freshness_check',
+    agent: 'orchestrator',
+    input_refs: blockingContextEntries.map(entry => entry.ref),
+    output_refs: ['context_manifest', 'failure_attribution', 'recovery_plan'],
+    issue_codes: blockingContextEntries.map(entry => `${entry.status}-context`),
+    status: 'blocked'
+  });
+  setFailureAttribution({
+    responsible_agent: 'orchestrator',
+    decisive_step: 'context_freshness_check',
+    failure_mode: blockingContextEntries.some(entry => entry.status === 'missing') ? 'missing_evidence' : 'stale_context',
+    supporting_trace_events: ['trace_context_manifest_check']
+  });
+  stopBeforeAgentDispatch();
+}
+
 const gateResults = {};
+const issueRegistry = [];
 for (const [agent, threshold] of Object.entries(quality_gates.thresholds)) {
   const score = extractScore(results[agent]);
+  const normalizedIssues = normalizeIssues(results[agent].issues ?? [], {
+    source_agent: agent,
+    required_fields: quality_gates.issue_policy?.required_issue_fields ?? []
+  });
   gateResults[agent] = {
     score,
     threshold,
     pass: score >= threshold,
-    verdict: results[agent].verdict
+    verdict: results[agent].verdict,
+    issues: normalizedIssues
   };
+  issueRegistry.push(...normalizedIssues);
 }
 
 // Determine overall pass
@@ -467,6 +499,320 @@ const overallPass = evaluateConsensus(gateResults, quality_gates.consensus);
 //            "majority" → >50% must pass
 //            "weighted" → weighted score above threshold
 ```
+
+### Step 5-0: Build Context Manifest Before Agent Dispatch
+
+Quality-gated teams must write a `context_manifest` before dispatching validators or mutating workers. This prevents a long team run from passing or failing based on stale summaries, superseded chapter versions, missing relationship state, or a context handoff that nobody can replay.
+
+For every file, glob, task output, issue, directive, schema, state, or external reference used by the run, append:
+
+```json
+{
+  "ref": "context/summaries/chapter_013.md",
+  "source_type": "file",
+  "loaded_at": "2026-06-21T00:27:00Z",
+  "status": "stale",
+  "required": true,
+  "used_by": ["editor", "critic"],
+  "freshness_checked_at": "2026-06-21T00:27:03Z",
+  "stale_reason": "summary mtime predates latest chapter_013 revision used by current plot handoff",
+  "blocking": true,
+  "version": "summary-13-v1"
+}
+```
+
+Rules:
+- `context_manifest` is mandatory whenever `quality_gates.enabled === true`.
+- Required chapter manuscript, chapter JSON, project design, plot strategy, relationship state, prior summaries, style guide, review directives, and previous team outputs must have manifest entries when they are part of the prompt.
+- `used_by` must name every agent or workflow step that receives the context. These names must also appear in `execution_trace.input_refs`.
+- Mark `status: "missing"` when a required context file or output is absent, `status: "stale"` when a summary/state predates the manuscript or plot version it claims to describe, and `status: "superseded"` when a later version exists.
+- Any required entry with `status` of `missing`, `stale`, or `superseded`, or with `blocking: true`, blocks PASS and normally blocks agent dispatch.
+- If context freshness fails before agents run, set `failure_attribution.responsible_agent` to `orchestrator`, `decisive_step` to `context_freshness_check`, and `failure_mode` to `missing_evidence` or `stale_context`.
+- The `recovery_plan.required_context_refs` must list the stale/missing refs and the freshest source that should regenerate them.
+- Do not hide stale context under a validator score. A validator cannot reliably resolve a stale-context failure because the validator did not receive trustworthy input.
+
+### Step 5-A: Apply Issue Policy and Provenance
+
+If `quality_gates.issue_policy` exists, apply it before declaring PASS:
+
+```spec
+const policy = quality_gates.issue_policy;
+const mergedIssues = mergeIssues(issueRegistry, {
+  strategy: policy.merge_strategy, // dedupe_by_code_highest_severity
+  severity_order: policy.severity_order
+});
+
+const criticalIssues = mergedIssues.filter(issue => issue.severity === 'critical');
+const policyPass =
+  !(policy.critical_blocks_pass && criticalIssues.length > 0) &&
+  validateRequiredIssueFields(mergedIssues, policy.required_issue_fields);
+
+const validationConflicts = detectValidationConflicts(gateResults, mergedIssues, issueRegistry, execution_trace);
+const unresolvedBlockingConflicts = validationConflicts.filter(
+  conflict => conflict.blocks_pass && conflict.status !== 'resolved'
+);
+const blockingContextEntries = context_manifest.filter(
+  entry => entry.required && (entry.blocking || ['missing', 'stale', 'superseded'].includes(entry.status))
+);
+const blockingHandoffContracts = handoff_contracts.filter(
+  contract => contract.blocks_pass && contract.status !== 'accepted'
+);
+
+const finalPass =
+  overallPass &&
+  policyPass &&
+  unresolvedBlockingConflicts.length === 0 &&
+  blockingContextEntries.length === 0 &&
+  blockingHandoffContracts.length === 0;
+const orderedDirectives = buildDirectives(mergedIssues, {
+  order: policy.directive_priority // critical_first
+});
+```
+
+Rules:
+- Preserve every validator `issue.code` in `issueRegistry`; do not paraphrase it away.
+- Add `source_agent` when an agent omits it, using the team member that produced the issue.
+- Require `evidence` for every merged issue. If an agent only gives a vague complaint, record `evidence: "missing"` and mark the issue as non-actionable in the report.
+- When multiple agents report the same `code`, merge by code and keep the highest severity from `severity_order`; keep all `source_agents`, evidence snippets, and directives.
+- `critical_blocks_pass === true` means a critical issue blocks PASS even if every numeric threshold passes.
+- In pipeline teams, `critical_action: "retry"` or `"block_or_retry"` routes the next iteration to `retry_from_step`; if that step is missing, stop and report a configuration error.
+- In parallel verification teams, `critical_action: "block"` returns a failed team verdict with ordered revision directives.
+
+### Step 5-A-1: Preserve Validator Disagreements Before PASS
+
+Quality gates must not collapse validator disagreement into a single average score. Before declaring PASS, build `validation_conflicts` from validator results, issue registry, merged issues, and execution trace.
+
+Detect these conflict types:
+
+```spec
+const validationConflicts = detectValidationConflicts(gateResults, mergedIssues, issueRegistry, execution_trace);
+```
+
+- `pass_fail_split`: at least one validator passes while another fails, or a validator verdict contradicts its numeric pass flag.
+- `severity_disagreement`: multiple validators report the same `issue.code` with different severities.
+- `score_spread`: validator scores differ by 15 points or more in the same gate run.
+- `missing_evidence`: an issue is needed for a gate decision but lacks concrete evidence.
+- `directive_conflict`: validators propose incompatible directives for the same scene, issue, or manuscript region.
+- `evidence_conflict`: validators cite contradictory evidence for the same issue.
+
+Each conflict entry must include:
+
+```json
+{
+  "conflict_id": "conflict_validate_pass_fail_001",
+  "conflict_type": "pass_fail_split",
+  "agents": ["critic", "beta-reader"],
+  "severity": "major",
+  "issue_codes": ["manuscript-reader-desire-not-evidenced"],
+  "trace_event_ids": ["trace_validate_critic_issue", "trace_validate_beta_result"],
+  "status": "blocked",
+  "minority_position": "critic failed the chapter because reader desire is not evidenced, while beta-reader passed on atmosphere.",
+  "winning_decision": "BLOCK_UNTIL_REVISED",
+  "resolution": "소수 FAIL 의견이 manuscript issue code와 evidence를 갖고 있으므로 평균 점수로 덮지 않고 revision directive로 승격한다.",
+  "required_follow_up": ["revise manuscript-reader-desire-not-evidenced", "rerun verification-team"],
+  "blocks_pass": true,
+  "rationale": "대작 품질 게이트에서는 major/critical 소수 의견이 실제 독자 이탈 위험을 가리킬 수 있다."
+}
+```
+
+Rules:
+- Preserve the minority position verbatim enough that a later reviewer can see what would have been lost by majority or weighted aggregation.
+- A critical minority issue always blocks PASS until resolved.
+- A major minority issue blocks PASS unless the orchestrator can cite concrete evidence that it is duplicate, already covered by a higher-priority directive, or invalid.
+- `status: "resolved"` requires an evidence-backed `resolution`; do not mark a conflict resolved only because most agents passed.
+- If any unresolved blocking conflict remains, set `failure_attribution.failure_mode` to `validator_conflict` and include the conflict IDs in `failure_attribution.supporting_trace_events` or `recovery_plan.required_context_refs`.
+
+### Step 5-A-2: Verify Handoff Contracts Before PASS
+
+Pipeline, sequential, hybrid, and collaborative teams must preserve the payload that one agent or step passes to another. A trace event with `event_type: "handoff"` is not enough by itself; it must have a matching `handoff_contracts` entry that proves the receiving step got the required issue codes, directives, evidence, file refs, score/verdict context, and freshness-sensitive state without being dropped or softened.
+
+For every handoff where an output becomes another agent's input, append:
+
+```json
+{
+  "handoff_id": "handoff_critic_to_editor_001",
+  "from_agent": "critic",
+  "to_agent": "editor",
+  "from_step": "validate",
+  "to_step": "revise",
+  "trace_event_ids": ["trace_validate_critic_issue", "trace_validate_to_revise_handoff"],
+  "input_refs": ["issue:manuscript-reader-desire-not-evidenced", "chapters/chapter_009.md"],
+  "output_refs": ["directive:revise-reader-desire", "task:editor-revise-input"],
+  "required_payloads": [
+    {
+      "kind": "issue",
+      "ref": "issue:manuscript-reader-desire-not-evidenced",
+      "status": "present",
+      "source_trace_event_id": "trace_validate_critic_issue"
+    },
+    {
+      "kind": "directive",
+      "ref": "directive:주인공이 반드시 얻고 싶은 결과와 실패 시 잃는 것을 장면 행동으로 드러낸다.",
+      "status": "present",
+      "source_trace_event_id": "trace_validate_critic_issue"
+    },
+    {
+      "kind": "evidence",
+      "ref": "evidence:주인공의 실패 비용이 장면 행동으로 드러나지 않는다.",
+      "status": "present",
+      "source_trace_event_id": "trace_validate_critic_issue"
+    }
+  ],
+  "acceptance_criteria": [
+    "editor prompt contains the original issue code",
+    "editor prompt contains the original directive without weaker wording",
+    "editor prompt cites the concrete evidence snippet"
+  ],
+  "status": "accepted",
+  "loss_risks": ["directive paraphrase weakens the revision target"],
+  "verified_by": "orchestrator",
+  "blocks_pass": true,
+  "rationale": "critical revision input reached the editor with issue, directive, and evidence intact."
+}
+```
+
+Rules:
+- `handoff_contracts` is mandatory whenever `execution_trace` contains a `handoff` event.
+- Required payloads must include all blocking issue codes, directives, evidence snippets, changed file refs, and relevant score/verdict context that the receiver needs to reproduce the decision.
+- Mark a payload `status: "weakened"` when a critical or major directive is paraphrased into a softer instruction, loses its failure condition, or drops the evidence that made it actionable.
+- Do not declare PASS when a required handoff payload is missing, stale, superseded, weakened, or untracked.
+- If any blocking handoff contract is not `accepted`, append a `handoff_acceptance_check` block trace, set `failure_attribution.failure_mode` to `handoff_loss`, and start the `recovery_plan` from the producer/consumer boundary that lost the payload.
+- Do not let editor, prose-surgeon, narrator, or a collaborative lead rewrite a critical directive into a weaker instruction without a handoff contract recording the change and an evidence-backed reason.
+
+Team reports must include:
+
+```json
+{
+  "gate_results": {},
+  "context_manifest": [],
+  "issue_registry": [],
+  "merged_issues": [],
+  "validation_conflicts": [],
+  "handoff_contracts": [],
+  "ordered_directives": [],
+  "issue_policy": {
+    "merge_strategy": "dedupe_by_code_highest_severity",
+    "critical_blocks_pass": true,
+    "critical_action": "block"
+  },
+  "execution_trace": [],
+  "failure_attribution": {},
+  "recovery_plan": {}
+}
+```
+
+This issue policy is mandatory for any team with `quality_gates.enabled === true`; do not run a quality-gated team if the policy is missing.
+The `context_manifest` is also mandatory for quality-gated teams; do not declare PASS when required context is missing, stale, superseded, or untracked.
+The `handoff_contracts` ledger is mandatory for any trace with a handoff; do not declare PASS when required handoff payload is missing, stale, superseded, weakened, or untracked.
+
+### Step 5-B: Record Execution Trace and Failure Attribution
+
+Every team run must keep a replayable `execution_trace` in the team state and final report. This is required for long team runs because a failed final verdict is not actionable unless the report shows which agent produced the decisive issue, what input it saw, and which later steps inherited that issue.
+
+Append one trace event for each dispatch, handoff, agent result, validator issue, retry, block, and error:
+
+```json
+{
+  "trace_event_id": "trace_validate_critic_issue",
+  "step_id": "validate",
+  "step_name": "parallel_validation",
+  "agent": "critic",
+  "event_type": "validator_issue",
+  "timestamp": "2026-06-21T00:13:10Z",
+  "status": "failed",
+  "input_refs": ["task:t1", "chapters/chapter_012.md"],
+  "output_refs": ["issue:manuscript-long-hook-thread-not-advanced"],
+  "depends_on": ["trace_validate_critic_dispatch"],
+  "issue_codes": ["manuscript-long-hook-thread-not-advanced"],
+  "evidence": ["장기 떡밥의 단서가 반복되지만 새 정보나 상태 변화가 없다."],
+  "directive": "장기 미스터리에 새 단서, 해석 변화, 추적 행동 중 하나를 추가한다.",
+  "score": 82,
+  "verdict": "FAIL"
+}
+```
+
+Rules:
+- `trace_event_id` must be stable within the run and referenced by later `depends_on` and `failure_attribution.supporting_trace_events`.
+- `input_refs` and `output_refs` must name files, task IDs, issue IDs, directives, or report sections precisely enough to replay the handoff.
+- Handoff trace events must reference the matching `handoff_contracts` entry in `output_refs` or `input_refs`.
+- Validator issues must copy the original `issue.code`, `evidence`, `directive`, `source_agent`, score, and verdict from the agent result.
+- Do not overwrite the earliest originating failure. If a later agent repeats or propagates an inherited issue, set that later event in `propagated_to`; keep `decisive_step` on the first trace event that introduced the actionable failure.
+
+When the team fails, a quality gate blocks pass, or a retry is triggered, set `failure_attribution`:
+
+```json
+{
+  "status": "confirmed",
+  "responsible_agent": "critic",
+  "decisive_step": "validate",
+  "failure_mode": "quality_gate_block",
+  "supporting_trace_events": ["trace_validate_critic_issue", "trace_validate_gate_block"],
+  "recoverability": "requires_revision",
+  "recommended_retry_from_step": "revise",
+  "propagated_to": ["trace_validate_gate_block"],
+  "counterfactual_fix": "validate 단계에서 지적된 장기 떡밥 정체를 수정하면 quality_gate 차단 조건이 해소된다.",
+  "rationale": "첫 실패 issue를 생성한 critic trace가 품질 게이트 차단의 직접 입력이다."
+}
+```
+
+Failure attribution rules:
+- Use `status: "confirmed"` only when the supporting trace events show the exact issue or error that caused the failure.
+- Use `status: "suspected"` when the trace identifies a likely source but the input evidence is incomplete.
+- Use `responsible_agent: "orchestrator"` for configuration errors, missing files, invalid skill refs that stop execution, or quality gate policy violations created by orchestration logic.
+- Set `failure_mode` to one of `missing_evidence`, `stale_context`, `validator_conflict`, `quality_gate_block`, `agent_error`, `handoff_loss`, `policy_violation`, or `unknown`.
+- Set `recoverability` to `retry_from_step`, `requires_revision`, `requires_user_input`, `unrecoverable`, or `unknown`; include `recommended_retry_from_step` when the run can resume from a known workflow step.
+- A successful run may omit `failure_attribution` or set `status: "not_applicable"` with `responsible_agent: "none"` and `failure_mode: "not_applicable"`.
+
+### Step 5-C: Generate Targeted Recovery Plan
+
+When `failure_attribution.status` is `suspected` or `confirmed`, also write a `recovery_plan`. The recovery plan turns the trace into an actionable replay strategy. Do not restart the whole team when a later step can be replayed from a known failure boundary.
+
+Use prefix-preserving replay:
+- Keep trace events before `preserve_prefix_trace_until` as the accepted execution prefix.
+- Start recovery from `from_step`, normally `failure_attribution.recommended_retry_from_step` or the earliest editable step before `decisive_step`.
+- Only rerun agents that need the changed context or validation. Preserve unrelated successful agent results in the report.
+- If the failure was caused by missing evidence or stale context, set `intervention_type: "revise_context"` and list the files that must be reread.
+- If the failure was caused by a validator issue, set `intervention_type: "rerun_pipeline_from_step"` or `manual_rewrite` and include the exact directives to apply before validation.
+- If the trace is too weak to decide a retry boundary, set `intervention_type: "request_user_input"` or `abort`; do not invent a confident recovery path.
+
+Required `recovery_plan` fields:
+
+```json
+{
+  "status": "planned",
+  "from_step": "revise",
+  "intervention_type": "rerun_pipeline_from_step",
+  "preserve_prefix_trace_until": "trace_validate_critic_issue",
+  "target_agents": ["editor", "critic"],
+  "required_context_refs": [
+    "chapters/chapter_012.md",
+    "issue:manuscript-long-hook-thread-not-advanced"
+  ],
+  "directives_to_apply": [
+    "장기 훅 단서가 반복되는 문단을 새 정보, 가설 변화, 추적 행동 중 하나로 수정한다."
+  ],
+  "issue_codes": ["manuscript-long-hook-thread-not-advanced"],
+  "success_criteria": [
+    "critic score >= 85",
+    "manuscript-long-hook-thread-not-advanced issue absent",
+    "quality_gate.overall_pass === true"
+  ],
+  "verification_commands": [
+    "/team run verification-team 12"
+  ],
+  "rollback_refs": ["chapters/chapter_012.md@pre-revise"],
+  "rationale": "원인 trace 이전 dispatch와 critic issue는 보존하고, 수정 가능한 원고 단계부터 재실행하면 전체 팀 run을 반복하지 않고 차단 issue를 검증할 수 있다."
+}
+```
+
+Recovery plan rules:
+- `from_step` must match a workflow step or be `none` when recovery is not applicable.
+- `preserve_prefix_trace_until` must reference an existing `trace_event_id` unless `status` is `not_applicable` or `abandoned`.
+- `required_context_refs` must include every file or task output that changed since the preserved prefix.
+- `directives_to_apply` must be copied from the highest-priority merged issue directives, not paraphrased into a weaker instruction.
+- `success_criteria` must be observable in the next run report: score threshold, absent issue code, pass verdict, changed file, or user approval.
+- `verification_commands` must include the narrowest command or team run that proves the recovery worked.
+- Include `rollback_refs` when an editor/novelist/prose-surgeon step will mutate files.
 
 ### Step 5-1: Chapter 1 Enhanced Thresholds
 
@@ -514,7 +860,7 @@ Produce a structured report combining all agent results:
 ### Step 7: Finalize
 
 1. Update team state to `completed` (or `failed`)
-2. Save final report to `.omc/state/novel-team-{id}.json`
+2. Save final report to `.omc/state/novel-team-{id}.json`, including `handoff_contracts`, `execution_trace`, `failure_attribution`, and `recovery_plan` when applicable
 3. Save permanent result to `reviews/team/{team-name}_ch{N}_{timestamp}.json`
 4. Clean up team resources (if using TeamCreate)
 

@@ -12,6 +12,7 @@
     "meta",
     "context",
     "narrative_elements",
+    "reader_experience",
     "scenes",
     "style_guide"
   ],
@@ -149,6 +150,55 @@
           "type": "string",
           "description": "Intended reader emotional response",
           "maxLength": 1000
+        },
+        "resonance_seed": {
+          "type": "string",
+          "description": "Concrete recurring image/object/gesture that should carry this chapter's emotional and thematic aftertaste; when present, engagement gates require it to appear in scene evidence and manuscript with image, emotion, meaning shift, and story consequence",
+          "maxLength": 1000
+        }
+      }
+    },
+    "reader_experience": {
+      "type": "object",
+      "description": "Reader-facing fun targets that must be fulfilled when drafting this chapter",
+      "required": [
+        "promise_fulfillment",
+        "chapter_reward",
+        "page_turner_question",
+        "character_appeal_moment",
+        "drop_off_risk",
+        "must_click_ending"
+      ],
+      "properties": {
+        "promise_fulfillment": {
+          "type": "string",
+          "description": "How this chapter fulfills the reader promise contract"
+        },
+        "chapter_reward": {
+          "type": "string",
+          "description": "Concrete pleasure, reveal, emotion, victory, or reversal delivered in this chapter"
+        },
+        "page_turner_question": {
+          "type": "string",
+          "description": "Question the reader should carry into the next chapter"
+        },
+        "character_appeal_moment": {
+          "type": "string",
+          "description": "Moment that makes the protagonist or key cast more compelling"
+        },
+        "drop_off_risk": {
+          "type": "string",
+          "description": "Most likely reader drop-off point and prevention strategy"
+        },
+        "must_click_ending": {
+          "type": "string",
+          "description": "Ending beat designed to make the next chapter feel necessary"
+        },
+        "cliffhanger_strength": {
+          "type": "integer",
+          "description": "0-10 estimate of the ending hook strength",
+          "minimum": 0,
+          "maximum": 10
         }
       }
     },
@@ -162,7 +212,9 @@
           "scene_number",
           "purpose",
           "characters",
-          "location"
+          "location",
+          "conflict",
+          "beat"
         ],
         "properties": {
           "scene_number": {
@@ -190,12 +242,14 @@
           },
           "conflict": {
             "type": "string",
-            "description": "Main conflict or tension in scene",
+            "description": "Concrete scene conflict or pressure that must be executed in manuscript prose",
+            "minLength": 1,
             "maxLength": 1000
           },
           "beat": {
             "type": "string",
-            "description": "Story beat or key event in scene",
+            "description": "Concrete scene turn or key event that changes the situation on page; not static checking, comparison, note-taking, or planning without outcome/escalation",
+            "minLength": 1,
             "maxLength": 2000
           },
           "emotional_tone": {

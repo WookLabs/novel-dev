@@ -4,10 +4,82 @@
   "title": "DesignStrategy",
   "description": "Phase 0 설계 전략 문서. plot-architect가 blueprint를 분석하여 생성.",
   "type": "object",
+  "required": [
+    "core_direction",
+    "reader_promise_contract",
+    "agent_directives",
+    "constraints",
+    "genre_specific"
+  ],
   "properties": {
     "core_direction": {
       "type": "object",
       "description": "핵심 방향성 (톤, 세계관, 캐릭터, 아크)"
+    },
+    "reader_promise_contract": {
+      "type": "object",
+      "description": "독자가 이 작품을 계속 읽어야 하는 이유를 집필 전 고정하는 대작 지향 독자 약속. core_hook, novelty_angle, irresistible_question, binge_reason, long_series_engine, first_five_chapter_retention_plan은 같은 전제 앵커를 공유해야 한다.",
+      "required": [
+        "target_reader",
+        "core_hook",
+        "irresistible_question",
+        "emotional_payoff",
+        "protagonist_appeal",
+        "novelty_angle",
+        "binge_reason",
+        "first_five_chapter_retention_plan",
+        "long_series_engine",
+        "risk_factors"
+      ],
+      "properties": {
+        "target_reader": {
+          "type": "string",
+          "description": "핵심 독자층과 그들이 기대하는 장르적 쾌감"
+        },
+        "core_hook": {
+          "type": "string",
+          "description": "첫 문장/소개글/1화에서 즉시 전달되어야 하는 핵심 매력"
+        },
+        "irresistible_question": {
+          "type": "string",
+          "description": "독자가 답을 알고 싶어서 계속 읽게 되는 중심 질문"
+        },
+        "emotional_payoff": {
+          "type": "string",
+          "description": "작품이 반복적으로 제공할 감정 보상"
+        },
+        "protagonist_appeal": {
+          "type": "string",
+          "description": "주인공을 응원하거나 지켜보고 싶게 만드는 매력"
+        },
+        "novelty_angle": {
+          "type": "string",
+          "description": "동종 장르와 구분되는 신선한 각도"
+        },
+        "binge_reason": {
+          "type": "string",
+          "description": "한 화 더 누르게 만드는 반복 동력"
+        },
+        "first_five_chapter_retention_plan": {
+          "type": "array",
+          "description": "1~5화 잔류를 위한 회차별 약속과 보상",
+          "minItems": 5,
+          "items": {
+            "type": "string"
+          }
+        },
+        "long_series_engine": {
+          "type": "string",
+          "description": "중후반까지 이야기를 끌고 갈 장기 동력"
+        },
+        "risk_factors": {
+          "type": "array",
+          "description": "이탈 위험과 사전 대응 전략",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "agent_directives": {
       "type": "object",

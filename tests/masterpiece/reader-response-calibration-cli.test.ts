@@ -1,0 +1,1078 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import { build } from 'esbuild';
+import { spawnSync } from 'node:child_process';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+
+const root = process.cwd();
+const sampleProject = join(root, 'tests', 'fixtures', 'sample-project');
+
+async function readJson<T = any>(path: string): Promise<T> {
+  return JSON.parse(await readFile(path, 'utf8')) as T;
+}
+
+describe('reader response calibration CLI', () => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.map(dir => rm(dir, { recursive: true, force: true })));
+    tempDirs.length = 0;
+  });
+
+  it('hydrates automated engagement from quality trend and stores reader calibration results', async () => {
+    const workDir = await mkdtemp(join(tmpdir(), 'reader-response-calibration-cli-'));
+    tempDirs.push(workDir);
+
+    const projectDir = join(workDir, 'sample-project');
+    await cp(sampleProject, projectDir, { recursive: true });
+
+    await writeFile(
+      join(projectDir, 'meta', 'quality-trend.json'),
+      `${JSON.stringify(
+        {
+          project_id: 'sample-project',
+          snapshots: [
+            {
+              chapter_number: 1,
+              timestamp: '2026-06-20T12:00:00.000Z',
+              version: 1,
+              overall_score: 94,
+              dimensions: {
+                engagement: 94,
+              },
+              verdict: 'PASS',
+              issues: [],
+            },
+          ],
+          metadata: {
+            total_snapshots: 1,
+            last_updated: '2026-06-20T12:00:00.000Z',
+            auto_exemplars_added: 0,
+            regression_alerts_fired: 0,
+          },
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+
+    const panelDir = join(projectDir, 'reviews', 'reader-response');
+    await mkdir(panelDir, { recursive: true });
+    await writeFile(
+      join(panelDir, 'chapter-001-panel.json'),
+      `${JSON.stringify(
+        {
+          required_genres: ['mystery', 'romance'],
+          required_target_reader_segments: ['genre-core', 'platform-native', 'style-sensitive'],
+          minimum_respondents_per_required_target_segment: 1,
+          require_target_reader_segment_quotas: true,
+          required_recruitment_channels: ['opt-in-panel', 'newsletter', 'platform-community'],
+          minimum_respondents_per_required_recruitment_channel: 1,
+          maximum_dominant_recruitment_channel_ratio: 0.6,
+          require_recruitment_channel_diversity: true,
+          minimum_samples_per_genre: 2,
+          minimum_usable_samples_per_genre: 2,
+          required_series_length: 2,
+          required_usable_series_length: 2,
+          minimum_holdout_samples: 1,
+          minimum_usable_holdout_samples: 1,
+          require_drop_off_localization_evidence: true,
+          minimum_drop_off_annotations: 1,
+          minimum_actionable_drop_off_annotations: 1,
+          require_annotation_reliability_evidence: true,
+          minimum_annotation_coder_count: 2,
+          minimum_annotation_double_coded_count: 2,
+          minimum_annotation_agreement_rate: 0.8,
+          require_scene_recall_evidence: true,
+          minimum_unprompted_scene_recall_ratio: 0.4,
+          minimum_distinctive_scene_recall_ratio: 0.25,
+          minimum_scene_recall_annotations: 1,
+          require_tension_trace_evidence: true,
+          minimum_tension_trace_ratio: 0.4,
+          minimum_tension_peak_ratio: 0.25,
+          minimum_tension_question_ratio: 0.25,
+          minimum_tension_trace_annotations: 1,
+          require_narrative_forecast_evidence: true,
+          minimum_forecast_prediction_ratio: 0.4,
+          minimum_forecast_diversity_count: 2,
+          minimum_forecast_revision_ratio: 0.2,
+          minimum_forecast_mismatch_ratio: 0.2,
+          minimum_narrative_forecast_annotations: 1,
+          require_line_quote_evidence: true,
+          minimum_quote_recall_ratio: 0.25,
+          minimum_favorite_line_ratio: 0.2,
+          minimum_shareable_line_ratio: 0.15,
+          minimum_line_quote_annotations: 1,
+          require_payoff_fairness_evidence: true,
+          minimum_payoff_setup_recall_ratio: 0.3,
+          minimum_payoff_trigger_recognition_ratio: 0.25,
+          minimum_payoff_earned_ratio: 0.35,
+          minimum_payoff_recontextualization_ratio: 0.2,
+          minimum_payoff_emotional_satisfaction_ratio: 0.3,
+          minimum_payoff_fairness_annotations: 1,
+          require_advocacy_evidence: true,
+          minimum_organic_recommendation_ratio: 0.3,
+          minimum_discussion_prompt_ratio: 0.25,
+          minimum_advocacy_annotations: 1,
+          require_durable_engagement_evidence: true,
+          minimum_bookmark_ratio: 0.3,
+          minimum_return_intent_ratio: 0.3,
+          minimum_paid_continuation_intent_ratio: 0.15,
+          minimum_durable_engagement_annotations: 1,
+          require_continuation_behavior_evidence: true,
+          minimum_continuation_behavior_impressions: 6,
+          minimum_next_chapter_click_through_ratio: 0.3,
+          minimum_next_chapter_open_ratio: 0.25,
+          minimum_next_chapter_read_start_ratio: 0.2,
+          require_resonance_evidence: true,
+          minimum_lingering_emotion_ratio: 0.3,
+          minimum_reflective_meaning_ratio: 0.2,
+          minimum_resonance_annotations: 1,
+          require_delayed_memory_evidence: true,
+          minimum_delayed_follow_up_respondent_ratio: 0.5,
+          minimum_delayed_follow_up_hours: 20,
+          minimum_delayed_scene_recall_ratio: 0.25,
+          minimum_delayed_character_recall_ratio: 0.2,
+          minimum_delayed_continuation_intent_ratio: 0.25,
+          minimum_delayed_memory_annotations: 1,
+          require_comparative_preference: true,
+          minimum_comparative_preference_win_rate: 0.55,
+          minimum_comparative_preference_respondents: 8,
+          required_chapter_ranges: [
+            {
+              id: 'opening',
+              min_chapter: 1,
+              max_chapter: 3,
+              required_genres: ['mystery', 'romance'],
+              minimum_samples: 2,
+              minimum_usable_samples: 2,
+            },
+          ],
+          samples: [
+            {
+              id: 'chapter-001-panel',
+              label: '1화 독자 패널',
+              genre: 'mystery',
+              chapter: 1,
+              version: 1,
+              calibration_split: 'holdout',
+              reader: {
+                next_click: 42,
+                attention: 61,
+                emotional_engagement: 58,
+                mental_imagery: 55,
+                transportation: 54,
+                character_attachment: 45,
+                relationship_investment: 44,
+                novelty: 41,
+                surprise: 42,
+                resonance: 43,
+                scene_recall: 72,
+                recommendation_intent: 44,
+                bookmark_intent: 82,
+                return_intent: 80,
+                purchase_intent: 76,
+                binge_intent: 79,
+                interest: 63,
+                suspense: 50,
+                beauty: 70,
+                overall_liking: 60,
+              },
+              respondent_count: 8,
+              evidence: {
+                respondent_source: 'human-target-reader',
+                human_respondent_count: 8,
+                synthetic_respondent_count: 0,
+                author_estimate_count: 0,
+                manuscript_word_count: 2100,
+                manuscript_character_count: 7200,
+                median_read_time_seconds: 480,
+                minimum_read_time_seconds: 220,
+                speeding_response_count: 0,
+                straight_lining_response_count: 0,
+                duplicate_response_count: 0,
+                bot_suspected_response_count: 0,
+                low_quality_open_ended_response_count: 0,
+                inconsistent_response_count: 0,
+                quality_flagged_response_count: 0,
+                target_reader_count: 7,
+                target_reader_segment_count: 3,
+                target_reader_segment_counts: {
+                  'genre-core': 3,
+                  'platform-native': 2,
+                  'style-sensitive': 2,
+                },
+                dominant_reader_segment_ratio: 0.63,
+                started_read_count: 8,
+                completed_read_count: 7,
+                drop_off_count: 1,
+                skimmed_read_count: 1,
+                drop_off_annotations: [
+                  {
+                    location: 'scene-01 paragraph-04',
+                    event_type: 'drop-off',
+                    last_completed_location: 'scene-01 paragraph-03',
+                    trigger_quote: '독자가 앱 규칙 설명이 길어지는 지점에서 멈췄다고 표시했다.',
+                    reason: '사건 행동보다 규칙 설명이 먼저 길어져 다음 행동 기대가 약해졌다.',
+                    reader_count: 1,
+                    reader_segment: 'platform-native',
+                    suggested_revision: '앱 규칙을 주인공의 즉시 선택과 실패 결과에 끼워 넣어 행동 중에 드러낸다.',
+                  },
+                  {
+                    location: 'scene-02 transition',
+                    event_type: 'skim',
+                    trigger_quote: '독자가 이동 전환부를 빠르게 훑었다고 표시했다.',
+                    reason: '새 정보 없이 동선만 이어져 긴장 질문이 잠시 사라졌다.',
+                    reader_count: 1,
+                    reader_segment: 'genre-core',
+                    suggested_revision: '전환부 첫 문장에 단서 오독 가능성이나 추적 시간 압박을 배치한다.',
+                  },
+                ],
+                qualitative_comment_count: 5,
+                friction_point_count: 3,
+                actionable_friction_point_count: 3,
+                rewrite_suggestion_count: 2,
+                annotation_coder_count: 2,
+                annotation_double_coded_count: 5,
+                annotation_agreement_rate: 0.84,
+                annotation_reliability_metric: 'krippendorff-alpha',
+                annotation_codebook_version: 'reader-friction-v1',
+                annotation_adjudicated: true,
+                annotation_coder_blinded: true,
+                unprompted_scene_recall_count: 4,
+                distinctive_scene_recall_count: 3,
+                scene_recall_annotations: [
+                  {
+                    location: 'scene-02 reveal beat',
+                    remembered_moment: '독자가 젖은 사진의 지워진 날짜가 용의자 가설을 바꾸는 장면을 자발적으로 언급했다.',
+                    distinctive_detail: '사진 모서리, 지워진 날짜, 좁혀진 용의자 가설이 함께 회상됐다.',
+                    reader_count: 2,
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'ending beat',
+                    remembered_moment: '독자가 마지막 알림음과 다음 수신자 이름을 기억했다.',
+                    distinctive_detail: '소리, 화면 문구, 주인공의 즉시 선택 압력이 함께 남았다.',
+                    reader_count: 2,
+                    reader_segment: 'platform-native',
+                  },
+                ],
+                tension_trace_point_count: 4,
+                tension_peak_count: 3,
+                tension_question_count: 3,
+                tension_trace_annotations: [
+                  {
+                    location: 'scene-02 reveal beat',
+                    experienced_tension: '독자가 젖은 사진의 지워진 날짜를 보고 기존 용의자 가설이 무너지는 긴장을 표시했다.',
+                    suspense_level: 82,
+                    curiosity_level: 88,
+                    surprise_level: 78,
+                    narrative_question: '조력자가 날짜를 바꾼 것인지 화자의 기억이 틀린 것인지 알고 싶다고 답했다.',
+                    stake_or_risk: '잘못된 가설을 믿으면 다음 수신자를 놓칠 수 있다는 위험이 생겼다.',
+                    reader_count: 2,
+                    reader_segment: 'genre-core',
+                    reason: '단서 재해석과 다음 검증 행동이 함께 열렸다.',
+                  },
+                  {
+                    location: 'ending beat',
+                    experienced_tension: '독자가 마지막 알림 화면을 다음 화를 눌러야 하는 압력 고점으로 표시했다.',
+                    suspense_level: 86,
+                    curiosity_level: 84,
+                    surprise_level: 70,
+                    narrative_question: '왜 다음 수신자 이름이 지금 나타났는지 알고 싶다고 답했다.',
+                    stake_or_risk: '주인공이 바로 움직이지 않으면 다음 사람이 위험해진다는 압력이 남았다.',
+                    reader_count: 2,
+                    reader_segment: 'platform-native',
+                    reason: '말미 질문이 즉시 위험과 연결됐다.',
+                  },
+                ],
+                forecast_prediction_count: 4,
+                forecast_diversity_count: 3,
+                forecast_revision_count: 3,
+                forecast_mismatch_count: 2,
+                forecast_inflection_count: 3,
+                narrative_forecast_annotations: [
+                  {
+                    location: 'scene-02 reveal beat',
+                    initial_prediction: '독자는 조력자가 사진 날짜를 조작했다고 예상했다.',
+                    revised_prediction: '젖은 사진 모서리와 지워진 날짜 때문에 화자의 기억 오염 가능성으로 예측을 바꿨다.',
+                    actual_outcome: '장면 말미에는 조력자가 아니라 다음 수신자가 조작 단서와 연결된 것으로 드러났다.',
+                    prediction_mismatch: true,
+                    prediction_shift: '사진 단서와 다음 수신자 이름이 의심 대상을 새 인과 사슬로 이동시켰다.',
+                    surprise_or_tension_reason: '예측 불일치가 기존 단서를 버리지 않고 다시 읽게 만들어 다음 검증 욕구를 키웠다.',
+                    reader_count: 2,
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'ending beat',
+                    initial_prediction: '독자는 다음 화가 범인 추궁으로 시작될 것이라고 예상했다.',
+                    revised_prediction: '마지막 알림의 다음 수신자 이름 때문에 즉시 구조 선택이 먼저 올 것이라고 예측을 바꿨다.',
+                    actual_outcome: '회차는 진실 확인과 다음 수신자 보호 사이의 선택 압력으로 끝났다.',
+                    prediction_mismatch: false,
+                    prediction_shift: '마지막 알림이 범인 추적을 시간 압박으로 바꿨다.',
+                    surprise_or_tension_reason: '독자의 예측이 범인 맞히기에서 선택 비용 예측으로 이동했다.',
+                    reader_count: 2,
+                    reader_segment: 'platform-native',
+                  },
+                ],
+                quote_recall_count: 4,
+                favorite_line_count: 3,
+                shareable_line_count: 3,
+                line_quote_annotations: [
+                  {
+                    location: 'ending beat',
+                    quoted_line: '그 이름은 화면 위가 아니라 이미 방 안에 와 있었다.',
+                    appeal_reason: '독자가 알림 화면과 물리적 위험이 한 줄에서 겹친다고 답했다.',
+                    share_reason: '다음 화 압력을 설명할 때 이 문장을 그대로 보여주고 싶다고 답했다.',
+                    line_function: 'image',
+                    reader_count: 2,
+                    reader_segment: 'platform-native',
+                  },
+                  {
+                    location: 'scene-02 reveal beat',
+                    quoted_line: '사진은 증거가 아니라 접힌 시간이었다.',
+                    appeal_reason: '독자가 단서의 기능 변화와 시간 압박을 압축한 문장으로 기억했다.',
+                    share_reason: '공정한 단서 반전의 맛을 말할 때 인용하고 싶다고 답했다.',
+                    line_function: 'plot',
+                    reader_count: 2,
+                    reader_segment: 'genre-core',
+                  },
+                ],
+                payoff_setup_recall_count: 4,
+                payoff_trigger_recognition_count: 3,
+                payoff_earned_count: 4,
+                payoff_recontextualization_count: 2,
+                payoff_emotional_satisfaction_count: 3,
+                payoff_fairness_annotations: [
+                  {
+                    location: 'scene-02 reveal beat',
+                    payoff_moment: '젖은 사진의 지워진 날짜가 다음 수신자 시간표 단서였다는 reveal.',
+                    remembered_setup: '초반 젖은 사진 모서리, 지워진 날짜, 반복된 알림 간격을 기억했다.',
+                    trigger_or_reveal: '마지막 알림 화면에서 다음 수신자 이름과 숫자가 같이 뜨며 단서가 연결됐다.',
+                    changed_interpretation: '독자는 사진 날짜를 단순 조작 증거가 아니라 다음 수신자 동선 단서로 다시 읽었다.',
+                    earned_reason: '같은 사진 디테일이 앞에서 노출되어 있었기 때문에 뒤늦은 연결이 공정하게 느껴졌다.',
+                    emotional_payoff_reason: '단서가 맞물리는 만족과 다음 사람을 구해야 한다는 압박이 동시에 생겼다.',
+                    reader_count: 2,
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'ending beat',
+                    payoff_moment: '다음 수신자 이름이 앞선 숫자 단서를 생존 시간 압박으로 회수했다.',
+                    remembered_setup: '독자는 사진 뒷면 숫자와 알림음 간격을 기억했다.',
+                    trigger_or_reveal: '말미 알림음과 화면 문구가 숫자의 의미를 날짜에서 간격으로 바꿨다.',
+                    changed_interpretation: '독자는 앞선 숫자를 사건 날짜가 아니라 다음 공격까지의 시간으로 재해석했다.',
+                    earned_reason: '숫자와 알림이 반복되어 치트가 아니라 늦게 알아차린 단서로 받아들였다.',
+                    emotional_payoff_reason: '회수와 동시에 위험이 커져 다음 화 클릭 압력이 생겼다.',
+                    reader_count: 2,
+                    reader_segment: 'platform-native',
+                  },
+                ],
+                organic_recommendation_count: 3,
+                discussion_prompt_count: 3,
+                advocacy_annotations: [
+                  {
+                    location: 'scene-02 reveal beat',
+                    share_trigger: '독자가 젖은 사진의 날짜 반전은 미스터리 독자에게 보여 주고 싶다고 말했다.',
+                    recommended_audience: 'fair-play mystery readers',
+                    discussion_prompt: '독자가 날짜 조작이 조력자와 화자 중 누구를 가리키는지 토론하고 싶다고 말했다.',
+                    reader_count: 2,
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'ending beat',
+                    share_trigger: '독자가 마지막 알림 화면은 플랫폼 독자 친구에게 공유하고 싶다고 말했다.',
+                    recommended_audience: 'platform-native hook readers',
+                    discussion_prompt: '독자가 다음 수신자 이름의 의미를 추측하고 싶다고 말했다.',
+                    reader_count: 2,
+                    reader_segment: 'platform-native',
+                  },
+                ],
+                bookmark_count: 3,
+                follow_or_library_add_count: 2,
+                return_next_day_count: 3,
+                binge_read_intent_count: 1,
+                paid_continuation_intent_count: 2,
+                durable_engagement_annotations: [
+                  {
+                    location: 'ending beat',
+                    commitment_trigger: '독자가 마지막 알림 화면 때문에 다음 업데이트 때 돌아오려고 저장하겠다고 말했다.',
+                    intended_action: 'return',
+                    reader_count: 2,
+                    reader_segment: 'platform-native',
+                    reason: '말미의 즉시 결과가 다음 회차 확인 행동으로 이어졌다.',
+                  },
+                  {
+                    location: 'scene-02 reveal beat',
+                    commitment_trigger: '독자가 날짜 조작 규칙이 더 이어질 것 같아 작품을 팔로우하겠다고 말했다.',
+                    intended_action: 'follow',
+                    reader_count: 2,
+                    reader_segment: 'genre-core',
+                    reason: '단서 재해석이 장기 추적 약속으로 읽혔다.',
+                  },
+                ],
+                next_chapter_cta_impression_count: 8,
+                next_chapter_click_count: 4,
+                next_chapter_open_count: 3,
+                next_chapter_read_start_count: 2,
+                lingering_emotion_count: 3,
+                reflective_comment_count: 2,
+                personal_memory_or_meaning_count: 1,
+                resonance_annotations: [
+                  {
+                    location: 'closing image',
+                    lingering_emotion: '독자가 마지막 알림 화면 뒤의 불안과 책임감을 계속 떠올렸다고 답했다.',
+                    reflective_question: '주인공이 다음 사람을 구하려면 어디까지 자기 안전을 포기해야 하는지 생각하게 됐다고 답했다.',
+                    remembered_image: '꺼진 화면의 다음 수신자 이름과 멈춘 손가락이 잔상으로 남았다.',
+                    personal_meaning: '한 독자는 놓친 메시지 때문에 관계가 틀어진 기억을 떠올렸다고 말했다.',
+                    reader_count: 2,
+                    reader_segment: 'style-sensitive',
+                  },
+                ],
+                delayed_follow_up_respondent_count: 6,
+                delayed_follow_up_hours: 24,
+                delayed_scene_recall_count: 4,
+                delayed_character_recall_count: 3,
+                delayed_next_click_intent_count: 3,
+                delayed_return_intent_count: 3,
+                delayed_paid_continuation_intent_count: 2,
+                delayed_memory_annotations: [
+                  {
+                    location: 'ending beat',
+                    delayed_remembered_moment: '다음 날에도 독자가 마지막 알림음과 다음 수신자 이름을 기억했다.',
+                    delayed_character_or_relationship: '주인공이 다음 사람을 구하려면 조력자와의 신뢰를 깨야 한다는 관계 압박을 떠올렸다.',
+                    delayed_next_question: '다음 수신자가 왜 선택됐는지 확인하고 싶다는 질문이 남았다.',
+                    return_or_purchase_reason: '말미의 선택 비용 때문에 다음 업데이트가 오면 이어 읽겠다고 답했다.',
+                    reader_count: 3,
+                    reader_segment: 'platform-native',
+                  },
+                ],
+                friction_annotations: [
+                  {
+                    location: 'scene-01 paragraph-04',
+                    dimension: 'mental-imagery',
+                    reason: '독자가 복도 장면의 위치와 동선을 떠올리지 못해 몰입이 끊겼다고 표시했다.',
+                    severity: 'major',
+                    rewrite_suggestion: '복도 폭, 젖은 바닥, 주인공의 손이 닿는 증거 봉투를 같은 문단에 배치한다.',
+                    reader_count: 3,
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'ending beat',
+                    dimension: 'next-click',
+                    reason: '말미 질문은 있지만 다음 화에서 확인하고 싶은 즉시 대가가 약하다고 표시했다.',
+                    severity: 'critical',
+                    rewrite_suggestion: '마지막 단락에서 새 단서가 용의자 가설을 좁히거나 주인공 선택을 강제하게 바꾼다.',
+                    reader_count: 4,
+                    reader_segment: 'platform-native',
+                  },
+                  {
+                    location: 'scene-01 paragraph-02',
+                    dimension: 'attention',
+                    reason: '독자가 설명이 이어지는 동안 현재 장면 목표를 놓쳤다고 표시했다.',
+                    rewrite_suggestion: '문단 초반에 주인공의 즉시 목표와 방해물을 먼저 배치한다.',
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'scene-02 beat-03',
+                    dimension: 'emotional-engagement',
+                    reason: '독자가 사건은 이해했지만 실패 비용을 느끼지 못했다고 표시했다.',
+                    rewrite_suggestion: '단서 발견 전에 주인공이 잃을 관계나 선택 비용을 장면 안에 세운다.',
+                    reader_segment: 'platform-native',
+                  },
+                  {
+                    location: 'scene-02 beat-04',
+                    dimension: 'transportation',
+                    reason: '독자가 설계 설명처럼 읽혀 장면 안에 머무르지 못했다고 표시했다.',
+                    rewrite_suggestion: '설계어를 빼고 사물, 행동, 결과가 인과를 끌고 가도록 고친다.',
+                    reader_segment: 'style-sensitive',
+                  },
+                  {
+                    location: 'scene-03 paragraph-01',
+                    dimension: 'character-attachment',
+                    reason: '독자가 주인공의 결과를 걱정할 고유 행동이나 취약성을 보지 못했다고 표시했다.',
+                    rewrite_suggestion: '주인공만의 방식으로 위험을 감수하는 선택과 주변 반응을 추가한다.',
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'scene-03 paragraph-03',
+                    dimension: 'relationship-investment',
+                    reason: '독자가 관계 전환을 신경 쓸 상호 압박과 달라진 신뢰를 보지 못했다고 표시했다.',
+                    rewrite_suggestion: '상대의 조건, 거절, 숨긴 대가 중 하나를 넣고 이후 행동 변화를 남긴다.',
+                    reader_segment: 'platform-native',
+                  },
+                  {
+                    location: 'scene-03 premise route',
+                    dimension: 'novelty',
+                    reason: '독자가 익숙한 장르 장면처럼 읽혀 이 작품만의 새로움이 약하다고 표시했다.',
+                    rewrite_suggestion: '장르 약속은 유지하되 단서 사용 방식이나 장애물을 덜 예상되는 방향으로 바꾼다.',
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'scene-03 reveal beat',
+                    dimension: 'surprise',
+                    reason: '독자가 발견이 예상한 정보를 확인하는 수준이라 놀라움이 약하다고 표시했다.',
+                    rewrite_suggestion: '이미 심은 단서가 다른 의미로 재해석되게 만들어 독자 가설을 바꾼다.',
+                    reader_segment: 'platform-native',
+                  },
+                  {
+                    location: 'closing image',
+                    dimension: 'resonance',
+                    reason: '독자가 읽고 난 뒤 남는 이미지나 감정의 잔향이 약하다고 표시했다.',
+                    rewrite_suggestion: '마지막 이미지가 인물의 비용, 관계 변화, 자기 이해 중 하나로 이어지게 고친다.',
+                    reader_segment: 'style-sensitive',
+                  },
+                  {
+                    location: 'scene-04 question beat',
+                    dimension: 'interest',
+                    reason: '독자가 중심 질문이 일반적이라 새롭게 궁금하지 않다고 표시했다.',
+                    rewrite_suggestion: '단서와 기존 가설이 충돌하는 구체 질문으로 바꾼다.',
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'scene-04 pressure beat',
+                    dimension: 'suspense',
+                    reason: '독자가 위험이 정지해 있고 안전한 선택지가 남아 있다고 표시했다.',
+                    rewrite_suggestion: '시간 제한, 닫힌 선택지, 즉시 손실 중 하나를 추가한다.',
+                    reader_segment: 'platform-native',
+                  },
+                  {
+                    location: 'closing impression',
+                    dimension: 'overall-liking',
+                    reason: '독자가 장면의 약속은 알지만 읽고 난 만족감이 낮다고 표시했다.',
+                    rewrite_suggestion: '작은 보상 하나를 회수한 뒤 더 큰 질문을 열어 독자 만족과 압력을 함께 남긴다.',
+                    reader_segment: 'genre-core',
+                  },
+                  {
+                    location: 'post-read share check',
+                    dimension: 'recommendation-intent',
+                    reason: '독자가 특정 장면을 다른 독자에게 권할 만큼 선명한 공유 이유가 약하다고 표시했다.',
+                    rewrite_suggestion: '장면 말미에 작품 고유의 반전 이미지나 토론할 선택 비용을 남겨 추천 이유를 만든다.',
+                    reader_segment: 'platform-native',
+                  },
+                ],
+                reader_score_standard_deviation: 9,
+                high_response_count: 0,
+                neutral_response_count: 2,
+                low_response_count: 6,
+                blind_reading: true,
+                author_identity_masked: true,
+                prior_exposure_screened: true,
+                unexcluded_prior_exposure_count: 0,
+                spoiler_exposure_screened: true,
+                unexcluded_spoiler_exposure_count: 0,
+                neutral_question_wording: true,
+                response_option_order_randomized: true,
+                sample_order_randomized: true,
+                manuscript_order_counterbalanced: true,
+                max_samples_per_respondent: 2,
+                order_balance_ratio: 0.9,
+                question_wording_disclosed: true,
+                recruitment_method_disclosed: true,
+                recruitment_channel_counts: {
+                  'opt-in-panel': 3,
+                  newsletter: 3,
+                  'platform-community': 2,
+                },
+                population_definition_disclosed: true,
+                sampling_frame_disclosed: true,
+                fieldwork_dates_disclosed: true,
+                survey_mode_disclosed: true,
+                incentive_disclosed: true,
+                attention_check_pass_count: 8,
+                excluded_response_count: 0,
+                comparative_reference_label: 'target-market reference opening',
+                comparative_preference_current_count: 2,
+                comparative_preference_reference_count: 5,
+                comparative_preference_tie_count: 1,
+                comparative_preference_respondent_count: 8,
+                comparative_blind_pairwise: true,
+                comparative_same_reader_cohort: true,
+                comparative_question_wording_disclosed: true,
+                revision_pair_id: 'chapter-001-v1-v2',
+                revision_baseline_reader_score: 0,
+                revision_preference_revised_count: 5,
+                revision_preference_baseline_count: 2,
+                revision_preference_tie_count: 1,
+                revision_preference_respondent_count: 8,
+                revision_blind_comparison: true,
+                revision_same_reader_cohort: true,
+                revision_question_wording_disclosed: true,
+                revision_guardrail_regression_count: 0,
+              },
+            },
+          ],
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+
+    const cliPath = join(workDir, 'calibrate-reader-response.mjs');
+    await build({
+      entryPoints: [join(root, 'src', 'cli', 'calibrate-reader-response.ts')],
+      outfile: cliPath,
+      bundle: true,
+      platform: 'node',
+      format: 'esm',
+      target: 'node18',
+      logLevel: 'silent',
+    });
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        cliPath,
+        '--project',
+        projectDir,
+        '--min-samples',
+        '1',
+        '--json',
+      ],
+      { encoding: 'utf8' }
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output).toMatchObject({
+      projectId: 'sample-project',
+      samplesLoaded: 1,
+      requiredGenres: ['mystery', 'romance'],
+      requiredTargetReaderSegments: ['genre-core', 'platform-native', 'style-sensitive'],
+      minimumRespondentsPerRequiredTargetSegment: 1,
+      requireTargetReaderSegmentQuotasForTuning: true,
+      requiredRecruitmentChannels: ['opt-in-panel', 'newsletter', 'platform-community'],
+      minimumRespondentsPerRequiredRecruitmentChannel: 1,
+      maximumDominantRecruitmentChannelRatio: 0.6,
+      requireRecruitmentChannelDiversityForTuning: true,
+      minimumSamplesPerGenre: 2,
+      minimumUsableSamplesPerGenre: 2,
+      requiredSeriesLength: 2,
+      requiredUsableSeriesLength: 2,
+      minimumHoldoutSampleCount: 1,
+      minimumUsableHoldoutSampleCount: 1,
+      requireSceneRecallEvidenceForTuning: true,
+      minimumUnpromptedSceneRecallRatio: 0.4,
+      minimumDistinctiveSceneRecallRatio: 0.25,
+      minimumSceneRecallAnnotationCount: 1,
+      requireTensionTraceEvidenceForTuning: true,
+      minimumTensionTraceRatio: 0.4,
+      minimumTensionPeakRatio: 0.25,
+      minimumTensionQuestionRatio: 0.25,
+      minimumTensionTraceAnnotationCount: 1,
+      requireNarrativeForecastEvidenceForTuning: true,
+      minimumForecastPredictionRatio: 0.4,
+      minimumForecastDiversityCount: 2,
+      minimumForecastRevisionRatio: 0.2,
+      minimumForecastMismatchRatio: 0.2,
+      minimumNarrativeForecastAnnotationCount: 1,
+      requirePayoffFairnessEvidenceForTuning: true,
+      minimumPayoffSetupRecallRatio: 0.3,
+      minimumPayoffTriggerRecognitionRatio: 0.25,
+      minimumPayoffEarnedRatio: 0.35,
+      minimumPayoffRecontextualizationRatio: 0.2,
+      minimumPayoffEmotionalSatisfactionRatio: 0.3,
+      minimumPayoffFairnessAnnotationCount: 1,
+      requireAdvocacyEvidenceForTuning: true,
+      minimumOrganicRecommendationRatio: 0.3,
+      minimumDiscussionPromptRatio: 0.25,
+      minimumAdvocacyAnnotationCount: 1,
+      requireDurableEngagementEvidenceForTuning: true,
+      minimumBookmarkRatio: 0.3,
+      minimumReturnIntentRatio: 0.3,
+      minimumPaidContinuationIntentRatio: 0.15,
+      minimumDurableEngagementAnnotationCount: 1,
+      requireContinuationBehaviorEvidenceForTuning: true,
+      minimumContinuationBehaviorImpressionCount: 6,
+      minimumNextChapterClickThroughRatio: 0.3,
+      minimumNextChapterOpenRatio: 0.25,
+      minimumNextChapterReadStartRatio: 0.2,
+      requireResonanceEvidenceForTuning: true,
+      minimumLingeringEmotionRatio: 0.3,
+      minimumReflectiveMeaningRatio: 0.2,
+      minimumResonanceAnnotationCount: 1,
+      requireDelayedMemoryEvidenceForTuning: true,
+      minimumDelayedFollowUpRespondentRatio: 0.5,
+      minimumDelayedFollowUpHours: 20,
+      minimumDelayedSceneRecallRatio: 0.25,
+      minimumDelayedCharacterRecallRatio: 0.2,
+      minimumDelayedContinuationIntentRatio: 0.25,
+      minimumDelayedMemoryAnnotationCount: 1,
+      minimumComparativePreferenceWinRate: 0.55,
+      minimumComparativePreferenceRespondentCount: 8,
+      requireComparativePreferenceForTuning: true,
+      requiredChapterRanges: [
+        {
+          id: 'opening',
+          minChapter: 1,
+          maxChapter: 3,
+          requiredGenres: ['mystery', 'romance'],
+          minimumSamples: 2,
+          minimumUsableSamples: 2,
+        },
+      ],
+      calibration: {
+        total: 1,
+        falsePositiveCount: 1,
+        falseNegativeCount: 0,
+        lowConfidenceCount: 0,
+        splitCoverage: {
+          holdoutSamples: 1,
+          usableHoldoutSamples: 1,
+        },
+        underSampledHoldoutSamples: false,
+        underSampledUsableHoldoutSamples: false,
+        weakComparativePreferenceCount: 1,
+        comparativePreferenceEvidenceCount: 1,
+        comparativePreferenceAverageWinRate: 0.31,
+        lowHumanReaderEvidenceCount: 0,
+        humanReaderEvidenceCount: 1,
+        lowResponseDataQualityCount: 0,
+        responseDataQualityEvidenceCount: 1,
+        revisionOutcomeEvidenceCount: 1,
+        revisionImprovementCount: 1,
+        revisionRegressionCount: 0,
+        lowRevisionOutcomeEvidenceCount: 0,
+        lowSceneRecallEvidenceCount: 0,
+        sceneRecallEvidenceCount: 1,
+        lowTensionTraceEvidenceCount: 0,
+        tensionTraceEvidenceCount: 1,
+        lowNarrativeForecastEvidenceCount: 0,
+        narrativeForecastEvidenceCount: 1,
+        lowLineQuoteEvidenceCount: 0,
+        lineQuoteEvidenceCount: 1,
+        lowPayoffFairnessEvidenceCount: 0,
+        payoffFairnessEvidenceCount: 1,
+        lowAdvocacyEvidenceCount: 0,
+        advocacyEvidenceCount: 1,
+        lowDurableEngagementEvidenceCount: 0,
+        durableEngagementEvidenceCount: 1,
+        lowContinuationBehaviorEvidenceCount: 0,
+        continuationBehaviorEvidenceCount: 1,
+        lowResonanceEvidenceCount: 0,
+        resonanceEvidenceCount: 1,
+        lowDelayedMemoryEvidenceCount: 0,
+        delayedMemoryEvidenceCount: 1,
+        missingRequiredGenres: ['romance'],
+        underSampledRequiredGenres: ['mystery', 'romance'],
+        underSampledUsableRequiredGenres: ['mystery', 'romance'],
+        missingRequiredSeriesGenres: ['mystery', 'romance'],
+        missingRequiredUsableSeriesGenres: ['mystery', 'romance'],
+        underSampledRequiredChapterRanges: ['opening'],
+        underSampledUsableRequiredChapterRanges: ['opening'],
+        missingRequiredChapterRangeGenres: ['opening:romance'],
+        missingRequiredUsableChapterRangeGenres: ['opening:romance'],
+      },
+    });
+    expect(output.calibration.sampleResults[0]).toMatchObject({
+      id: 'chapter-001-panel',
+      calibrationSplit: 'holdout',
+      automatedScore: 94,
+      failureType: 'auto-false-positive',
+      reliability: 'usable',
+      evidenceQuality: 'usable',
+      panelConsensus: 'clear',
+      readerScoreConfidence: 'precise',
+      cohortRepresentativeness: 'balanced',
+      targetReaderSegmentCounts: {
+        'genre-core': 3,
+        'platform-native': 2,
+        'style-sensitive': 2,
+      },
+      panelProtocolQuality: 'strong',
+      recruitmentChannelCounts: {
+        'opt-in-panel': 3,
+        newsletter: 3,
+        'platform-community': 2,
+      },
+      humanReaderEvidence: 'usable',
+      respondentSource: 'human-target-reader',
+      humanRespondentCount: 8,
+      syntheticRespondentCount: 0,
+      authorEstimateCount: 0,
+      humanRespondentRatio: 1,
+      responseDataQuality: 'usable',
+      manuscriptWordCount: 2100,
+      manuscriptCharacterCount: 7200,
+      medianReadingWordsPerMinute: 262.5,
+      minimumReadingWordsPerMinute: 572.73,
+      medianReadingCharactersPerMinute: 900,
+      minimumReadingCharactersPerMinute: 1963.64,
+      medianReadTimeSeconds: 480,
+      minimumReadTimeSeconds: 220,
+      speedingResponseCount: 0,
+      straightLiningResponseCount: 0,
+      duplicateResponseCount: 0,
+      botSuspectedResponseCount: 0,
+      lowQualityOpenEndedResponseCount: 0,
+      inconsistentResponseCount: 0,
+      qualityFlaggedResponseCount: 0,
+      qualityFlaggedResponseRatio: 0,
+      revisionOutcomeEvidence: 'improved',
+      revisionBaselineReaderScore: 0,
+      revisionPreferenceWinRate: 0.69,
+      revisionPreferenceRespondentCount: 8,
+      sceneRecallEvidence: 'usable',
+      unpromptedSceneRecallCount: 4,
+      distinctiveSceneRecallCount: 4,
+      tensionTraceEvidence: 'usable',
+      tensionTracePointCount: 4,
+      tensionPeakCount: 4,
+      tensionQuestionCount: 4,
+      narrativeForecastEvidence: 'usable',
+      forecastPredictionCount: 4,
+      forecastDiversityCount: 3,
+      forecastRevisionCount: 4,
+      forecastMismatchCount: 2,
+      forecastInflectionCount: 4,
+      lineQuoteEvidence: 'usable',
+      quoteRecallCount: 4,
+      favoriteLineCount: 4,
+      shareableLineCount: 4,
+      payoffFairnessEvidence: 'usable',
+      payoffSetupRecallCount: 4,
+      payoffTriggerRecognitionCount: 4,
+      payoffEarnedCount: 4,
+      payoffRecontextualizationCount: 4,
+      payoffEmotionalSatisfactionCount: 4,
+      advocacyEvidence: 'usable',
+      organicRecommendationCount: 4,
+      discussionPromptCount: 4,
+      durableEngagementEvidence: 'usable',
+      bookmarkCount: 3,
+      followOrLibraryAddCount: 2,
+      returnNextDayCount: 3,
+      bingeReadIntentCount: 1,
+      paidContinuationIntentCount: 2,
+      continuationBehaviorEvidence: 'usable',
+      nextChapterCtaImpressionCount: 8,
+      nextChapterClickCount: 4,
+      nextChapterOpenCount: 3,
+      nextChapterReadStartCount: 2,
+      nextChapterClickThroughRatio: 0.5,
+      nextChapterOpenRatio: 0.375,
+      nextChapterReadStartRatio: 0.25,
+      resonanceEvidence: 'usable',
+      lingeringEmotionCount: 3,
+      reflectiveMeaningCount: 3,
+      delayedMemoryEvidence: 'usable',
+      delayedFollowUpRespondentCount: 6,
+      delayedFollowUpHours: 24,
+      delayedSceneRecallCount: 4,
+      delayedCharacterRecallCount: 3,
+      delayedContinuationIntentCount: 3,
+      delayedNextClickIntentCount: 3,
+      delayedReturnIntentCount: 3,
+      delayedPaidContinuationIntentCount: 2,
+      comparativePreferenceStatus: 'weak',
+      comparativePreferenceWinRate: 0.31,
+      comparativePreferenceRespondentCount: 8,
+    });
+    expect(output.calibration.sampleResults[0].frictionAnnotations).toHaveLength(14);
+    expect(output.calibration.sampleResults[0].sceneRecallAnnotations).toHaveLength(2);
+    expect(output.calibration.sampleResults[0].tensionTraceAnnotations).toHaveLength(2);
+    expect(output.calibration.sampleResults[0].narrativeForecastAnnotations).toHaveLength(2);
+    expect(output.calibration.sampleResults[0].payoffFairnessAnnotations).toHaveLength(2);
+    expect(output.calibration.sampleResults[0].advocacyAnnotations).toHaveLength(2);
+    expect(output.calibration.sampleResults[0].durableEngagementAnnotations).toHaveLength(2);
+    expect(output.calibration.sampleResults[0].resonanceAnnotations).toHaveLength(1);
+    expect(output.calibration.sampleResults[0].delayedMemoryAnnotations).toHaveLength(1);
+    expect(output.calibration.sampleResults[0].frictionAnnotationCoverage).toBe('covered');
+    expect(output.calibration.sampleResults[0].frictionAnnotationRepresentativeness).toBe('balanced');
+    expect(output.calibration.sampleResults[0].frictionAnnotations[0]).toMatchObject({
+      location: 'scene-01 paragraph-04',
+      dimension: 'mental-imagery',
+      readerSegment: 'genre-core',
+    });
+    expect(output.calibration.sampleResults[0].readerScoreMarginOfError).toBeCloseTo(6.24, 2);
+    expect(output.calibration.sampleResults[0].dimensionIssues.map(
+      (issue: { dimension: string }) => issue.dimension
+    )).toContain('character-attachment');
+    expect(output.calibration.sampleResults[0].dimensionIssues.map(
+      (issue: { dimension: string }) => issue.dimension
+    )).toContain('relationship-investment');
+    expect(output.calibration.sampleResults[0].dimensionIssues.map(
+      (issue: { dimension: string }) => issue.dimension
+    )).toEqual(expect.arrayContaining(['novelty', 'surprise', 'resonance']));
+    expect(output).toMatchObject({
+      requireDropOffLocalizationEvidenceForTuning: true,
+      minimumDropOffAnnotationCount: 1,
+      minimumActionableDropOffAnnotationCount: 1,
+    });
+    expect(output.calibration).toMatchObject({
+      lowDropOffLocalizationEvidenceCount: 0,
+      dropOffLocalizationEvidenceCount: 1,
+    });
+    expect(output.calibration.sampleResults[0]).toMatchObject({
+      dropOffLocalizationEvidence: 'usable',
+      dropOffAnnotationCount: 2,
+      actionableDropOffAnnotationCount: 2,
+    });
+    expect(output.calibration.evidenceCollectionPlan).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'run-blind-comparative-preference-test',
+          priority: 'critical',
+          sampleIds: ['chapter-001-panel'],
+        }),
+        expect.objectContaining({
+          id: 'collect-required-genre-coverage',
+          priority: 'critical',
+        }),
+        expect.objectContaining({
+          id: 'collect-required-chapter-range-coverage',
+          priority: 'critical',
+        }),
+      ])
+    );
+
+    const outputPath = join(projectDir, 'reviews', 'reader-response-calibration.json');
+    expect(existsSync(outputPath)).toBe(true);
+    const persisted = await readJson(outputPath);
+    expect(persisted.calibration.falsePositiveCount).toBe(1);
+    expect(persisted.calibration.evidenceCollectionPlan.length).toBeGreaterThan(0);
+  });
+
+  it('accepts explicit automated scores when no quality trend exists', async () => {
+    const workDir = await mkdtemp(join(tmpdir(), 'reader-response-calibration-cli-explicit-'));
+    tempDirs.push(workDir);
+
+    const projectDir = join(workDir, 'sample-project');
+    await cp(sampleProject, projectDir, { recursive: true });
+
+    const panelDir = join(projectDir, 'reviews', 'reader-response');
+    await mkdir(panelDir, { recursive: true });
+    await writeFile(
+      join(panelDir, 'chapter-001-panel.json'),
+      `${JSON.stringify(
+        {
+          samples: [
+            {
+              id: 'explicit-automated-panel',
+              genre: 'mystery',
+              chapter: 1,
+              automated: {
+                engagement_score: 88,
+                gate_passed: true,
+              },
+              reader: {
+                next_click: 6,
+                attention: 6,
+                emotional_engagement: 6,
+                mental_imagery: 5,
+                transportation: 6,
+                interest: 6,
+                suspense: 5,
+                overall_liking: 6,
+              },
+              respondent_count: 5,
+              rating_scale: {
+                min: 1,
+                max: 7,
+              },
+            },
+          ],
+        },
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+
+    const cliPath = join(workDir, 'calibrate-reader-response.mjs');
+    await build({
+      entryPoints: [join(root, 'src', 'cli', 'calibrate-reader-response.ts')],
+      outfile: cliPath,
+      bundle: true,
+      platform: 'node',
+      format: 'esm',
+      target: 'node18',
+      logLevel: 'silent',
+    });
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        cliPath,
+        '--project',
+        projectDir,
+        '--required-genres',
+        'mystery,thriller',
+        '--min-samples-per-genre',
+        '2',
+        '--min-usable-samples-per-genre',
+        '2',
+        '--required-series-length',
+        '2',
+        '--required-usable-series-length',
+        '2',
+        '--required-chapter-range',
+        'opening:1-3:2:2:mystery,thriller',
+        '--no-require-drop-off-localization-evidence',
+        '--min-drop-off-annotations',
+        '2',
+        '--min-actionable-drop-off-annotations',
+        '2',
+        '--no-require-continuation-behavior-evidence',
+        '--min-continuation-behavior-impressions',
+        '10',
+        '--min-next-chapter-click-through-ratio',
+        '40',
+        '--min-next-chapter-open-ratio',
+        '35',
+        '--min-next-chapter-read-start-ratio',
+        '25',
+        '--json',
+      ],
+      { encoding: 'utf8' }
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output.calibration.sampleResults[0]).toMatchObject({
+      id: 'explicit-automated-panel',
+      automatedScore: 88,
+    });
+    expect(output.calibration.falsePositiveCount).toBe(0);
+    expect(output).toMatchObject({
+      requireDropOffLocalizationEvidenceForTuning: false,
+      minimumDropOffAnnotationCount: 2,
+      minimumActionableDropOffAnnotationCount: 2,
+      requireContinuationBehaviorEvidenceForTuning: false,
+      minimumContinuationBehaviorImpressionCount: 10,
+      minimumNextChapterClickThroughRatio: 0.4,
+      minimumNextChapterOpenRatio: 0.35,
+      minimumNextChapterReadStartRatio: 0.25,
+    });
+    expect(output.calibration).toMatchObject({
+      missingRequiredGenres: ['thriller'],
+      underSampledRequiredGenres: ['mystery', 'thriller'],
+      underSampledUsableRequiredGenres: ['mystery', 'thriller'],
+      missingRequiredSeriesGenres: ['mystery', 'thriller'],
+      missingRequiredUsableSeriesGenres: ['mystery', 'thriller'],
+      underSampledRequiredChapterRanges: ['opening'],
+      underSampledUsableRequiredChapterRanges: ['opening'],
+      missingRequiredChapterRangeGenres: ['opening:thriller'],
+      missingRequiredUsableChapterRangeGenres: ['opening:mystery', 'opening:thriller'],
+    });
+    expect(output.calibration.evidenceCollectionPlan).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'record-human-reader-provenance',
+          priority: 'critical',
+        }),
+        expect.objectContaining({
+          id: 'record-response-data-quality',
+          priority: 'critical',
+        }),
+        expect.objectContaining({
+          id: 'collect-required-chapter-range-coverage',
+          priority: 'critical',
+        }),
+      ])
+    );
+  });
+});

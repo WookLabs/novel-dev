@@ -1,0 +1,420 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://novel-dev.org/schemas/series-retention-benchmark.schema.json",
+  "title": "Series Retention Benchmark Samples",
+  "description": "Target-reader long-series retention samples used to compare automated serial engagement scores with actual next-click, fatigue resistance, hook progress, reward variety, payoff satisfaction, novelty, emotional reset, and payoff confidence across consecutive chapters.",
+  "type": "object",
+  "required": ["samples"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "reader_retention_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "automated_retention_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "minimum_dimension_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "required_genres": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "required_target_readers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "minimum_panel_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_commented_responses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_started_read_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "minimum_completion_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_continuation_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_drop_off_ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_skimmed_read_ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "require_funnel_evidence": {
+      "type": "boolean"
+    },
+    "require_hook_progress_evidence": {
+      "type": "boolean",
+      "description": "Whether every sampled chapter needs structured hook progress ledger counts before the sequence can be used for gate tuning."
+    },
+    "minimum_hook_progress_event_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000,
+      "description": "Minimum count of advanced, resolved, or recontextualized hook threads required per chapter."
+    },
+    "minimum_hook_progress_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Minimum share of active hook threads that must advance, resolve, or recontextualize in a sampled chapter."
+    },
+    "maximum_hook_stall_ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Maximum share of active hook threads that may remain stalled in a sampled chapter."
+    },
+    "minimum_sequence_length": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    },
+    "maximum_retention_drop": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "maximum_repeated_reward_signature_run": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    },
+    "maximum_repeated_emotional_signature_run": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    },
+    "maximum_dominant_emotional_signature_family_share": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Maximum share of sampled chapter endings that may belong to the same emotional signature family before the sequence is treated as an emotionally narrow palette."
+    },
+    "minimum_samples_per_genre": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_samples_per_target_reader": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_usable_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_failing_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_usable_failing_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/definitions/seriesRetentionSample"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "seriesRetentionSample": {
+      "type": "object",
+      "required": ["id", "chapters"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "genre": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "target_reader": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "expected_retained": {
+          "type": "boolean"
+        },
+        "calibration_split": {
+          "$ref": "#/definitions/calibrationSplit"
+        },
+        "rating_scale": {
+          "$ref": "#/definitions/ratingScale"
+        },
+        "chapters": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": {
+            "$ref": "#/definitions/chapterSample"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "chapterSample": {
+      "type": "object",
+      "required": ["chapter", "reader_responses"],
+      "properties": {
+        "chapter": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "automated_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "reward_signature": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "emotional_signature": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "emotional_signature_family": {
+          "$ref": "#/definitions/emotionalSignatureFamily"
+        },
+        "hook_thread": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "started_read_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "completed_read_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "continued_read_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "drop_off_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "skimmed_read_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "hook_open_thread_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "hook_advanced_thread_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "hook_resolved_thread_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "hook_recontextualized_thread_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "hook_new_thread_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "hook_stalled_thread_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "reader_responses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/definitions/readerResponse"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "readerResponse": {
+      "type": "object",
+      "required": ["ratings"],
+      "properties": {
+        "reader_id": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "target_reader_fit": {
+          "type": "boolean"
+        },
+        "rating_scale": {
+          "$ref": "#/definitions/ratingScale"
+        },
+        "ratings": {
+          "type": "object",
+          "properties": {
+            "next_click": {
+              "$ref": "#/definitions/rating"
+            },
+            "fatigue_resistance": {
+              "$ref": "#/definitions/rating"
+            },
+            "hook_progress": {
+              "$ref": "#/definitions/rating"
+            },
+            "reward_variety": {
+              "$ref": "#/definitions/rating"
+            },
+            "payoff_satisfaction": {
+              "$ref": "#/definitions/rating"
+            },
+            "novelty": {
+              "$ref": "#/definitions/rating"
+            },
+            "emotional_reset": {
+              "$ref": "#/definitions/rating"
+            },
+            "confidence_in_payoff": {
+              "$ref": "#/definitions/rating"
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        },
+        "would_continue": {
+          "type": "boolean"
+        },
+        "would_continue_score": {
+          "$ref": "#/definitions/rating"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "fatigue_points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "freshness_points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "rewrite_suggestion": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "additionalProperties": false
+    },
+    "emotionalSignatureFamily": {
+      "type": "string",
+      "enum": [
+        "dread",
+        "shock",
+        "curiosity",
+        "relief",
+        "grief",
+        "intimacy",
+        "triumph",
+        "anger"
+      ],
+      "description": "Controlled affect family for the chapter ending emotional signature. Use this when free-form emotional_signature is localized or too project-specific for token normalization."
+    },
+    "ratingScale": {
+      "type": "string",
+      "enum": ["likert-7", "percent-100"]
+    },
+    "calibrationSplit": {
+      "type": "string",
+      "enum": ["calibration", "validation", "holdout"]
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+}

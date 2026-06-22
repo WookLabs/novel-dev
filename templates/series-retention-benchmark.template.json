@@ -1,0 +1,529 @@
+{
+  "$schema": "../schemas/series-retention-benchmark.schema.json",
+  "reader_retention_threshold": 72,
+  "automated_retention_threshold": 85,
+  "minimum_dimension_score": 60,
+  "required_genres": ["mystery", "romance", "fantasy"],
+  "required_target_readers": ["webnovel-core"],
+  "minimum_panel_size": 3,
+  "minimum_commented_responses": 2,
+  "minimum_started_read_count": 20,
+  "minimum_completion_rate": 0.72,
+  "minimum_continuation_rate": 0.55,
+  "maximum_drop_off_ratio": 0.25,
+  "maximum_skimmed_read_ratio": 0.2,
+  "require_funnel_evidence": true,
+  "require_hook_progress_evidence": true,
+  "minimum_hook_progress_event_count": 1,
+  "minimum_hook_progress_rate": 0.5,
+  "maximum_hook_stall_ratio": 0.5,
+  "minimum_sequence_length": 3,
+  "maximum_retention_drop": 12,
+  "maximum_repeated_reward_signature_run": 2,
+  "maximum_repeated_emotional_signature_run": 2,
+  "maximum_dominant_emotional_signature_family_share": 0.67,
+  "minimum_samples_per_genre": 2,
+  "minimum_samples_per_target_reader": 2,
+  "minimum_holdout_samples": 1,
+  "minimum_usable_holdout_samples": 1,
+  "minimum_failing_holdout_samples": 1,
+  "minimum_usable_failing_holdout_samples": 1,
+  "samples": [
+    {
+      "id": "series-retention-good-mystery-run",
+      "label": "연속 회차에서 훅이 전진하고 보상 패턴이 바뀌어 독자가 계속 읽겠다고 반응한 시퀀스",
+      "genre": "mystery",
+      "target_reader": "webnovel-core",
+      "expected_retained": true,
+      "calibration_split": "calibration",
+      "rating_scale": "likert-7",
+      "chapters": [
+        {
+          "chapter": 7,
+          "title": "첫 경보",
+          "automated_score": 91,
+          "reward_signature": "first-alert-rescue",
+          "emotional_signature": "alarm-dread-to-resolve",
+          "emotional_signature_family": "dread",
+          "hook_thread": "실종 파일을 보내는 익명 발신자의 정체",
+          "started_read_count": 120,
+          "completed_read_count": 112,
+          "continued_read_count": 98,
+          "drop_off_count": 6,
+          "skimmed_read_count": 8,
+          "hook_open_thread_count": 2,
+          "hook_advanced_thread_count": 1,
+          "hook_resolved_thread_count": 0,
+          "hook_recontextualized_thread_count": 1,
+          "hook_new_thread_count": 1,
+          "hook_stalled_thread_count": 0,
+          "reader_responses": [
+            {
+              "reader_id": "reader-001",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 7,
+                "fatigue_resistance": 6,
+                "hook_progress": 6,
+                "reward_variety": 6,
+                "payoff_satisfaction": 6,
+                "novelty": 6,
+                "emotional_reset": 5,
+                "confidence_in_payoff": 6
+              },
+              "would_continue": true,
+              "would_continue_score": 7,
+              "comment": "발신자 떡밥이 새 단서와 구조 선택으로 바로 움직여 다음 화가 궁금하다.",
+              "freshness_points": ["경보가 행동 선택을 바꿈", "구조와 파일 단서가 같이 전진함"],
+              "rewrite_suggestion": "마지막 단서의 물리적 흔적을 한 줄 더 선명하게 남기면 좋다."
+            },
+            {
+              "reader_id": "reader-002",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 6,
+                "fatigue_resistance": 6,
+                "hook_progress": 6,
+                "reward_variety": 6,
+                "payoff_satisfaction": 6,
+                "novelty": 5,
+                "emotional_reset": 5,
+                "confidence_in_payoff": 6
+              },
+              "would_continue": true,
+              "would_continue_score": 6,
+              "comment": "위험한 선택이 있었고 발신자 정보가 조금 좁혀져서 연재 훅이 정체되지 않는다.",
+              "freshness_points": ["가설이 좁혀짐", "구조 장면이 보상으로 작동함"],
+              "rewrite_suggestion": "리셋 장면을 짧게 더 주면 감정 소모가 덜할 듯하다."
+            },
+            {
+              "reader_id": "reader-003",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 7,
+                "fatigue_resistance": 6,
+                "hook_progress": 7,
+                "reward_variety": 6,
+                "payoff_satisfaction": 6,
+                "novelty": 6,
+                "emotional_reset": 6,
+                "confidence_in_payoff": 6
+              },
+              "would_continue": true,
+              "would_continue_score": 7,
+              "comment": "이번 화 보상이 해결감도 있고 장기 질문도 더 구체적이라 계속 읽을 수 있다.",
+              "freshness_points": ["단기 보상과 장기 질문 균형", "발신자 조건 변화"],
+              "rewrite_suggestion": "주인공이 다음 검증 행동을 더 직접 선언하면 클릭 욕구가 강해진다."
+            }
+          ]
+        },
+        {
+          "chapter": 8,
+          "title": "냉동 창고의 이름",
+          "automated_score": 90,
+          "reward_signature": "cold-case-clue",
+          "emotional_signature": "cold-clue-curiosity",
+          "emotional_signature_family": "curiosity",
+          "hook_thread": "실종 파일을 보내는 익명 발신자의 정체",
+          "started_read_count": 98,
+          "completed_read_count": 93,
+          "continued_read_count": 84,
+          "drop_off_count": 4,
+          "skimmed_read_count": 6,
+          "hook_open_thread_count": 2,
+          "hook_advanced_thread_count": 1,
+          "hook_resolved_thread_count": 1,
+          "hook_recontextualized_thread_count": 0,
+          "hook_new_thread_count": 1,
+          "hook_stalled_thread_count": 0,
+          "reader_responses": [
+            {
+              "reader_id": "reader-001",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 7,
+                "fatigue_resistance": 6,
+                "hook_progress": 7,
+                "reward_variety": 6,
+                "payoff_satisfaction": 6,
+                "novelty": 6,
+                "emotional_reset": 5,
+                "confidence_in_payoff": 6
+              },
+              "would_continue": true,
+              "would_continue_score": 7,
+              "comment": "이번에는 추격이 아니라 오래된 이름 단서라 보상 모양이 바뀌었다.",
+              "freshness_points": ["조사 보상으로 전환", "발신자 후보가 좁혀짐"],
+              "rewrite_suggestion": "단서 발견 직전의 압박을 조금 더 늦추면 좋다."
+            },
+            {
+              "reader_id": "reader-002",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 6,
+                "fatigue_resistance": 6,
+                "hook_progress": 6,
+                "reward_variety": 6,
+                "payoff_satisfaction": 6,
+                "novelty": 6,
+                "emotional_reset": 5,
+                "confidence_in_payoff": 6
+              },
+              "would_continue": true,
+              "would_continue_score": 6,
+              "comment": "같은 사건을 다루지만 단서 종류가 바뀌어 반복으로 느껴지지 않았다.",
+              "freshness_points": ["증거 유형 변화", "가설 갱신"],
+              "rewrite_suggestion": "파트너 반응이 더 날카로우면 중간 장력이 산다."
+            },
+            {
+              "reader_id": "reader-003",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 7,
+                "fatigue_resistance": 6,
+                "hook_progress": 6,
+                "reward_variety": 7,
+                "payoff_satisfaction": 6,
+                "novelty": 6,
+                "emotional_reset": 6,
+                "confidence_in_payoff": 6
+              },
+              "would_continue": true,
+              "would_continue_score": 7,
+              "comment": "이름 단서가 다음 검증 행동으로 이어져서 쉬는 화처럼 보이지 않는다.",
+              "freshness_points": ["검증 행동이 생김", "장기 훅이 한 칸 전진"],
+              "rewrite_suggestion": "주인공이 틀릴 가능성도 조금 남기면 더 긴장된다."
+            }
+          ]
+        },
+        {
+          "chapter": 9,
+          "title": "파트너의 조건",
+          "automated_score": 92,
+          "reward_signature": "partner-risk-choice",
+          "emotional_signature": "relationship-cost-resolve",
+          "emotional_signature_family": "relief",
+          "hook_thread": "실종 파일을 보내는 익명 발신자의 정체",
+          "started_read_count": 84,
+          "completed_read_count": 81,
+          "continued_read_count": 72,
+          "drop_off_count": 2,
+          "skimmed_read_count": 4,
+          "hook_open_thread_count": 2,
+          "hook_advanced_thread_count": 1,
+          "hook_resolved_thread_count": 0,
+          "hook_recontextualized_thread_count": 1,
+          "hook_new_thread_count": 1,
+          "hook_stalled_thread_count": 0,
+          "reader_responses": [
+            {
+              "reader_id": "reader-001",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 7,
+                "fatigue_resistance": 6,
+                "hook_progress": 6,
+                "reward_variety": 7,
+                "payoff_satisfaction": 6,
+                "novelty": 6,
+                "emotional_reset": 6,
+                "confidence_in_payoff": 6
+              },
+              "would_continue": true,
+              "would_continue_score": 7,
+              "comment": "이번 보상은 관계 조건이라 앞선 단서 회차와 다르게 느껴지고 다음 선택이 궁금하다.",
+              "freshness_points": ["관계 보상으로 전환", "다음 선택 비용 증가"],
+              "rewrite_suggestion": "조건을 거절했을 때의 즉시 대가를 더 세게 보여주면 좋다."
+            },
+            {
+              "reader_id": "reader-002",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 6,
+                "fatigue_resistance": 6,
+                "hook_progress": 6,
+                "reward_variety": 6,
+                "payoff_satisfaction": 6,
+                "novelty": 5,
+                "emotional_reset": 6,
+                "confidence_in_payoff": 6
+              },
+              "would_continue": true,
+              "would_continue_score": 6,
+              "comment": "발신자 훅을 관계 선택으로 밀어붙여 세 화째인데도 반복감이 약하다.",
+              "freshness_points": ["관계 압박", "보상 리듬 변화"],
+              "rewrite_suggestion": "말미 질문을 발신자와 파트너 양쪽에 걸면 더 강하다."
+            },
+            {
+              "reader_id": "reader-003",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 7,
+                "fatigue_resistance": 7,
+                "hook_progress": 6,
+                "reward_variety": 7,
+                "payoff_satisfaction": 6,
+                "novelty": 6,
+                "emotional_reset": 6,
+                "confidence_in_payoff": 7
+              },
+              "would_continue": true,
+              "would_continue_score": 7,
+              "comment": "다음 화에서 조건을 받아들일지 바로 확인하고 싶고 장기 떡밥도 믿고 따라갈 수 있다.",
+              "freshness_points": ["선택 압박", "보상 신뢰 유지"],
+              "rewrite_suggestion": "마지막 대사를 조금 더 짧게 끊으면 클릭감이 좋아진다."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "series-retention-bad-repetitive-run",
+      "label": "자동 점수는 높지만 같은 보상 패턴 반복으로 독자 유지가 떨어진 시퀀스",
+      "genre": "mystery",
+      "target_reader": "webnovel-core",
+      "expected_retained": false,
+      "calibration_split": "holdout",
+      "rating_scale": "likert-7",
+      "chapters": [
+        {
+          "chapter": 10,
+          "title": "다시 울린 휴대폰",
+          "automated_score": 88,
+          "reward_signature": "alert-investigation-phone-check",
+          "emotional_signature": "alarm-dread-deferral",
+          "emotional_signature_family": "dread",
+          "hook_thread": "실종 파일을 보내는 익명 발신자의 정체",
+          "started_read_count": 120,
+          "completed_read_count": 96,
+          "continued_read_count": 66,
+          "drop_off_count": 18,
+          "skimmed_read_count": 22,
+          "hook_open_thread_count": 2,
+          "hook_advanced_thread_count": 0,
+          "hook_resolved_thread_count": 0,
+          "hook_recontextualized_thread_count": 0,
+          "hook_new_thread_count": 1,
+          "hook_stalled_thread_count": 2,
+          "reader_responses": [
+            {
+              "reader_id": "reader-004",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 5,
+                "fatigue_resistance": 5,
+                "hook_progress": 5,
+                "reward_variety": 4,
+                "payoff_satisfaction": 5,
+                "novelty": 4,
+                "emotional_reset": 4,
+                "confidence_in_payoff": 5
+              },
+              "would_continue": true,
+              "would_continue_score": 5,
+              "comment": "아직은 따라가지만 또 알림을 받고 확인하는 흐름이라 새로움은 약하다.",
+              "fatigue_points": ["알림으로 시작하는 구조 반복", "확인 뒤 말미 의문 반복"],
+              "rewrite_suggestion": "이번 화 보상은 알림이 아니라 인물 선택이나 대가로 바꿔야 한다."
+            },
+            {
+              "reader_id": "reader-005",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 5,
+                "fatigue_resistance": 4,
+                "hook_progress": 4,
+                "reward_variety": 4,
+                "payoff_satisfaction": 4,
+                "novelty": 4,
+                "emotional_reset": 4,
+                "confidence_in_payoff": 4
+              },
+              "would_continue": true,
+              "would_continue_score": 5,
+              "comment": "정보는 추가되지만 이야기 상태가 크게 달라진 느낌이 약하다.",
+              "fatigue_points": ["가설이 좁혀지지 않음", "보상 방식 반복"],
+              "rewrite_suggestion": "발신자에게 한 발 가까워지는 검증 행동이 필요하다."
+            },
+            {
+              "reader_id": "reader-006",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 5,
+                "fatigue_resistance": 5,
+                "hook_progress": 4,
+                "reward_variety": 4,
+                "payoff_satisfaction": 5,
+                "novelty": 4,
+                "emotional_reset": 4,
+                "confidence_in_payoff": 5
+              },
+              "would_continue": true,
+              "would_continue_score": 5,
+              "comment": "말미 훅은 있지만 이전 화와 비슷해서 다음 화 기대가 아주 크지는 않다.",
+              "fatigue_points": ["같은 말미 질문", "다음 검증 행동 부족"],
+              "rewrite_suggestion": "다음 화에서 다른 종류의 보상이 나올 약속을 심어야 한다."
+            }
+          ]
+        },
+        {
+          "chapter": 11,
+          "title": "세 번째 알림",
+          "automated_score": 90,
+          "reward_signature": "alert-investigation-phone-check",
+          "emotional_signature": "alarm-dread-deferral",
+          "emotional_signature_family": "dread",
+          "hook_thread": "실종 파일을 보내는 익명 발신자의 정체",
+          "started_read_count": 66,
+          "completed_read_count": 46,
+          "continued_read_count": 28,
+          "drop_off_count": 16,
+          "skimmed_read_count": 20,
+          "hook_open_thread_count": 2,
+          "hook_advanced_thread_count": 0,
+          "hook_resolved_thread_count": 0,
+          "hook_recontextualized_thread_count": 1,
+          "hook_new_thread_count": 1,
+          "hook_stalled_thread_count": 1,
+          "reader_responses": [
+            {
+              "reader_id": "reader-004",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 4,
+                "fatigue_resistance": 3,
+                "hook_progress": 3,
+                "reward_variety": 2,
+                "payoff_satisfaction": 4,
+                "novelty": 3,
+                "emotional_reset": 3,
+                "confidence_in_payoff": 4
+              },
+              "would_continue": false,
+              "would_continue_score": 4,
+              "comment": "또 알림을 받고 확인하는 장면이라 사건이 진행되는 것보다 반복을 본 느낌이다.",
+              "fatigue_points": ["같은 시작", "같은 조사", "같은 말미 의문"],
+              "rewrite_suggestion": "중간 화는 추격이나 관계 대가처럼 전혀 다른 보상으로 바꿔야 한다."
+            },
+            {
+              "reader_id": "reader-005",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 4,
+                "fatigue_resistance": 3,
+                "hook_progress": 4,
+                "reward_variety": 3,
+                "payoff_satisfaction": 4,
+                "novelty": 3,
+                "emotional_reset": 3,
+                "confidence_in_payoff": 4
+              },
+              "would_continue": false,
+              "would_continue_score": 4,
+              "comment": "새 정보가 있지만 왜 지금 꼭 다음 화를 봐야 하는지는 약하다.",
+              "fatigue_points": ["보상 다양성 부족", "클릭 동기 약화"],
+              "rewrite_suggestion": "발신자 후보를 하나 탈락시키거나 주인공이 손해를 봐야 한다."
+            },
+            {
+              "reader_id": "reader-006",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 4,
+                "fatigue_resistance": 3,
+                "hook_progress": 3,
+                "reward_variety": 2,
+                "payoff_satisfaction": 4,
+                "novelty": 3,
+                "emotional_reset": 3,
+                "confidence_in_payoff": 3
+              },
+              "would_continue": false,
+              "would_continue_score": 4,
+              "comment": "장기 떡밥을 믿고 기다릴 이유가 줄어들었다.",
+              "fatigue_points": ["보상 신뢰 하락", "반복 조사"],
+              "rewrite_suggestion": "이번 화에서 발신자의 규칙을 깨는 사건이 필요하다."
+            }
+          ]
+        },
+        {
+          "chapter": 12,
+          "title": "네 번째 알림",
+          "automated_score": 89,
+          "reward_signature": "alert-investigation-phone-check",
+          "emotional_signature": "alarm-dread-deferral",
+          "emotional_signature_family": "dread",
+          "hook_thread": "실종 파일을 보내는 익명 발신자의 정체",
+          "started_read_count": 28,
+          "completed_read_count": 19,
+          "continued_read_count": 9,
+          "drop_off_count": 8,
+          "skimmed_read_count": 7,
+          "hook_open_thread_count": 2,
+          "hook_advanced_thread_count": 0,
+          "hook_resolved_thread_count": 0,
+          "hook_recontextualized_thread_count": 0,
+          "hook_new_thread_count": 1,
+          "hook_stalled_thread_count": 2,
+          "reader_responses": [
+            {
+              "reader_id": "reader-004",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 3,
+                "fatigue_resistance": 2,
+                "hook_progress": 3,
+                "reward_variety": 2,
+                "payoff_satisfaction": 3,
+                "novelty": 2,
+                "emotional_reset": 3,
+                "confidence_in_payoff": 3
+              },
+              "would_continue": false,
+              "would_continue_score": 3,
+              "comment": "세 화째 같은 약속이라 뒤에 큰 보상이 있을 거라는 믿음이 약해졌다.",
+              "fatigue_points": ["반복 보상", "장기 훅 정체"],
+              "rewrite_suggestion": "이번 화는 답 하나를 확정하고 새로운 위험으로 넘겨야 한다."
+            },
+            {
+              "reader_id": "reader-005",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 3,
+                "fatigue_resistance": 2,
+                "hook_progress": 2,
+                "reward_variety": 2,
+                "payoff_satisfaction": 3,
+                "novelty": 2,
+                "emotional_reset": 2,
+                "confidence_in_payoff": 3
+              },
+              "would_continue": false,
+              "would_continue_score": 3,
+              "comment": "다음 화를 눌러도 비슷한 조사가 나올 것 같아 멈추고 싶다.",
+              "fatigue_points": ["다음 보상 예측 가능", "상태 변화 부족"],
+              "rewrite_suggestion": "주인공의 선택이 관계나 세계 규칙을 바꾸는 장면이 필요하다."
+            },
+            {
+              "reader_id": "reader-006",
+              "target_reader_fit": true,
+              "ratings": {
+                "next_click": 3,
+                "fatigue_resistance": 2,
+                "hook_progress": 3,
+                "reward_variety": 2,
+                "payoff_satisfaction": 3,
+                "novelty": 2,
+                "emotional_reset": 3,
+                "confidence_in_payoff": 3
+              },
+              "would_continue": false,
+              "would_continue_score": 3,
+              "comment": "알림 장치가 장면을 움직이는 게 아니라 같은 장면을 반복시키는 장치처럼 보인다.",
+              "fatigue_points": ["장치 피로", "말미 훅 반복"],
+              "rewrite_suggestion": "알림이 오지 않는 예외 상황으로 패턴을 깨야 한다."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -34,6 +34,25 @@ user-invocable: true
 - **완료 조건**: `chapters/chapter_001.json` 존재
 - **표시**: `[x] gen-plot`
 
+### Phase 3.5: 집필 전 설계/문체/요약 메모리 게이트
+- **확인 파일**: `reviews/design-gate-report.json`
+- **확인 파일**: `reviews/style-gate-report.json`
+- **확인 파일**: `context/summaries/chapter_NNN_summary.md` (현재 회차 직전 최대 3개 원고)
+- **PASS 조건**: `passed == true` 그리고 `status == "PASS"`
+- **요약 메모리 PASS 조건**: 요약 존재, 원고보다 최신, compact text 100자 이상
+- **표시**:
+  - PASS: `[x] design-gate`
+  - PASS: `[x] style-gate`
+  - PASS: `[x] summary-memory`
+  - 없음/BLOCKED/실패: `[!] design-gate`
+  - 없음/BLOCKED/실패: `[!] style-gate`
+  - 없음/오래됨/부족함: `[!] summary-memory`
+- **다음 단계 규칙**:
+  - 세 gate가 모두 PASS이면 `/write {current_chapter}` 또는 `/write-all --resume`을 안내합니다.
+  - 설계 미통과이면 집필/재개 명령을 직접 권하지 않고 `run-premise-appeal-benchmark`와 `apply-design-gate --fail-on-blocked`를 먼저 안내합니다.
+  - 문체 미통과이면 집필/재개 명령을 직접 권하지 않고 `run-prose-taste-benchmark`와 `apply-style-gate --fail-on-blocked`를 먼저 안내합니다.
+  - 요약 메모리 미통과이면 집필/재개 명령을 직접 권하지 않고 누락/오래된 `context/summaries/chapter_NNN_summary.md` 재생성과 `/verify-chapter N`을 먼저 안내합니다.
+
 ### Phase 4: 집필
 - **진행 조건**: `meta/ralph-state.json` 존재 및 `current_chapter` 확인
 - **완료 조건**: 모든 `chapters/chapter_*.md` 존재
@@ -74,6 +93,11 @@ user-invocable: true
   -- Phase 3: 플롯 --------------------------------------------
   [x] gen-plot       플롯 생성 (50화)
 
+  -- Phase 3.5: 설계/문체/요약 메모리 게이트 ------------------
+  [x] design-gate    reviews/design-gate-report.json PASS
+  [x] style-gate     reviews/style-gate-report.json PASS
+  [x] summary-memory context/summaries/chapter_011_summary.md PASS
+
   -- Phase 4: 집필 --------------------------------------------
   [~] write          단일 회차 (12/50)
   [ ] write-act      막 단위 집필
@@ -93,10 +117,16 @@ user-invocable: true
   ├─ 현재 막: 1 (1-15화)
   ├─ 마지막 점수: 87점
   ├─ Ralph 활성: YES
-  └─ Resume 가능: YES
+  ├─ Resume 가능: YES
+  ├─ 설계 게이트: PASS
+  ├─ 문체 게이트: PASS
+  └─ 요약 메모리: PASS
 
   다음 단계
-  → /write 12  또는  /write-all --resume
+  → 설계/문체/요약 메모리 게이트 PASS: /write 12  또는  /write-all --resume
+  → 설계 게이트 미통과: run-premise-appeal-benchmark → apply-design-gate --fail-on-blocked
+  → 문체 게이트 미통과: run-prose-taste-benchmark → apply-style-gate --fail-on-blocked
+  → 요약 메모리 미통과: context/summaries/chapter_NNN_summary.md 재생성 → /verify-chapter N
 
 ══════════════════════════════════════════════════════════════
 ```
@@ -111,6 +141,9 @@ user-invocable: true
 | `characters/*.json` | Phase 2 완료 |
 | `plot/main-arc.json` | Phase 2 완료 |
 | `chapters/chapter_*.json` | Phase 3 완료 |
+| `reviews/design-gate-report.json` | 집필/재개 전 설계 게이트 |
+| `reviews/style-gate-report.json` | 집필/재개 전 문체 게이트 |
+| `context/summaries/chapter_NNN_summary.md` | 집필/재개 전 직전 회차 요약 메모리 |
 | `chapters/chapter_*.md` | Phase 4 진행 |
 | `reviews/*_review.json` | Phase 5 완료 |
 | `exports/*` | Phase 6 완료 |

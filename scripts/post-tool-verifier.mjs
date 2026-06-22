@@ -5,7 +5,7 @@
  * 도구 실행 결과 검증 및 기억 태그 처리
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { readStdinSafe } from './lib/hook-utils.mjs';
 
@@ -125,29 +125,6 @@ function saveToNotepad(projectPath, tags) {
   writeFileSync(notepadPath, content);
 }
 
-// Update ralph-state with quality score
-function updateQualityScore(projectPath, score) {
-  const statePath = join(projectPath, 'meta', 'ralph-state.json');
-
-  let state = {};
-  if (existsSync(statePath)) {
-    try {
-      state = JSON.parse(readFileSync(statePath, 'utf-8'));
-    } catch {}
-  }
-
-  state.last_quality_score = score;
-  state.last_quality_check = new Date().toISOString();
-
-  // Ensure meta directory exists
-  const metaDir = join(projectPath, 'meta');
-  if (!existsSync(metaDir)) {
-    mkdirSync(metaDir, { recursive: true });
-  }
-
-  writeFileSync(statePath, JSON.stringify(state, null, 2));
-}
-
 // Generate contextual message based on tool output
 function generateMessage(toolName, toolOutput, toolInput) {
   const messages = [];
@@ -167,6 +144,7 @@ function generateMessage(toolName, toolOutput, toolInput) {
         } else {
           messages.push(`⚠️ 품질 점수 ${score}점 - 재집필 필요`);
         }
+        messages.push(`gate 확정 필요: node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {N} --quality-score ${score} --json`);
       }
     }
 
@@ -210,16 +188,6 @@ async function main() {
 
     // Process results if in a novel project
     if (projectPath && toolName === 'Task') {
-      const inputStr = JSON.stringify(toolInput);
-
-      // Extract and save quality score from critic
-      if (/critic/i.test(inputStr)) {
-        const score = extractQualityScore(toolOutput);
-        if (score !== null) {
-          updateQualityScore(projectPath, score);
-        }
-      }
-
       // Extract and save remember tags
       const rememberTags = extractRememberTags(toolOutput);
       if (rememberTags.length > 0) {

@@ -11,6 +11,43 @@ The write-all skill implements a persistent, quality-gated loop that writes an e
 3. **Circuit Breaker**: Intelligent failure handling
 4. **Session Recovery**: Resume from interruption
 5. **Promise Tracking**: Tamper-proof progress markers
+6. **Preflight Gates**: Do not start or resume drafting until design, style, and summary memory gates all pass
+
+## Preflight Gate System
+
+`/write-all`, `/write-all --resume`, and `/write-all --restart` can all create new manuscript text. Before any chapter draft starts, run the design/style preflight gates and verify summary memory for resumed chapters:
+
+```bash
+node dist/cli/apply-design-gate.js --project {projectPath} --fail-on-blocked --json
+node dist/cli/apply-style-gate.js --project {projectPath} --fail-on-blocked --json
+```
+
+The loop may start only when all preflight evidence passes:
+
+- `reviews/design-gate-report.json.passed == true`
+- `reviews/design-gate-report.json.status == "PASS"`
+- `reviews/style-gate-report.json.passed == true`
+- `reviews/style-gate-report.json.status == "PASS"`
+- For chapter 2+, each prior manuscript among the last 3 chapters has `context/summaries/chapter_NNN_summary.md`
+- Each summary is newer than its manuscript and has compact text of at least 100 characters
+
+If the design gate is missing, stale, malformed, or blocked, do not write Chapter 1 or resume the current chapter. Regenerate the premise benchmark and design gate first:
+
+```bash
+node dist/cli/run-premise-appeal-benchmark.js --project {projectPath} --json
+node dist/cli/apply-design-gate.js --project {projectPath} --fail-on-blocked --json
+```
+
+If the style gate is missing, stale, malformed, or blocked, do not write Chapter 1 or resume the current chapter. Regenerate the prose taste benchmark and style gate first:
+
+```bash
+node dist/cli/run-prose-taste-benchmark.js --project {projectPath} --json
+node dist/cli/apply-style-gate.js --project {projectPath} --fail-on-blocked --json
+```
+
+Common blocking issue codes include `premise-appeal-not-ready`, `weak-promise-evidence`, `premise-appeal-report-stale`, `premise-appeal-source-missing`, `prose-taste-not-ready`, `prose-taste-failing-samples`, `prose-taste-false-classification`, `style-friction-evidence-weak`, `style-highlight-evidence-weak`, `style-fingerprint-weak`, `authorial-style-drift`, `prose-taste-report-stale`, and `prose-taste-source-missing`.
+
+If summary memory is missing, stale, malformed, or too thin, do not resume the current chapter. Regenerate `context/summaries/chapter_NNN_summary.md` from the affected prior manuscript and rerun `/verify-chapter N` if the chapter verification output is also stale. Summary memory blockers are `summary-memory-missing`, `summary-memory-stale`, `summary-memory-too-thin`, and `summary-memory-malformed`.
 
 ## Multi-Validator System
 
@@ -349,6 +386,10 @@ Keeps last 3 backups. Rotation policy:
 - Oldest backup deleted when >3 exist
 - Manual backups not auto-deleted
 
+### Max Iteration Pause
+
+When `max_iterations` is reached before a gated act or novel completion, Ralph Loop must pause with `requires_user_intervention=true` and `can_resume=true`. Do not mark `act_complete`, do not emit completion promises, and resume only after the user reviews the stalled chapter or workflow state.
+
 ### Resume Process
 
 When resuming from interruption:
@@ -362,6 +403,15 @@ When resuming from interruption:
 const state = readRalphState();
 
 if (state.ralph_active && state.can_resume) {
+  const designGate = readJson('reviews/design-gate-report.json');
+  const styleGate = readJson('reviews/style-gate-report.json');
+  if (designGate?.passed !== true || designGate?.status !== 'PASS') {
+    return 'Run premise benchmark and apply-design-gate before resume';
+  }
+  if (styleGate?.passed !== true || styleGate?.status !== 'PASS') {
+    return 'Run prose taste benchmark and apply-style-gate before resume';
+  }
+
   console.log(`
 Resumable session detected!
 
@@ -376,10 +426,13 @@ Resume from this checkpoint? [Y/n]
 ```
 
 **Resume Actions**:
-1. Restore state from `ralph-state.json`
-2. Verify all completed chapters still exist
-3. Load last validation results
-4. Continue from `current_chapter`
+1. Run `apply-design-gate --fail-on-blocked`
+2. Run `apply-style-gate --fail-on-blocked`
+3. Verify summary memory for the last 3 prior manuscript chapters
+4. Restore state from `ralph-state.json`
+5. Verify all completed chapters still exist
+6. Load last validation results
+7. Continue from `current_chapter`
 
 ### Restart vs Resume
 
@@ -390,6 +443,8 @@ Resume from this checkpoint? [Y/n]
 # Restart from beginning (ignores state)
 /write-all --restart
 ```
+
+Both commands still run the same design, style, and summary memory preflight before drafting. Restarting ignores prior Ralph state, not the current design/style evidence or required continuity summaries.
 
 **Restart**:
 - Backs up current state to `meta/backups/`
@@ -420,32 +475,50 @@ Tamper-proof progress tracking using memory tags.
 2. **Persistent**: Survives context compaction
 3. **Verifiable**: Can be queried programmatically
 
+### Completion Gate Conditions
+
+Completion promises are not proof by themselves. They are accepted only when the current state proves the quality gate passed:
+
+- `ACT_N_DONE` is valid only when `N matches current_act`
+- `ACT_N_DONE` and `NOVEL_DONE` are valid only when `last_gate.status == "PASS"`
+- `last_gate.passed == true`, `failed_chapters is empty`, and `requires_user_intervention == false`
+- `ACT_N_DONE` also requires every chapter in the act to be present in `completed_chapters`, with the latest PASS gate covering the act end
+- Act ranges are resolved from `plot/structure.json` first, explicit state ranges second, and even `total_chapters / total_acts` fallback last
+- `NOVEL_DONE` also requires every chapter through `total_chapters` complete, with the latest PASS gate covering the final chapter
+- The Stop hook and `scripts/act-completion.mjs` block stale, incomplete, or ungated completion promises
+- Generic task completion promises such as `<promise>TASK_COMPLETE</promise>` are invalid while Ralph Loop is active
+
 ### Usage Pattern
 
 ```javascript
-// After chapter validation passes
-function markChapterComplete(chapterNum) {
-  updateRalphState({
-    completed_chapters: [...state.completed_chapters, chapterNum]
-  });
+// After validate-chapter and apply-chapter-gate both pass
+function markChapterComplete(chapterNum, state) {
+  if (state.last_gate?.status !== "PASS" || state.last_gate?.passed !== true) return;
+  if (state.failed_chapters.length > 0 || state.requires_user_intervention) return;
 
-  // Emit promise
   console.log(`<promise>CHAPTER_${chapterNum}_DONE</promise>`);
 }
 ```
 
 ### Verification
 
-Check all promises at end:
+Check state and promises at end:
 
 ```javascript
-function verifyCompletion() {
+function verifyCompletion(state) {
   const promiseCount = countPromises(/CHAPTER_\d+_DONE/);
   const expectedChapters = project.target_chapters;
+  const gatePassed = state.last_gate?.status === "PASS" && state.last_gate?.passed === true;
+  const noOpenFailures = state.failed_chapters.length === 0 && !state.requires_user_intervention;
+  const allChaptersComplete = Array.from({ length: state.total_chapters }, (_, i) => i + 1)
+    .every(chapter => state.completed_chapters.includes(chapter));
+  const finalGateCovered = state.last_gate?.chapter >= state.total_chapters;
 
-  if (promiseCount === expectedChapters) {
-    console.log(`<promise>NOVEL_DONE</promise>`);
+  if (promiseCount === expectedChapters && gatePassed && noOpenFailures && allChaptersComplete && finalGateCovered) {
+    return "<promise>NOVEL_DONE</promise>";
   }
+
+  return "Continue or revise before emitting NOVEL_DONE";
 }
 ```
 
@@ -557,10 +630,11 @@ async function validateAct(actNum) {
 
 ```javascript
 function completeAct(actNum) {
-  updateRalphState({
-    act_complete: true,
-    current_act: actNum + 1
-  });
+  if (actNum !== state.current_act) return;
+  if (state.last_gate?.status !== "PASS") return;
+  if (state.failed_chapters.length > 0 || state.requires_user_intervention) return;
+  if (!getChaptersInAct(actNum).every(chapter => state.completed_chapters.includes(chapter))) return;
+  if (state.last_gate?.chapter < getChaptersInAct(actNum).at(-1)) return;
 
   console.log(`<promise>ACT_${actNum}_DONE</promise>`);
 

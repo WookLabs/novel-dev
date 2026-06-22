@@ -1,0 +1,76 @@
+import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+describe('prebuild integrity gates', () => {
+  it('should validate team definitions before TypeScript compilation', () => {
+    const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'))
+
+    expect(pkg.scripts['validate:teams']).toBe('node scripts/validate-teams.mjs')
+    expect(pkg.scripts.prebuild).toContain('npm run validate:teams')
+  })
+
+  it('should run static integrity tests before TypeScript compilation', () => {
+    const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'))
+    const integrityScript = pkg.scripts['validate:integrity']
+
+    expect(integrityScript).toBeDefined()
+    expect(integrityScript).toContain('vitest run')
+    expect(integrityScript).toContain('tests/config/version-sync.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/engagement-contracts.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/engagement-contract-evaluator.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/chapter-gate-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/design-gate-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/style-gate-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/character-relationship-benchmark-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/engagement-benchmark-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/engagement-record-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/masterpiece-readiness-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/premise-appeal-benchmark-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/prose-taste-benchmark-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/reader-response-calibration-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/series-retention-benchmark-cli.test.ts')
+    expect(integrityScript).toContain('tests/masterpiece/golden-sample-project.test.ts')
+    expect(integrityScript).toContain('tests/quality/character-relationship-benchmark.test.ts')
+    expect(integrityScript).toContain('tests/quality/engagement-benchmark.test.ts')
+    expect(integrityScript).toContain('tests/quality/masterpiece-readiness.test.ts')
+    expect(integrityScript).toContain('tests/quality/premise-appeal-benchmark.test.ts')
+    expect(integrityScript).toContain('tests/quality/prose-taste-benchmark.test.ts')
+    expect(integrityScript).toContain('tests/quality/prose-taste-gate.test.ts')
+    expect(integrityScript).toContain('tests/quality/reader-response-calibration.test.ts')
+    expect(integrityScript).toContain('tests/quality/series-retention-benchmark.test.ts')
+    expect(integrityScript).toContain('tests/retry/quality-gate.test.ts')
+    expect(integrityScript).toContain('tests/scripts/act-completion-gate.test.ts')
+    expect(integrityScript).toContain('tests/scripts/checkpoint-gate.test.ts')
+    expect(integrityScript).toContain('tests/scripts/post-tool-verifier.test.ts')
+    expect(integrityScript).toContain('tests/scripts/pretooluse-manuscript-gate.test.ts')
+    expect(integrityScript).toContain('tests/scripts/stop-hook.test.ts')
+    expect(integrityScript).toContain('tests/scripts/writing-preflight.test.ts')
+    expect(integrityScript).toContain('tests/docs/catalog-sync.test.ts')
+    expect(integrityScript).toContain('tests/self-improvement/quality-tracker.test.ts')
+    expect(integrityScript).toContain('tests/self-improvement/regression-detector.test.ts')
+    expect(pkg.scripts.prebuild).toContain('npm run validate:integrity')
+  })
+
+  it('should verify engagement CLI build output', () => {
+    const verifyBuild = readFileSync(join(process.cwd(), 'scripts', 'verify-build.mjs'), 'utf8')
+
+    expect(verifyBuild).toContain('cli/record-engagement.js')
+    expect(verifyBuild).toContain('cli/apply-chapter-gate.js')
+    expect(verifyBuild).toContain('cli/apply-design-gate.js')
+    expect(verifyBuild).toContain('cli/apply-style-gate.js')
+    expect(verifyBuild).toContain('cli/calibrate-reader-response.js')
+    expect(verifyBuild).toContain('cli/run-character-relationship-benchmark.js')
+    expect(verifyBuild).toContain('cli/character-relationship-benchmark-project.js')
+    expect(verifyBuild).toContain('cli/run-engagement-benchmark.js')
+    expect(verifyBuild).toContain('cli/engagement-benchmark-project.js')
+    expect(verifyBuild).toContain('cli/run-masterpiece-readiness.js')
+    expect(verifyBuild).toContain('cli/masterpiece-readiness-project.js')
+    expect(verifyBuild).toContain('cli/run-premise-appeal-benchmark.js')
+    expect(verifyBuild).toContain('cli/premise-appeal-benchmark-project.js')
+    expect(verifyBuild).toContain('cli/run-prose-taste-benchmark.js')
+    expect(verifyBuild).toContain('cli/prose-taste-benchmark-project.js')
+    expect(verifyBuild).toContain('cli/run-series-retention-benchmark.js')
+    expect(verifyBuild).toContain('cli/series-retention-benchmark-project.js')
+  })
+})

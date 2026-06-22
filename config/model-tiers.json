@@ -22,6 +22,7 @@
     "plot-architect": "HIGH",
     "quality-oracle": "HIGH",
     "prose-surgeon": "HIGH",
+    "chapter-merger": "HIGH",
     "arc-designer": "MEDIUM",
     "editor": "MEDIUM",
     "lore-keeper": "MEDIUM",
@@ -33,6 +34,8 @@
     "character-voice-analyzer": "MEDIUM",
     "style-curator": "MEDIUM",
     "team-orchestrator": "MEDIUM",
+    "narrator": "HIGH",
+    "extras": "MEDIUM",
     "proofreader": "LOW",
     "summarizer": "LOW"
   },
@@ -48,6 +51,7 @@
     "summarizer": "default",
     "quality-oracle": "plan",
     "prose-surgeon": "default",
+    "chapter-merger": "default",
     "beta-reader": "plan",
     "chapter-verifier": "plan",
     "character-voice-analyzer": "plan",
@@ -55,12 +59,14 @@
     "engagement-optimizer": "plan",
     "genre-validator": "plan",
     "style-curator": "default",
-    "team-orchestrator": "default"
+    "team-orchestrator": "default",
+    "narrator": "default",
+    "extras": "plan"
   },
   "colors": {
     "novelist": "green",
     "arc-designer": "blue",
-    "character-designer": "pink",
+    "character-designer": "magenta",
     "editor": "cyan",
     "critic": "yellow",
     "plot-architect": "blue",
@@ -69,6 +75,7 @@
     "summarizer": "magenta",
     "quality-oracle": "yellow",
     "prose-surgeon": "green",
+    "chapter-merger": "magenta",
     "beta-reader": "yellow",
     "chapter-verifier": "red",
     "character-voice-analyzer": "yellow",
@@ -76,6 +83,8 @@
     "engagement-optimizer": "yellow",
     "genre-validator": "yellow",
     "style-curator": "cyan",
-    "team-orchestrator": "blue"
+    "team-orchestrator": "blue",
+    "narrator": "cyan",
+    "extras": "cyan"
   }
 }

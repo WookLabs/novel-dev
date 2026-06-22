@@ -17,6 +17,7 @@ import type { StyleProfile } from '../style-library/style-profile.js';
 import type { SubtextAnnotation } from '../subtext/types.js';
 import type { VoiceProfile } from '../voice/types.js';
 import type { DialogueAttribution } from '../voice/types.js';
+import type { ProseTasteProfile } from './prose-taste-gate.js';
 
 // ============================================================================
 // Stage Names
@@ -169,6 +170,21 @@ export interface MultiStageOptions extends AnalyzeChapterOptions {
    * - Generate 'style-alignment' directives for deviations
    */
   styleProfile?: StyleProfile;
+
+  /**
+   * User/project prose taste profile for blocking irritating generated prose.
+   *
+   * This complements styleProfile: styleProfile measures similarity to a target
+   * style, while proseTasteProfile blocks concrete habits the reader dislikes
+   * (functional report phrasing, over-sensory density, sensory wallpaper runs,
+   * repeated body reactions, design jargon leaking into prose, etc.).
+   */
+  proseTasteProfile?: ProseTasteProfile;
+
+  /**
+   * Minimum score for prose taste gate. Defaults to the profile minimum or 88.
+   */
+  proseTasteThreshold?: number;
 
   /**
    * Subtext annotations for dialogue analysis

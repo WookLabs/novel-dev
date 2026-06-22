@@ -3,9 +3,10 @@
  *
  * Tests for the quality trend tracking system:
  * - recordSnapshot: idempotency, versioning, superseding
+ * - recordEngagementEvaluation: load-record-save-detect engagement workflow
  * - getLatestSnapshots: filtering, sorting, empty handling
  * - loadTrendData / saveTrendData: file I/O, round-trip, backup
- * - renderTrendTable: markdown output, trend arrows, summary row
+ * - renderTrendTable: markdown output, engagement column, trend arrows, summary row
  * - recalculateTrends: metadata recalculation
  */
 
@@ -17,6 +18,8 @@ import os from 'os';
 import type { QualitySnapshot, TrendData } from '../../src/self-improvement/types.js';
 import {
   recordSnapshot,
+  createEngagementSnapshot,
+  recordEngagementEvaluation,
   loadTrendData,
   saveTrendData,
   getLatestSnapshots,
@@ -126,6 +129,320 @@ describe('recordSnapshot', () => {
   });
 });
 
+describe('createEngagementSnapshot', () => {
+  it('should convert engagement contract evaluation into a trend snapshot', () => {
+    const snapshot = createEngagementSnapshot({
+      chapterNumber: 7,
+      version: 2,
+      evaluation: {
+        passed: true,
+        score: 91,
+        breakdown: {
+          promiseAlignment: 100,
+          funSpecAlignment: 90,
+          cliffhangerStrength: 80,
+        },
+        issues: [],
+      },
+    });
+
+    expect(snapshot.chapterNumber).toBe(7);
+    expect(snapshot.version).toBe(2);
+    expect(snapshot.overallScore).toBe(91);
+    expect(snapshot.dimensions.engagement).toBe(91);
+    expect(snapshot.verdict).toBe('PASS');
+    expect(new Date(snapshot.timestamp).toISOString()).toBe(snapshot.timestamp);
+    expect(snapshot.engagementIssues).toEqual([]);
+    expect(snapshot.engagementRevisionDirectives).toEqual([]);
+  });
+
+  it('should store engagement issues and revision directives on failed snapshots', () => {
+    const snapshot = createEngagementSnapshot({
+      chapterNumber: 8,
+      version: 1,
+      evaluation: {
+        passed: false,
+        score: 64,
+        breakdown: {
+          promiseAlignment: 45,
+          funSpecAlignment: 60,
+          cliffhangerStrength: 40,
+        },
+        issues: [
+          {
+            code: 'missing-core-hook',
+            severity: 'critical',
+            message: 'Missing core hook',
+          },
+        ],
+        revisionDirectives: [
+          {
+            code: 'missing-core-hook',
+            priority: 'critical',
+            target: 'reader_experience',
+            action: 'Rewrite promise_fulfillment so it carries the design core_hook.',
+            expected: '살인을 예고하는 앱',
+            actual: '이상한 메시지',
+          },
+        ],
+      },
+    });
+
+    expect(snapshot.overallScore).toBe(64);
+    expect(snapshot.dimensions.engagement).toBe(64);
+    expect(snapshot.verdict).toBe('REVISE');
+    expect(snapshot.engagementIssues).toEqual([
+      expect.objectContaining({
+        code: 'missing-core-hook',
+        severity: 'critical',
+        message: 'Missing core hook',
+      }),
+    ]);
+    expect(snapshot.engagementRevisionDirectives).toEqual([
+      expect.objectContaining({
+        code: 'missing-core-hook',
+        priority: 'critical',
+        target: 'reader_experience',
+        action: 'Rewrite promise_fulfillment so it carries the design core_hook.',
+      }),
+    ]);
+  });
+});
+
+describe('recordEngagementEvaluation', () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'engagement-record-test-'));
+  });
+
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('should record, persist, and analyze an engagement evaluation in one workflow', async () => {
+    const result = await recordEngagementEvaluation({
+      projectDir: tempDir,
+      projectId: 'serial-a',
+      chapterNumber: 1,
+      version: 1,
+      evaluation: {
+        passed: true,
+        score: 93,
+        breakdown: {
+          promiseAlignment: 95,
+          funSpecAlignment: 90,
+          cliffhangerStrength: 94,
+        },
+        issues: [],
+      },
+    });
+
+    expect(result.snapshot.chapterNumber).toBe(1);
+    expect(result.snapshot.dimensions.engagement).toBe(93);
+    expect(result.trendData.projectId).toBe('serial-a');
+    expect(result.trendData.metadata.totalSnapshots).toBe(1);
+    expect(result.regression.alertLevel).toBe('none');
+
+    const trendPath = path.join(tempDir, 'meta', 'quality-trend.json');
+    expect(existsSync(trendPath)).toBe(true);
+
+    const loaded = await loadTrendData(tempDir, 'serial-a');
+    expect(loaded.snapshots).toHaveLength(1);
+    expect(loaded.snapshots[0]).toMatchObject({
+      chapterNumber: 1,
+      version: 1,
+      overallScore: 93,
+      dimensions: {
+        engagement: 93,
+      },
+      verdict: 'PASS',
+    });
+  });
+
+  it('should supersede older chapter versions when recording a revised engagement evaluation', async () => {
+    await recordEngagementEvaluation({
+      projectDir: tempDir,
+      projectId: 'serial-a',
+      chapterNumber: 3,
+      version: 1,
+      evaluation: {
+        passed: false,
+        score: 61,
+        breakdown: {
+          promiseAlignment: 55,
+          funSpecAlignment: 60,
+          cliffhangerStrength: 65,
+        },
+        issues: [
+          {
+            code: 'reader-reward-drift',
+            severity: 'major',
+            message: 'Reader reward drifted from the promise contract',
+          },
+        ],
+      },
+    });
+
+    const result = await recordEngagementEvaluation({
+      projectDir: tempDir,
+      projectId: 'serial-a',
+      chapterNumber: 3,
+      version: 2,
+      evaluation: {
+        passed: true,
+        score: 88,
+        breakdown: {
+          promiseAlignment: 90,
+          funSpecAlignment: 86,
+          cliffhangerStrength: 88,
+        },
+        issues: [],
+      },
+    });
+
+    expect(result.trendData.snapshots).toHaveLength(2);
+    expect(result.trendData.snapshots.find(s => s.version === 1)?.superseded).toBe(true);
+    expect(getLatestSnapshots(result.trendData)).toHaveLength(1);
+    expect(getLatestSnapshots(result.trendData)[0].overallScore).toBe(88);
+  });
+
+  it('should increment regression alert metadata only once for a new declining engagement record', async () => {
+    const scores = [92, 88, 84, 80, 60];
+    let latestResult: Awaited<ReturnType<typeof recordEngagementEvaluation>> | undefined;
+
+    for (let i = 0; i < scores.length; i++) {
+      latestResult = await recordEngagementEvaluation({
+        projectDir: tempDir,
+        projectId: 'serial-a',
+        chapterNumber: i + 1,
+        version: 1,
+        evaluation: {
+          passed: scores[i] >= 70,
+          score: scores[i],
+          breakdown: {
+            promiseAlignment: scores[i],
+            funSpecAlignment: scores[i],
+            cliffhangerStrength: scores[i],
+          },
+          issues: scores[i] >= 70
+            ? []
+            : [
+                {
+                  code: 'weak-must-click-ending',
+                  severity: 'critical',
+                  message: 'Ending no longer compels the next click',
+                },
+              ],
+        },
+      });
+    }
+
+    expect(latestResult?.regression.regressionDetected).toBe(true);
+    expect(latestResult?.trendData.metadata.regressionAlertsFired).toBe(1);
+
+    const repeated = await recordEngagementEvaluation({
+      projectDir: tempDir,
+      projectId: 'serial-a',
+      chapterNumber: 5,
+      version: 1,
+      evaluation: {
+        passed: false,
+        score: 60,
+        breakdown: {
+          promiseAlignment: 60,
+          funSpecAlignment: 60,
+          cliffhangerStrength: 60,
+        },
+        issues: [
+          {
+            code: 'weak-must-click-ending',
+            severity: 'critical',
+            message: 'Ending no longer compels the next click',
+          },
+        ],
+      },
+    });
+
+    expect(repeated.trendData.metadata.regressionAlertsFired).toBe(1);
+  });
+
+  it('should report recurring engagement revision directives across active snapshots', async () => {
+    await recordEngagementEvaluation({
+      projectDir: tempDir,
+      projectId: 'serial-a',
+      chapterNumber: 1,
+      version: 1,
+      evaluation: {
+        passed: false,
+        score: 62,
+        breakdown: {
+          promiseAlignment: 70,
+          funSpecAlignment: 60,
+          cliffhangerStrength: 50,
+        },
+        issues: [
+          {
+            code: 'must-click-ending-not-staged',
+            severity: 'critical',
+            message: 'Final scene misses the must-click ending.',
+          },
+        ],
+        revisionDirectives: [
+          {
+            code: 'must-click-ending-not-staged',
+            priority: 'critical',
+            target: 'final_scene',
+            action: 'Rewrite the final scene to stage must_click_ending.',
+          },
+        ],
+      },
+    });
+
+    const result = await recordEngagementEvaluation({
+      projectDir: tempDir,
+      projectId: 'serial-a',
+      chapterNumber: 2,
+      version: 1,
+      evaluation: {
+        passed: false,
+        score: 64,
+        breakdown: {
+          promiseAlignment: 72,
+          funSpecAlignment: 62,
+          cliffhangerStrength: 50,
+        },
+        issues: [
+          {
+            code: 'must-click-ending-not-staged',
+            severity: 'critical',
+            message: 'Final scene misses the must-click ending again.',
+          },
+        ],
+        revisionDirectives: [
+          {
+            code: 'must-click-ending-not-staged',
+            priority: 'critical',
+            target: 'final_scene',
+            action: 'Rewrite the final scene to stage must_click_ending.',
+          },
+        ],
+      },
+    });
+
+    expect(result.recurringEngagementDirectives).toEqual([
+      expect.objectContaining({
+        code: 'must-click-ending-not-staged',
+        count: 2,
+        firstChapter: 1,
+        latestChapter: 2,
+        priority: 'critical',
+        target: 'final_scene',
+      }),
+    ]);
+  });
+});
+
 // ============================================================================
 // getLatestSnapshots Tests
 // ============================================================================
@@ -229,6 +546,7 @@ describe('renderTrendTable', () => {
     const table = renderTrendTable(trend);
 
     expect(table).toContain('| Chapter |');
+    expect(table).toContain('Engagement');
     expect(table).toContain('|---------|');
     expect(table).toContain('Average: -');
   });
@@ -252,6 +570,18 @@ describe('renderTrendTable', () => {
     expect(dataRow).toBeDefined();
     // Should end with empty trend cell: "| |"
     expect(dataRow!).toMatch(/\|\s*\|$/);
+  });
+
+  it('should include engagement score when tracked', () => {
+    let trend = emptyTrend();
+    trend = recordSnapshot(trend, makeSnapshot(1, 88, {
+      engagement: 91,
+    }));
+
+    const table = renderTrendTable(trend);
+
+    expect(table).toContain('| Chapter | Score | Verdict | Engagement |');
+    expect(table).toContain('| 1 | 88.0 | PASS | 91 |');
   });
 
   it('should show correct trend arrows for multiple chapters', () => {

@@ -24,6 +24,7 @@ import {
   checkVocabularyConsistency,
   checkVerbalHabits,
   checkSentenceStructure,
+  checkHonorificConsistency,
   buildVoiceAnalysisPrompt,
   buildVoiceGenerationPrompt,
 } from '../../src/voice/index.js';
@@ -256,6 +257,47 @@ describe('analyzeVoiceConsistency', () => {
     expect(result.deviations.length).toBeGreaterThan(0);
     const vocabDeviation = result.deviations.find(d => d.aspect === 'vocabulary');
     expect(vocabDeviation).toBeDefined();
+  });
+
+  it('should detect honorific drift when a formal character switches to casual endings', () => {
+    const profile = createVoiceProfile('char_001', '김교수', '격식을 차리는 교수');
+    const attributions = createTestAttributions('char_001', [
+      '그 파일은 지금 넘겨.',
+      '빨리 확인해.',
+    ]);
+
+    const result = analyzeVoiceConsistency(
+      '"그 파일은 지금 넘겨." 김교수가 말했다. "빨리 확인해."',
+      'char_001',
+      profile,
+      attributions
+    );
+
+    const honorificDeviation = result.deviations.find(d => d.aspect === 'honorific');
+    expect(honorificDeviation).toBeDefined();
+    expect(honorificDeviation?.severity).toBe('major');
+    expect(result.overallScore).toBeLessThan(100);
+    expect(result.recommendations).toEqual(
+      expect.arrayContaining([expect.stringContaining('합쇼체/격식 존대')])
+    );
+  });
+
+  it('should detect honorific drift when an intimate character flattens into formal endings', () => {
+    const profile = createVoiceProfile('char_002', '민지', '편한 20대 여성 학생');
+    const attributions = createTestAttributions('char_002', [
+      '그렇게 진행하겠습니다.',
+    ]);
+
+    const result = analyzeVoiceConsistency(
+      '"그렇게 진행하겠습니다." 민지가 말했다.',
+      'char_002',
+      profile,
+      attributions
+    );
+
+    const honorificDeviation = result.deviations.find(d => d.aspect === 'honorific');
+    expect(honorificDeviation).toBeDefined();
+    expect(honorificDeviation?.severity).toBe('major');
   });
 
   it('should detect structure drift (long sentences for short-preference)', () => {
@@ -504,5 +546,31 @@ describe('checkSentenceStructure', () => {
     const deviations = checkSentenceStructure(texts, structure, attributions);
     expect(deviations.length).toBeGreaterThan(0);
     expect(deviations[0].aspect).toBe('structure');
+  });
+});
+
+// ============================================================================
+// checkHonorificConsistency Tests
+// ============================================================================
+
+describe('checkHonorificConsistency', () => {
+  it('should allow matching hapsyoche endings', () => {
+    const texts = ['네, 그렇게 하겠습니다.', '확인했습니다.'];
+    const attributions = createTestAttributions('char_001', texts);
+
+    const deviations = checkHonorificConsistency(texts, 'hapsyoche', attributions);
+
+    expect(deviations).toEqual([]);
+  });
+
+  it('should flag haeche endings in a hapsyoche profile', () => {
+    const texts = ['그렇게 해.', '지금 말해.'];
+    const attributions = createTestAttributions('char_001', texts);
+
+    const deviations = checkHonorificConsistency(texts, 'hapsyoche', attributions);
+
+    expect(deviations.length).toBe(2);
+    expect(deviations.every(d => d.aspect === 'honorific')).toBe(true);
+    expect(deviations.every(d => d.severity === 'major')).toBe(true);
   });
 });

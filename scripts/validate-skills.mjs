@@ -74,7 +74,18 @@ const skillDirs = readdirSync(skillsDir)
 console.log(`Found ${skillDirs.length} skill directories\n`);
 
 for (const dir of skillDirs) {
+  const entries = readdirSync(join(skillsDir, dir));
   const skillMd = join(skillsDir, dir, 'SKILL.md');
+
+  if (!entries.includes('SKILL.md')) {
+    const nearMiss = entries.find(entry => entry.toLowerCase() === 'skill.md');
+    if (nearMiss) {
+      logError(`${dir}: Missing exact-case SKILL.md (found ${nearMiss})`);
+    } else {
+      logError(`${dir}: Missing SKILL.md`);
+    }
+    continue;
+  }
 
   if (!existsSync(skillMd)) {
     logError(`${dir}: Missing SKILL.md`);

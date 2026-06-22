@@ -40,7 +40,7 @@ const logger = createLogger('revision-stages');
  * Thresholds from RESEARCH.md:
  * - Draft: 70 (structural completeness)
  * - Tone: 75 (emotional alignment)
- * - Style: 80 (prose craft)
+ * - Style: 88 (prose craft + prose taste gate)
  * - Final: 95 (proofreading cleanliness)
  */
 export const REVISION_STAGES: RevisionStage[] = [
@@ -66,7 +66,7 @@ export const REVISION_STAGES: RevisionStage[] = [
     directiveTypes: STYLE_DIRECTIVE_TYPES,
     modelConfig: { model: 'opus', temperature: 0.7 },
     maxIterations: 5,
-    passThreshold: 80,
+    passThreshold: 88,
   },
   {
     name: 'final',

@@ -1,5 +1,6 @@
 import { join } from 'path';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { assertValidRalphState } from './ralph-state-validation.mjs';
 
 /**
  * Find Ralph state file in project
@@ -43,7 +44,11 @@ export function writeState(projectPath, state) {
   }
 
   const newPath = join(metaDir, 'ralph-state.json');
-  state.last_updated = new Date().toISOString();
-  writeFileSync(newPath, JSON.stringify(state, null, 2));
+  const nextState = {
+    ...state,
+    last_updated: new Date().toISOString(),
+  };
+  assertValidRalphState(nextState, newPath);
+  writeFileSync(newPath, JSON.stringify(nextState, null, 2));
   return newPath;
 }

@@ -1,0 +1,26 @@
+{
+  "$schema": "../schemas/consistency-report.schema.json",
+  "checked_at": "2026-06-21T00:00:00.000Z",
+  "chapter_range": {
+    "start": 1,
+    "end": 3
+  },
+  "chapters_analyzed": [1, 2, 3],
+  "domain_coverage": {
+    "character": true,
+    "timeline": true,
+    "setting": true,
+    "factual": true,
+    "plot_logic": true
+  },
+  "total_issues": 0,
+  "issues": [],
+  "summary": {
+    "character_issues": 0,
+    "timeline_issues": 0,
+    "world_issues": 0,
+    "factual_issues": 0,
+    "plot_logic_issues": 0,
+    "foreshadowing_issues": 0
+  }
+}

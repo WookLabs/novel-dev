@@ -12,6 +12,10 @@ Write entire novel from chapter 1 to target chapter count:
 
 **Expected output:**
 ```
+[PREFLIGHT]
+Design gate: PASS (reviews/design-gate-report.json)
+Style gate: PASS (reviews/style-gate-report.json)
+
 [RALPH LOOP ACTIVATED]
 Target: 50 chapters (3 acts)
 Quality threshold: 85 (Masterpiece Mode)
@@ -66,6 +70,10 @@ Continue from where you left off:
 
 **Detection:**
 ```
+Checking preflight gates...
+✓ Design gate PASS
+✓ Style gate PASS
+
 Resumable session detected!
 
 Last checkpoint: 2026-01-21 10:30:00
@@ -76,6 +84,23 @@ Last quality: 87/100
 Completed chapters: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 
 Resume from Chapter 13? [Y/n]
+```
+
+If either gate is missing or blocked, the command does not resume drafting:
+
+```
+Resume blocked before writing.
+
+Design gate: PASS
+Style gate: BLOCKED
+Summary memory: PASS
+Summary memory files: context/summaries/chapter_NNN_summary.md
+
+Recommended commands:
+1. node dist/cli/run-prose-taste-benchmark.js --project novels/my_novel --json
+2. node dist/cli/apply-style-gate.js --project novels/my_novel --fail-on-blocked --json
+
+Run the recommended commands and retry /write-all --resume after all preflight gates PASS.
 ```
 
 **User confirms:**
@@ -311,7 +336,8 @@ Please edit Scene 3 to clarify character motivation.
 
 When finished:
 1. Save the file
-2. Run: /write-all --resume
+2. Run the style/design preflight if source evidence changed
+3. Run: /write-all --resume
 
 Ralph loop paused at Chapter 10.
 State saved to: meta/ralph-state.json
@@ -324,6 +350,10 @@ State saved to: meta/ralph-state.json
 
 **Resume:**
 ```
+Checking preflight gates...
+✓ Design gate PASS
+✓ Style gate PASS
+
 Resuming from Chapter 10...
 Detecting changes since pause...
 
@@ -405,6 +435,15 @@ Running act-level validation...
    ⚠ Minor: Chapter 10 slightly slower
    ✓ Strong act ending hook
 
+Completion gate verified:
+- `N matches current_act` (N=1, current_act=1)
+- act range resolved from `plot/structure.json` (chapters 1-15)
+- `last_gate.status == "PASS"`
+- `last_gate.chapter` covers the act end (chapter 15)
+- all chapters in Act 1 are in `completed_chapters`
+- `failed_chapters is empty`
+- `requires_user_intervention == false`
+
 <promise>ACT_1_DONE</promise>
 
 Proceed to Act 2? [Y/n]
@@ -427,13 +466,17 @@ ACT 2: Confrontation (Chapters 16-35)
 # First, outline all chapters
 /outline-all
 
-# Then write them all
+# Then run design/style/summary memory gates and write them all
+node dist/cli/apply-design-gate.js --project novels/my_novel --fail-on-blocked --json
+node dist/cli/apply-style-gate.js --project novels/my_novel --fail-on-blocked --json
 /write-all
 ```
 
 **Output:**
 ```
 All plot files exist (chapters/chapter_001.json - chapter_050.json)
+✓ Design gate PASS
+✓ Style gate PASS
 ✓ Ready for writing
 
 Starting Ralph loop...
@@ -471,6 +514,10 @@ Summaries generated automatically after each chapter.
 
 **State verification:**
 ```
+Checking preflight gates...
+✓ Design gate PASS
+✓ Style gate PASS
+
 Verifying session state...
 
 Checking completed chapters...
@@ -613,6 +660,15 @@ Quality distribution:
 90-100 (S): ████████████████████████ 46%
 80-89  (A): ██████████████████████████ 50%
 70-79  (B): ██ 4%
+
+Completion gate verified:
+- `N matches current_act` for the final act promise
+- act range resolved from `plot/structure.json`
+- `last_gate.status == "PASS"`
+- `last_gate.chapter` covers the final chapter (chapter 50)
+- all chapters through `total_chapters` are in `completed_chapters`
+- `failed_chapters is empty`
+- `requires_user_intervention == false`
 
 <promise>NOVEL_DONE</promise>
 

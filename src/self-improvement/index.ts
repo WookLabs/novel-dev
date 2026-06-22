@@ -16,6 +16,9 @@ export type {
   ExemplarCandidate,
   CollectorConfig,
   QualitySnapshot,
+  EngagementIssueSnapshot,
+  EngagementRevisionDirectiveSnapshot,
+  RecurringEngagementDirective,
   TrendAnalysis,
   TrendData,
   RegressionConfig,
@@ -41,9 +44,12 @@ export {
 
 export {
   recordSnapshot,
+  createEngagementSnapshot,
+  recordEngagementEvaluation,
   loadTrendData,
   saveTrendData,
   getLatestSnapshots,
+  summarizeRecurringEngagementDirectives,
   renderTrendTable,
   recalculateTrends,
 } from './quality-tracker.js';

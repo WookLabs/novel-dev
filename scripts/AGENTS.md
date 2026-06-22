@@ -43,14 +43,22 @@ These are integration points that respond to system events during novel writing 
 - **act-completion.mjs** - Handles act/chapter completion during Ralph Loop
   - Reads transcript for assistant messages and promise tags
   - Tracks `<promise>ACT_N_DONE</promise>` and `<promise>NOVEL_DONE</promise>` markers
+  - Blocks `ACT_N_DONE` unless `N` matches `current_act`
+  - Blocks `ACT_N_DONE` until every chapter in the current act is listed in `completed_chapters` and the latest PASS gate covers the act end
+  - Resolves act ranges from `plot/structure.json` first, explicit state ranges second, and even `total_chapters / total_acts` fallback last
+  - Blocks `NOVEL_DONE` until every chapter through `total_chapters` is complete and the latest PASS gate covers the final chapter
+  - Blocks completion promises unless `last_gate.status` is `PASS`, `failed_chapters` is empty, and `requires_user_intervention` is false
+  - Treats generic task completion promises such as `<promise>TASK_COMPLETE</promise>` as invalid while Ralph Loop is active
   - Increments iteration counter and manages state transitions
-  - Enforces max_iterations limit
+  - Enforces `max_iterations` by pausing into `requires_user_intervention=true` with `can_resume=true`, without marking the act or novel complete
   - Triggers continuation or completion logic
 
 - **session-start.mjs** - Displays project status when session begins
   - Detects most recent novel project by created_at timestamp
   - Shows progress: completed/target chapters with percentage
   - Displays Ralph Loop status if active
+  - Shows recovery options whenever `can_resume=true`, including sessions left `ralph_active=true` after an interruption
+  - Includes `pause_reason`/`last_failure_reason` in recovery output for manual-intervention pauses
   - Lists available commands for user
   - Fallback to alphabetical sort if timestamps missing
 

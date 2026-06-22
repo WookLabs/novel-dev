@@ -239,6 +239,15 @@ export interface QualityAssessment {
     /** Texture words found */
     foundTextures: string[];
   };
+  /** Banned/AI-typical expression analysis (Korean-specific, optional) */
+  bannedExpressions?: {
+    /** Total banned expression matches */
+    count: number;
+    /** Critical and high severity match count */
+    criticalCount: number;
+    /** Matched banned expression categories */
+    categories: string[];
+  };
 }
 
 /**

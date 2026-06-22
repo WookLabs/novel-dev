@@ -113,15 +113,44 @@ export interface QualitySnapshot {
    * Flexible dimension score map.
    * Keys: proseQuality, sensoryGrounding, filterWordDensity,
    *        rhythmVariation, characterVoice, transitionQuality,
-   *        honorificConsistency?, koreanTexture?, styleAlignment?
+   *        engagement?, honorificConsistency?, koreanTexture?, styleAlignment?
    */
   dimensions: Record<string, number>;
 
   /** Final verdict from Quality Oracle */
   verdict: 'PASS' | 'REVISE';
 
+  /** Engagement contract issues captured at this evaluation point */
+  engagementIssues?: EngagementIssueSnapshot[];
+
+  /** Actionable engagement revision directives captured at this evaluation point */
+  engagementRevisionDirectives?: EngagementRevisionDirectiveSnapshot[];
+
   /** Whether this snapshot has been superseded by a newer version */
   superseded?: boolean;
+}
+
+export interface EngagementIssueSnapshot {
+  code?: string;
+  severity?: string;
+  message: string;
+  expected?: string;
+  actual?: string;
+}
+
+export interface EngagementRevisionDirectiveSnapshot {
+  code?: string;
+  priority?: string;
+  target?: string;
+  action: string;
+  expected?: string;
+  actual?: string;
+}
+
+export interface RecurringEngagementDirective extends EngagementRevisionDirectiveSnapshot {
+  count: number;
+  firstChapter: number;
+  latestChapter: number;
 }
 
 // ============================================================================

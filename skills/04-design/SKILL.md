@@ -56,6 +56,7 @@ Task(subagent_type="novel-dev:plot-architect", model="opus", prompt="
 
 포함할 내용:
 - 핵심 톤/분위기 방향
+- reader_promise_contract: target_reader, core_hook, irresistible_question, emotional_payoff, protagonist_appeal, novelty_angle, binge_reason, first_five_chapter_retention_plan, long_series_engine, risk_factors
 - 세계관 설계 우선순위
 - 캐릭터 설계 방침
 - 아크 구조 전략
@@ -64,6 +65,9 @@ Task(subagent_type="novel-dev:plot-architect", model="opus", prompt="
 - 프로젝트 제약 사항
 
 이 전략 문서는 이후 Phase 1~3에서 모든 에이전트가 참조합니다.
+reader_promise_contract는 이후 /gen-plot과 /write에서 독자 보상, 클릭 유도 질문, 주인공 매력 증명 기준으로 사용됩니다.
+reader_promise_contract는 구체적 독자 약속이어야 합니다. "흥미로운 사건", "매력적인 주인공", "재미와 감동", "다음 화가 궁금함" 같은 일반어만 쓰면 `reader-promise-generic` 실패로 반려됩니다. core_hook/novelty_angle/binge_reason/long_series_engine에는 고유 장치, 기억 가능한 단서, 주인공 선택/비용, 감정 보상 trigger를 넣으세요.
+전제는 나중에 `premise-appeal-benchmark`의 behavioral evidence와 behavioral protocol로 검증될 수 있어야 합니다. 제목/한줄훅/소개문/목록 패키지가 노출 → 클릭 → 첫 화 열람 → 저장/팔로우로 이어질 수 있도록 core_hook, novelty_angle, protagonist_appeal, binge_reason을 독자가 목록에서 바로 이해할 수 있는 전환 언어로 정리하고, 블라인드 목록 테스트에서 플랫폼, variant, 유입원, 관찰 시간을 기록할 수 있을 만큼 목록 패키지 단위를 분리하세요.
 구체적이고 실행 가능한 지시사항을 작성하세요.
 ")
 ```

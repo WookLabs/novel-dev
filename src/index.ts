@@ -15,3 +15,9 @@ export * from './state/index.js';
 
 // Retry/Quality gate system
 export * from './retry/index.js';
+
+// Multi-stage quality and engagement evaluation
+export * from './quality/index.js';
+
+// Self-improvement loop
+export * from './self-improvement/index.js';

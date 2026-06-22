@@ -1,0 +1,300 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://novel-dev.org/schemas/character-relationship-benchmark.schema.json",
+  "title": "Character Relationship Benchmark Samples",
+  "description": "Target-reader character and relationship investment samples used to compare automated drama scores with actual agency, attachment, tension, reciprocal pressure, subtext, consequence, and continue-intent.",
+  "type": "object",
+  "required": ["samples"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "required_genres": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "required_target_readers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "required_relationship_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "minimum_panel_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_commented_responses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_samples_per_genre": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_samples_per_target_reader": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_samples_per_relationship_type": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_usable_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_failing_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_usable_failing_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "require_focus_evidence": {
+      "type": "boolean"
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/definitions/characterRelationshipSample"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "characterRelationshipSample": {
+      "type": "object",
+      "required": ["id", "reader_responses"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "genre": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "target_reader": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "chapter": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "focus": {
+          "$ref": "#/definitions/focus"
+        },
+        "automated_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "expected_investing": {
+          "type": "boolean"
+        },
+        "calibration_split": {
+          "type": "string",
+          "enum": ["calibration", "validation", "holdout"]
+        },
+        "rating_scale": {
+          "$ref": "#/definitions/ratingScale"
+        },
+        "reader_responses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/definitions/readerResponse"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "focus": {
+      "type": "object",
+      "properties": {
+        "character_id": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "character_name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "relationship_id": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "relationship_type": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "counterpart_id": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "counterpart_name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "scene_promise": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "character_appeal_moment": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "relationship_turn": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "intended_change": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "consequence": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "readerResponse": {
+      "type": "object",
+      "required": ["ratings"],
+      "properties": {
+        "reader_id": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "target_reader_fit": {
+          "type": "boolean"
+        },
+        "rating_scale": {
+          "$ref": "#/definitions/ratingScale"
+        },
+        "ratings": {
+          "type": "object",
+          "properties": {
+            "protagonist_agency": {
+              "$ref": "#/definitions/rating"
+            },
+            "distinctive_signature": {
+              "$ref": "#/definitions/rating"
+            },
+            "vulnerability_cost": {
+              "$ref": "#/definitions/rating"
+            },
+            "character_attachment": {
+              "$ref": "#/definitions/rating"
+            },
+            "relationship_tension": {
+              "$ref": "#/definitions/rating"
+            },
+            "reciprocal_pressure": {
+              "$ref": "#/definitions/rating"
+            },
+            "subtext_inference": {
+              "$ref": "#/definitions/rating"
+            },
+            "turn_consequence": {
+              "$ref": "#/definitions/rating"
+            },
+            "next_scene_interest": {
+              "$ref": "#/definitions/rating"
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        },
+        "would_follow_character": {
+          "type": "boolean"
+        },
+        "would_follow_relationship": {
+          "type": "boolean"
+        },
+        "would_continue_score": {
+          "$ref": "#/definitions/rating"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "care_points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "disbelief_points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "rewrite_suggestion": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "additionalProperties": false
+    },
+    "ratingScale": {
+      "type": "string",
+      "enum": ["likert-7", "percent-100"]
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+}

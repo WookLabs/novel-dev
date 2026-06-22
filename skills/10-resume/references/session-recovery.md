@@ -12,7 +12,7 @@ write-all Ralph Loop 세션이 중단되었을 때 안전하게 복구하는 방
 |------|------|------|
 | `ralph_active` | boolean | Ralph Loop 활성 여부. `true`이면 세션 진행 중 중단된 것 |
 | `can_resume` | boolean | 복구 가능 여부. 체크포인트가 유효하면 `true` |
-| `mode` | string\|null | 실행 모드. `"write-all"` 또는 `null`(완료/리셋) |
+| `mode` | string | 실행 모드. `"write-all"` 또는 `"idle"`(완료/리셋) |
 | `project_id` | string | 프로젝트 식별자 (예: `"novel_20250117_143052"`) |
 
 ### 진행 상황 필드
@@ -59,7 +59,7 @@ write-all Ralph Loop 세션이 중단되었을 때 안전하게 복구하는 방
 |------|------|------|
 | `retry_count` | number | 현재 챕터 재시도 횟수 |
 | `iteration` | number | 전체 루프 반복 횟수 |
-| `max_iterations` | number | 최대 반복 제한 (기본 100) |
+| `max_iterations` | number | 최대 반복 제한 (기본 100). 도달 시 완료 처리하지 않고 `requires_user_intervention=true`, `can_resume=true`로 일시정지 |
 | `last_failure_reason` | string | 마지막 실패 원인 |
 
 ## 백업에서 복구하는 절차
@@ -155,7 +155,13 @@ cp meta/backups/ralph-state-{latest}.json meta/ralph-state.json
 #### 방법 3: 자동 판단
 
 `/resume` → "이어서 집필" 선택 시:
-- write-all이 `current_chapter`부터 시작
+- 먼저 `reviews/design-gate-report.json`의 `passed == true`, `status == "PASS"`를 확인
+- design gate가 없거나 `BLOCKED`이면 `run-premise-appeal-benchmark`와 `apply-design-gate --fail-on-blocked`를 먼저 안내하고 재개 중단
+- 이어서 `reviews/style-gate-report.json`의 `passed == true`, `status == "PASS"`를 확인
+- style gate가 없거나 `BLOCKED`이면 `run-prose-taste-benchmark`와 `apply-style-gate --fail-on-blocked`를 먼저 안내하고 재개 중단
+- 현재 회차가 2화 이상이면 직전 최대 3개 원고의 `context/summaries/chapter_NNN_summary.md`가 존재하고, 원고보다 최신이며, compact text 100자 이상인지 확인
+- 요약 메모리가 없거나 오래되었거나 너무 얕으면 해당 직전 회차 요약/검증을 먼저 안내하고 재개 중단
+- PASS이면 write-all이 `current_chapter`부터 시작
 - 기존 `.md` 파일이 있으면 write-all이 자체적으로 처리
 
 ### 주의사항
@@ -196,6 +202,40 @@ Circuit Breaker만 리셋하고 세션은 유지하려면:
 ```
 
 이후 `/resume --continue`로 재개하면 깨끗한 상태에서 다시 시도합니다.
+
+## 재개 전 설계/문체/요약 메모리 게이트
+
+중단된 세션을 이어 쓰는 것도 새 원고 생성이므로 `/resume --continue`와 `/write-all --resume`은 design gate, style gate, summary memory gate PASS를 모두 요구합니다. 세션 시작 메시지와 `/resume`은 `reviews/design-gate-report.json`, `reviews/style-gate-report.json`, 그리고 직전 원고 요약 메모리를 확인하고 다음 상태로 나눕니다:
+
+| 상태 | 처리 |
+|------|------|
+| 두 report 모두 `PASS` + `passed=true`, 요약 메모리 PASS | `/write-all --resume` 직접 재개 가능 |
+| design report 없음 | 전제 benchmark와 design gate 실행 후 재개 |
+| style report 없음 | 문체 취향 benchmark와 style gate 실행 후 재개 |
+| summary memory 없음 | 직전 원고 요약 생성 후 재개 |
+| summary memory stale | 원고 변경분 반영 요약 재생성 후 재개 |
+| summary memory too thin/malformed | 실질 요약 재작성 또는 `/verify-chapter N` 후 재개 |
+| `BLOCKED` | issue code를 표시하고 재개 중단 |
+| malformed report | report 재생성 후 재개 |
+
+차단 issue에는 `premise-appeal-not-ready`, `weak-promise-evidence`, `premise-appeal-false-positive`, `premise-behavioral-intent-weak`, `premise-appeal-split-leakage`, `premise-appeal-report-stale`, `premise-appeal-source-missing`이 포함됩니다.
+
+문체 차단 issue에는 `prose-taste-not-ready`, `prose-taste-failing-samples`, `prose-taste-false-classification`, `prose-taste-missing-issue`, `style-friction-evidence-weak`, `style-highlight-evidence-weak`, `style-fingerprint-weak`, `authorial-style-drift`, `prose-taste-report-stale`, `prose-taste-source-missing`이 포함됩니다.
+
+요약 메모리 차단 issue에는 `summary-memory-missing`, `summary-memory-stale`, `summary-memory-too-thin`, `summary-memory-malformed`가 포함됩니다. 대상 파일은 `context/summaries/chapter_NNN_summary.md`이며, 현재 회차 직전 최대 3개 원고를 기준으로 검사합니다.
+
+재개 전 실행 명령:
+
+```bash
+node dist/cli/run-premise-appeal-benchmark.js --project novels/{novel_id} --json
+node dist/cli/apply-design-gate.js --project novels/{novel_id} --fail-on-blocked --json
+node dist/cli/run-prose-taste-benchmark.js --project novels/{novel_id} --json
+node dist/cli/apply-style-gate.js --project novels/{novel_id} --fail-on-blocked --json
+```
+
+요약 메모리 issue가 있으면 해당 회차 원고를 다시 요약하고 필요 시 `/verify-chapter N`으로 검증/요약 산출물을 최신화한 뒤 재개합니다.
+
+이 기준은 재개 경로가 오래된 전제 설계, stale premise benchmark, 거슬리는 문체로 판정된 stale prose taste evidence, 또는 끊긴 장기 기억을 가지고 다음 회차를 생성하지 못하게 하기 위한 안전장치입니다.
 
 ## Wisdom 폴더 연동
 

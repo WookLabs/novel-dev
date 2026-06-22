@@ -1,0 +1,2201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://novel-dev.org/schemas/reader-response-calibration.schema.json",
+  "title": "Reader Response Calibration Samples",
+  "description": "Reader-panel response samples used to calibrate automated engagement scores against actual reader reactions.",
+  "type": "object",
+  "required": ["samples"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "required_genres": {
+      "type": "array",
+      "description": "Genres that must have reader-panel coverage before automated engagement thresholds can be retuned.",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "required_target_reader_segments": {
+      "type": "array",
+      "description": "Named target-reader quota cells that must each have enough respondents before reader-response samples can retune hard gates.",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "minimum_respondents_per_required_target_segment": {
+      "type": "integer",
+      "description": "Minimum respondents required in each named target-reader quota cell.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "require_target_reader_segment_quotas": {
+      "type": "boolean",
+      "description": "Whether each sample must include target_reader_segment_counts for the required target-reader segments before gate retuning."
+    },
+    "required_recruitment_channels": {
+      "type": "array",
+      "description": "Named recruitment channels that must each contribute enough respondents before reader-response samples can retune hard gates.",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "minimum_respondents_per_required_recruitment_channel": {
+      "type": "integer",
+      "description": "Minimum respondents required in each named recruitment channel.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "maximum_dominant_recruitment_channel_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of respondents from the single largest recruitment channel before panel protocol is considered source-skewed.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "require_recruitment_channel_diversity": {
+      "type": "boolean",
+      "description": "Whether samples must include recruitment_channel_counts for required recruitment channels before gate retuning."
+    },
+    "maximum_samples_per_respondent": {
+      "type": "integer",
+      "description": "Maximum manuscript or variant samples a single respondent may evaluate before repeated-exposure fatigue or carryover risk blocks gate retuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "minimum_order_balance_ratio": {
+      "type": "number",
+      "description": "Minimum acceptable balance for manuscript/sample presentation order across repeated-exposure respondents before gate retuning.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_samples_per_genre": {
+      "type": "integer",
+      "description": "Minimum total reader-panel samples required for each required genre.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "minimum_usable_samples_per_genre": {
+      "type": "integer",
+      "description": "Minimum usable reader-panel samples required for each required genre.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "minimum_human_respondent_ratio": {
+      "type": "number",
+      "description": "Minimum share of respondents that must be verified human readers before samples can be used for hard gate tuning. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "require_human_reader_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need respondent_source and human respondent provenance before automated thresholds can be retuned."
+    },
+    "require_response_data_quality": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need response quality flags before automated thresholds can be retuned."
+    },
+    "minimum_median_read_time_seconds": {
+      "type": "number",
+      "description": "Minimum median time respondents should spend reading/answering the manuscript sample before response data is considered credible.",
+      "minimum": 0,
+      "maximum": 86400
+    },
+    "maximum_median_reading_words_per_minute": {
+      "type": "number",
+      "description": "Maximum plausible median reading speed after normalizing the manuscript sample's word count by median read time.",
+      "exclusiveMinimum": 0,
+      "maximum": 5000
+    },
+    "maximum_minimum_reading_words_per_minute": {
+      "type": "number",
+      "description": "Maximum plausible fastest observed reading speed after normalizing the manuscript sample's word count by minimum read time.",
+      "exclusiveMinimum": 0,
+      "maximum": 10000
+    },
+    "maximum_median_reading_characters_per_minute": {
+      "type": "number",
+      "description": "Maximum plausible median reading speed after normalizing the manuscript sample's character count by median read time.",
+      "exclusiveMinimum": 0,
+      "maximum": 20000
+    },
+    "maximum_minimum_reading_characters_per_minute": {
+      "type": "number",
+      "description": "Maximum plausible fastest observed reading speed after normalizing the manuscript sample's character count by minimum read time.",
+      "exclusiveMinimum": 0,
+      "maximum": 50000
+    },
+    "require_length_normalized_read_time": {
+      "type": "boolean",
+      "description": "Whether response data-quality evidence must include manuscript_word_count or manuscript_character_count so reading time can be normalized by sample length."
+    },
+    "maximum_speeding_response_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of respondents flagged as speeders.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_straight_lining_response_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of respondents giving straight-lined or near-identical rating batteries.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_duplicate_response_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of duplicate or near-duplicate responses.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_bot_suspected_response_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of bot-suspected or automation-suspected responses.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_low_quality_open_ended_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of low-quality open-ended responses.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_inconsistent_response_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of inconsistent responses across repeated, validation, or cross-check items.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_quality_flagged_response_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of unique respondents carrying any response-quality flag.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "required_series_length": {
+      "type": "integer",
+      "description": "Minimum longest consecutive chapter run required for each required genre.",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "required_usable_series_length": {
+      "type": "integer",
+      "description": "Minimum longest consecutive usable chapter run required for each required genre.",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_holdout_samples": {
+      "type": "integer",
+      "description": "Minimum reserved holdout reader-panel samples required before automated engagement thresholds can be retuned.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "minimum_usable_holdout_samples": {
+      "type": "integer",
+      "description": "Minimum usable reserved holdout reader-panel samples required before automated engagement thresholds can be retuned.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "minimum_started_read_count": {
+      "type": "integer",
+      "description": "Minimum readers who started the sample before completed-reader averages can be trusted for gate tuning.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "minimum_panel_completion_rate": {
+      "type": "number",
+      "description": "Minimum share of started readers who completed the sample before rating. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_drop_off_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of started readers who dropped off before finishing. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "maximum_skimmed_read_ratio": {
+      "type": "number",
+      "description": "Maximum allowed share of started readers who skimmed rather than fully read the sample. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "require_retention_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need started/completed/drop-off/skimming evidence before automated thresholds can be retuned."
+    },
+    "minimum_drop_off_annotations": {
+      "type": "integer",
+      "description": "Minimum localized drop-off, skimming, slowdown, or mind-wandering annotations required when readers abandon or skim a sample.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "minimum_actionable_drop_off_annotations": {
+      "type": "integer",
+      "description": "Minimum localized drop-off annotations that include a location, reason, and suggested revision.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "require_drop_off_localization_evidence": {
+      "type": "boolean",
+      "description": "Whether samples with observed drop-off or skimming must localize the exact scene, paragraph, sentence, or beat before threshold tuning."
+    },
+    "minimum_annotation_coder_count": {
+      "type": "integer",
+      "description": "Minimum independent coders required before free-response friction annotations can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "minimum_annotation_double_coded_count": {
+      "type": "integer",
+      "description": "Minimum reader responses or annotation units that must be independently double-coded.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "minimum_annotation_agreement_rate": {
+      "type": "number",
+      "description": "Minimum inter-coder agreement or reliability rate required for annotation coding evidence. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "require_annotation_reliability_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need annotation coding reliability evidence before automated thresholds can be retuned."
+    },
+    "minimum_unprompted_scene_recall_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must recall at least one scene moment without prompted choices before the sample can be used for gate tuning. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_distinctive_scene_recall_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share whose recall includes a concrete, chapter-specific image, choice, reversal, or consequence. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_scene_recall_annotations": {
+      "type": "integer",
+      "description": "Minimum structured scene_recall_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_scene_recall_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need unprompted scene recall evidence before automated thresholds can be retuned."
+    },
+    "minimum_tension_trace_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must provide beat-level tension trace evidence before the sample can be used for gate tuning. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_tension_peak_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share whose trace marks a concrete suspense, curiosity, or surprise peak. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_tension_question_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share whose trace names the active narrative question, stake, or risk behind the tension. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_tension_trace_annotations": {
+      "type": "integer",
+      "description": "Minimum structured tension_trace_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_tension_trace_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need scene-level tension trace evidence before automated thresholds can be retuned."
+    },
+    "minimum_forecast_prediction_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must provide narrative forecast predictions before the sample can be used for gate tuning. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_forecast_diversity_count": {
+      "type": "integer",
+      "description": "Minimum number of distinct reader predictions required to show that the story is not mechanically obvious.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "minimum_forecast_revision_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share whose predictions changed while reading because the chapter shifted available evidence or stakes. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_forecast_mismatch_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share whose forecast diverged from the actual outcome in a meaningful, fair-play way. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_narrative_forecast_annotations": {
+      "type": "integer",
+      "description": "Minimum structured narrative_forecast_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_narrative_forecast_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need narrative forecast evidence before automated thresholds can be retuned."
+    },
+    "minimum_quote_recall_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must remember or quote a specific line before the sample can be used for gate tuning. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_favorite_line_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must mark a line as a favorite, striking, or especially valuable sentence. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_shareable_line_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must identify a line they would quote, screenshot, share, or discuss with another reader. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_line_quote_annotations": {
+      "type": "integer",
+      "description": "Minimum structured line_quote_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_line_quote_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need memorable or quotable line evidence before automated thresholds can be retuned."
+    },
+    "minimum_payoff_setup_recall_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must remember the setup, plant, or earlier clue that made a payoff feel prepared. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_payoff_trigger_recognition_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must identify the trigger, reveal, or connective beat that activated the payoff. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_payoff_earned_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must say the payoff felt earned rather than arbitrary or like a cheat. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_payoff_recontextualization_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must report a changed interpretation of an earlier scene, clue, relationship, rule, or choice after the payoff.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_payoff_emotional_satisfaction_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that must report emotional satisfaction, catharsis, dread, delight, or other payoff-specific feeling. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_payoff_fairness_annotations": {
+      "type": "integer",
+      "description": "Minimum structured payoff_fairness_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_payoff_fairness_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need setup/payoff fairness reconstruction evidence before automated thresholds can be retuned."
+    },
+    "minimum_organic_recommendation_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that would organically recommend or mention the chapter to another target reader. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_discussion_prompt_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that identified a concrete question, dilemma, scene, or character choice they wanted to discuss.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_advocacy_annotations": {
+      "type": "integer",
+      "description": "Minimum structured advocacy_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_advocacy_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need recommendation, sharing, or discussion evidence before automated thresholds can be retuned."
+    },
+    "minimum_bookmark_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that would bookmark, save, follow, or add the work to a library. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_return_intent_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that would return after a delay or keep reading more chapters in the same session. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_paid_continuation_intent_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that would spend paid currency, subscription attention, or premium unlocks to continue. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_durable_engagement_annotations": {
+      "type": "integer",
+      "description": "Minimum structured durable_engagement_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_durable_engagement_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need bookmark, follow, return, binge, or paid-continuation evidence before automated thresholds can be retuned."
+    },
+    "minimum_continuation_behavior_impressions": {
+      "type": "integer",
+      "description": "Minimum next-chapter CTA impressions required before actual continuation behavior can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "minimum_next_chapter_click_through_ratio": {
+      "type": "number",
+      "description": "Minimum share of next-chapter CTA impressions that should produce a next-chapter click. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_next_chapter_open_ratio": {
+      "type": "number",
+      "description": "Minimum share of next-chapter CTA impressions that should produce a next-chapter open. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_next_chapter_read_start_ratio": {
+      "type": "number",
+      "description": "Minimum share of next-chapter CTA impressions that should produce a next-chapter read start. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "require_continuation_behavior_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need actual next-chapter click/open/read-start behavior before automated thresholds can be retuned."
+    },
+    "minimum_lingering_emotion_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that reports a lingering emotion, mood shift, or emotional aftertaste after reading. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_reflective_meaning_ratio": {
+      "type": "number",
+      "description": "Minimum respondent share that reports a reflective question, personal memory, changed interpretation, or meaning carried after reading. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_resonance_annotations": {
+      "type": "integer",
+      "description": "Minimum structured resonance_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_resonance_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need post-reading emotional resonance evidence before automated thresholds can be retuned."
+    },
+    "minimum_delayed_follow_up_respondent_ratio": {
+      "type": "number",
+      "description": "Minimum share of original respondents who must complete a delayed follow-up before the sample can tune hard gates. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_delayed_follow_up_hours": {
+      "type": "number",
+      "description": "Minimum delay in hours between the initial reading and follow-up memory check.",
+      "minimum": 0,
+      "maximum": 8760
+    },
+    "minimum_delayed_scene_recall_ratio": {
+      "type": "number",
+      "description": "Minimum original-respondent share that must recall a concrete scene, image, line, or beat in the delayed follow-up. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_delayed_character_recall_ratio": {
+      "type": "number",
+      "description": "Minimum original-respondent share that must recall a character, relationship, decision, or character-specific pressure in the delayed follow-up. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_delayed_continuation_intent_ratio": {
+      "type": "number",
+      "description": "Minimum original-respondent share that still reports next-click, return, or paid continuation intent in the delayed follow-up. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_delayed_memory_annotations": {
+      "type": "integer",
+      "description": "Minimum structured delayed_memory_annotations required before the sample can be used for hard gate tuning.",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "require_delayed_memory_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need delayed follow-up memory and continuation evidence before automated thresholds can be retuned."
+    },
+    "require_comparative_preference": {
+      "type": "boolean",
+      "description": "Whether every reader-panel sample must include strong blind pairwise preference evidence against a target-market reference before automated thresholds can be retuned."
+    },
+    "minimum_comparative_preference_win_rate": {
+      "type": "number",
+      "description": "Minimum share of blind pairwise comparisons in which readers prefer the current manuscript over a target-market reference. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_comparative_preference_respondents": {
+      "type": "integer",
+      "description": "Minimum respondents required for comparative preference evidence.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "require_revision_outcome_evidence": {
+      "type": "boolean",
+      "description": "Whether reader-panel samples need before/after revision outcome evidence before automated thresholds can be retuned."
+    },
+    "minimum_revision_lift": {
+      "type": "number",
+      "description": "Minimum reader-score improvement required between the baseline draft and revised draft.",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "minimum_revision_preference_win_rate": {
+      "type": "number",
+      "description": "Minimum share of blind before/after pairwise comparisons in which readers prefer the revised draft. Accepts 0-1 ratios.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_revision_preference_respondents": {
+      "type": "integer",
+      "description": "Minimum respondents required for revision preference evidence.",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "required_chapter_ranges": {
+      "type": "array",
+      "description": "Chapter ranges that must have reader-panel coverage before automated engagement thresholds can be retuned.",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["id", "min_chapter"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "min_chapter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "max_chapter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "required_genres": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "maxItems": 40,
+            "uniqueItems": true
+          },
+          "minimum_samples": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "minimum_usable_samples": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": ["id", "reader"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "genre": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "chapter": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "calibration_split": {
+            "type": "string",
+            "enum": ["calibration", "validation", "holdout"],
+            "description": "Whether the sample is used for calibration/development, intermediate validation, or reserved holdout confirmation. Threshold retuning should be confirmed on holdout samples."
+          },
+          "automated": {
+            "type": "object",
+            "description": "Optional automated scores. If omitted, calibrate-reader-response reads meta/quality-trend.json by chapter/version.",
+            "properties": {
+              "engagement_score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "gate_passed": {
+                "type": "boolean"
+              },
+              "prose_taste_score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "issue_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "maxItems": 80
+              }
+            },
+            "additionalProperties": false
+          },
+          "reader": {
+            "type": "object",
+            "description": "Reader-panel response dimensions. Scores can use 0-100 or the provided rating_scale, such as 1-7 Likert.",
+            "minProperties": 1,
+            "properties": {
+              "next_click": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How strongly readers want to continue to the next chapter."
+              },
+              "attention": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "emotional_engagement": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "mental_imagery": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "transportation": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "character_attachment": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How much readers care about the protagonist or central character's outcome."
+              },
+              "relationship_investment": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How much readers care about the relationship turn, trust shift, or interpersonal stake."
+              },
+              "novelty": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How fresh, non-generic, or meaningfully different the premise, scene route, or payoff feels to readers."
+              },
+              "surprise": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How much readers feel an earned reversal, discovery, or non-obvious turn."
+              },
+              "resonance": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How much aftertaste, memory, emotional echo, or reflective meaning remains after reading."
+              },
+              "scene_recall": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How strongly readers can recall a concrete, distinctive scene moment without prompting."
+              },
+              "recommendation_intent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How strongly readers would recommend, share, or discuss the chapter with another target reader."
+              },
+              "bookmark_intent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How strongly readers would bookmark, save, follow, or add the work to their library."
+              },
+              "return_intent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How strongly readers expect to return to the story after a delay."
+              },
+              "purchase_intent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How strongly readers would spend paid currency, subscription attention, or a premium unlock to continue."
+              },
+              "binge_intent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "How strongly readers want to keep reading multiple chapters in the same sitting."
+              },
+              "interest": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "suspense": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "beauty": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "amusement": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "overall_liking": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "additionalProperties": false
+          },
+          "respondent_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "rating_scale": {
+            "type": "object",
+            "required": ["min", "max"],
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "evidence": {
+            "type": "object",
+            "description": "Evidence that the reader response sample is actionable enough for threshold tuning.",
+            "properties": {
+              "respondent_source": {
+                "type": "string",
+                "enum": [
+                  "human-target-reader",
+                  "human-general-reader",
+                  "mixed-human-synthetic",
+                  "synthetic-ai",
+                  "author-estimate",
+                  "unknown"
+                ],
+                "description": "Provenance of the respondent data. Only verified human reader panels are usable for hard gate tuning by default."
+              },
+              "human_respondent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents verified as real human readers, excluding synthetic AI responses and author/system estimates."
+              },
+              "synthetic_respondent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Responses generated or simulated by AI/synthetic respondents."
+              },
+              "author_estimate_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Responses that are author, editor, or system estimates rather than independent reader answers."
+              },
+              "manuscript_word_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000,
+                "description": "Word count of the exact manuscript excerpt shown to the reader panel, used to normalize read-time plausibility."
+              },
+              "manuscript_character_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000000,
+                "description": "Character count of the exact manuscript excerpt shown to the reader panel, used to normalize Korean or whitespace-sensitive read-time plausibility."
+              },
+              "median_read_time_seconds": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 86400,
+                "description": "Median time respondents spent reading/answering this manuscript sample."
+              },
+              "minimum_read_time_seconds": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 86400,
+                "description": "Shortest observed completion time for this manuscript sample."
+              },
+              "speeding_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents flagged for completing too quickly to have plausibly read the sample."
+              },
+              "straight_lining_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents flagged for straight-lining or near-identical response batteries."
+              },
+              "duplicate_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Duplicate or near-duplicate response records."
+              },
+              "bot_suspected_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Responses suspected to come from bots, automation, or non-human survey agents."
+              },
+              "low_quality_open_ended_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Open-ended answers that are nonsensical, template-like, copied, irrelevant, or too thin to support the rating."
+              },
+              "inconsistent_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents flagged for inconsistent validation, repeated-item, or cross-check answers."
+              },
+              "quality_flagged_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Unique respondents carrying any data-quality flag after de-duplicating overlapping flags."
+              },
+              "target_reader_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who match the intended genre/platform reader segment."
+              },
+              "target_reader_segment_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Distinct intended-reader cohorts represented in the panel, such as genre fans, platform-native readers, expert readers, or style-preference groups."
+              },
+              "target_reader_segment_counts": {
+                "type": "object",
+                "description": "Respondent counts per named target-reader quota cell. Keys should match required_target_reader_segments when quota coverage is required.",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              },
+              "dominant_reader_segment_ratio": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Share of respondents from the largest reader cohort. High values indicate a narrow panel that may overfit one reader profile."
+              },
+              "started_read_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Readers who opened or began the sampled chapter, including readers who dropped off before rating."
+              },
+              "completed_read_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who finished the sampled chapter before rating."
+              },
+              "drop_off_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Readers who started the sample but stopped before finishing or before giving complete ratings."
+              },
+              "skimmed_read_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Readers who self-reported skimming or were flagged as skimming the sample."
+              },
+              "qualitative_comment_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who left usable free-response feedback."
+              },
+              "friction_point_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Distinct scene, paragraph, or sentence-level drop-off/friction annotations."
+              },
+              "actionable_friction_point_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Friction annotations tied to a specific location and reason strongly enough to drive revision."
+              },
+              "rewrite_suggestion_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Concrete rewrite directives or revision suggestions derived from reader feedback."
+              },
+              "friction_annotations": {
+                "type": "array",
+                "description": "Structured scene, paragraph, or sentence-level reader friction notes. These turn reader-panel scores into revision directives.",
+                "maxItems": 80,
+                "items": {
+                  "type": "object",
+                  "required": ["reason"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local location such as scene id, paragraph number, sentence number, or beat label."
+                    },
+                    "quote": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "Short reader quote or short manuscript excerpt identifying the friction point."
+                    },
+                    "dimension": {
+                      "type": "string",
+                      "enum": [
+                        "next-click",
+                        "attention",
+                        "emotional-engagement",
+                        "mental-imagery",
+                        "transportation",
+                        "character-attachment",
+                        "relationship-investment",
+                        "novelty",
+                        "surprise",
+                        "resonance",
+                        "scene-recall",
+                        "recommendation-intent",
+                        "bookmark-intent",
+                        "return-intent",
+                        "purchase-intent",
+                        "binge-intent",
+                        "interest",
+                        "suspense",
+                        "beauty",
+                        "amusement",
+                        "overall-liking"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why readers stopped, drifted, felt unconvinced, or lost desire to continue."
+                    },
+                    "severity": {
+                      "type": "string",
+                      "enum": ["minor", "major", "critical"]
+                    },
+                    "rewrite_suggestion": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Concrete revision action derived from the reader feedback."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who marked this or equivalent friction."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this annotation, such as genre-core, platform-native, style-sensitive, or expert-reader."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "drop_off_annotations": {
+                "type": "array",
+                "description": "Localized reader drop-off, skimming, slowdown, or mind-wandering events. Required when retention counts show readers left or skimmed.",
+                "maxItems": 80,
+                "items": {
+                  "type": "object",
+                  "required": ["event_type", "reason"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local scene, paragraph, sentence, or beat where the reader stopped, skimmed, slowed down, or lost focus."
+                    },
+                    "event_type": {
+                      "type": "string",
+                      "enum": ["drop-off", "skim", "slowdown", "mind-wandering"],
+                      "description": "Observed disengagement event type."
+                    },
+                    "last_completed_location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Last scene, paragraph, sentence, or beat the reader reported finishing before disengaging."
+                    },
+                    "trigger_quote": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "Short reader quote or manuscript excerpt that identifies the disengagement trigger."
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why the reader stopped, skimmed, slowed down, or reported mind-wandering at this location."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of readers who produced this or an equivalent disengagement event."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this event."
+                    },
+                    "suggested_revision": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Concrete revision action that addresses the localized disengagement trigger."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "annotation_coder_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000,
+                "description": "Independent human coders who assigned issue labels, dimensions, or rewrite directives to reader free-response annotations."
+              },
+              "annotation_double_coded_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Reader responses or annotation units independently coded by at least two coders."
+              },
+              "annotation_agreement_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Agreement or reliability value for the annotation coding metric, normalized to a 0-1 ratio."
+              },
+              "annotation_reliability_metric": {
+                "type": "string",
+                "enum": [
+                  "percent-agreement",
+                  "cohen-kappa",
+                  "fleiss-kappa",
+                  "krippendorff-alpha",
+                  "icc",
+                  "other"
+                ],
+                "description": "Inter-coder agreement or reliability metric used for reader annotation coding."
+              },
+              "annotation_codebook_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "description": "Version or identifier of the annotation codebook used by coders."
+              },
+              "annotation_adjudicated": {
+                "type": "boolean",
+                "description": "Whether coder disagreements were reviewed and resolved before turning annotations into revision directives."
+              },
+              "annotation_coder_blinded": {
+                "type": "boolean",
+                "description": "Whether coders were blinded to automated scores, author/model identity, or expected verdict while coding responses."
+              },
+              "unprompted_scene_recall_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who could name at least one remembered scene moment without being shown answer choices."
+              },
+              "distinctive_scene_recall_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose unprompted recall included a concrete image, choice, reversal, consequence, or other distinctive chapter-specific detail."
+              },
+              "scene_recall_annotations": {
+                "type": "array",
+                "description": "Structured positive reader-memory notes that identify what scene moments readers could recall after reading.",
+                "maxItems": 80,
+                "items": {
+                  "type": "object",
+                  "required": ["remembered_moment"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local scene, paragraph, beat, or closing image that readers remembered."
+                    },
+                    "remembered_moment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "What readers recalled in their own words or as a normalized recall label."
+                    },
+                    "distinctive_detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "Concrete detail that makes the recalled scene chapter-specific rather than a generic plot summary."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who recalled this or equivalent moment."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this recall annotation."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "tension_trace_point_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who marked at least one beat-level tension, curiosity, or suspense point while reading."
+              },
+              "tension_peak_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose trace identified at least one concrete high-tension peak."
+              },
+              "tension_question_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose trace named the active narrative question, stake, risk, or uncertainty behind the tension."
+              },
+              "tension_trace_annotations": {
+                "type": "array",
+                "description": "Structured beat-level reader tension traces that identify where suspense, curiosity, surprise, or risk rose while reading.",
+                "maxItems": 120,
+                "items": {
+                  "type": "object",
+                  "required": ["experienced_tension"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local scene, paragraph, beat, or sentence where readers felt tension shift."
+                    },
+                    "experienced_tension": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "What readers felt becoming suspenseful, uncertain, risky, or surprising at this point."
+                    },
+                    "suspense_level": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "curiosity_level": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "surprise_level": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "narrative_question": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "Question readers wanted answered because of this beat."
+                    },
+                    "stake_or_risk": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "Concrete danger, cost, relationship risk, time pressure, or uncertainty readers perceived."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who marked this or equivalent tension point."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this tension trace annotation."
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why this beat raised, released, or failed to raise tension for readers."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "forecast_prediction_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who made at least one concrete prediction about the chapter or near-future story outcome while reading."
+              },
+              "forecast_diversity_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Distinct prediction clusters observed in reader forecasts, used to detect whether tension is too mechanically obvious."
+              },
+              "forecast_revision_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose forecast changed after a clue, reversal, choice, or escalation shifted the story model."
+              },
+              "forecast_mismatch_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose forecast differed from the actual outcome in a meaningful, fair-play way."
+              },
+              "forecast_inflection_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose forecast curve or certainty changed at a concrete narrative beat."
+              },
+              "narrative_forecast_annotations": {
+                "type": "array",
+                "description": "Structured reader forecast traces that show initial predictions, revised predictions, actual outcomes, and why forecast mismatch or change created tension.",
+                "maxItems": 120,
+                "items": {
+                  "type": "object",
+                  "required": ["initial_prediction"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local scene, paragraph, beat, or sentence where the forecast was made or changed."
+                    },
+                    "initial_prediction": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "What readers initially expected would happen."
+                    },
+                    "revised_prediction": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "How readers updated their prediction after new evidence, a reversal, or a pressure beat."
+                    },
+                    "actual_outcome": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "What actually happened in the chapter or validated follow-up beat."
+                    },
+                    "prediction_mismatch": {
+                      "type": "boolean",
+                      "description": "Whether the prediction meaningfully diverged from the actual outcome without becoming arbitrary."
+                    },
+                    "prediction_shift": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "The clue, choice, reversal, or escalation that changed the reader forecast."
+                    },
+                    "surprise_or_tension_reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why the prediction update or mismatch created suspense, curiosity, surprise, or reader investment."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who made this or equivalent forecast."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this forecast annotation."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "quote_recall_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who could recall, quote, or identify at least one specific line from the chapter."
+              },
+              "favorite_line_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who marked a line as a favorite, striking, beautiful, funny, emotionally sharp, or otherwise especially valuable."
+              },
+              "shareable_line_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who said they would quote, screenshot, share, or discuss a specific line."
+              },
+              "line_quote_annotations": {
+                "type": "array",
+                "description": "Structured reader notes for memorable, favorite, or shareable lines that preserve the exact line and why it worked.",
+                "maxItems": 120,
+                "items": {
+                  "type": "object",
+                  "required": ["quoted_line"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local sentence, paragraph, beat, or scene containing the quoted line."
+                    },
+                    "quoted_line": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "The exact or near-exact line readers remembered, selected, or wanted to quote."
+                    },
+                    "appeal_reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why the line worked for readers: voice, image, emotion, theme, wit, character pressure, or payoff."
+                    },
+                    "share_reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why readers would quote, screenshot, share, or discuss the line."
+                    },
+                    "line_function": {
+                      "type": "string",
+                      "enum": ["voice", "theme", "emotion", "character", "plot", "world", "humor", "image", "other"],
+                      "description": "Primary craft function readers attributed to the line."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who selected this or an equivalent line."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this line quote annotation."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "payoff_setup_recall_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who could name the setup, plant, clue, earlier scene, relationship beat, or rule that prepared the payoff."
+              },
+              "payoff_trigger_recognition_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who identified the trigger, reveal, or connective beat that activated the payoff."
+              },
+              "payoff_earned_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who said the payoff felt earned, fair, or properly prepared rather than arbitrary."
+              },
+              "payoff_recontextualization_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who reported that the payoff changed how they understood an earlier clue, scene, relationship, rule, or choice."
+              },
+              "payoff_emotional_satisfaction_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who reported payoff-specific emotional satisfaction, catharsis, dread, delight, or release."
+              },
+              "payoff_fairness_annotations": {
+                "type": "array",
+                "description": "Structured reader notes that reconstruct whether a payoff was prepared, triggered, earned, emotionally satisfying, and able to recontextualize earlier story evidence.",
+                "maxItems": 120,
+                "items": {
+                  "type": "object",
+                  "required": ["payoff_moment"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local scene, paragraph, beat, or sentence where the payoff occurred."
+                    },
+                    "payoff_moment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "The reveal, reversal, reward, emotional turn, clue resolution, or consequence readers treated as the payoff."
+                    },
+                    "remembered_setup": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "The earlier setup, plant, image, clue, relationship beat, rule, or choice readers remembered after the payoff."
+                    },
+                    "trigger_or_reveal": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "The trigger, reveal, or connective beat that made readers connect setup to payoff."
+                    },
+                    "changed_interpretation": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 700,
+                      "description": "How the payoff changed readers' interpretation of earlier evidence."
+                    },
+                    "earned_reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why readers felt the payoff was earned, fair, or emotionally prepared."
+                    },
+                    "arbitrary_or_cheat_reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why readers felt the payoff was arbitrary, unearned, too hidden, contradicted prior evidence, or cheated."
+                    },
+                    "emotional_payoff_reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "The satisfaction, catharsis, dread, delight, relief, or emotional release generated by the payoff."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who made this or equivalent payoff fairness observation."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this payoff fairness annotation."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "organic_recommendation_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who said they would organically recommend, mention, share, or pitch the chapter to another target reader."
+              },
+              "discussion_prompt_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who identified a concrete scene, question, dilemma, or character choice they wanted to discuss."
+              },
+              "advocacy_annotations": {
+                "type": "array",
+                "description": "Structured positive reader-advocacy notes that identify why readers would recommend, share, or discuss the chapter.",
+                "maxItems": 80,
+                "items": {
+                  "type": "object",
+                  "required": ["share_trigger"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local scene, paragraph, beat, or closing image that generated recommendation or discussion intent."
+                    },
+                    "share_trigger": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "What readers would tell another target reader about this chapter."
+                    },
+                    "recommended_audience": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "Specific friend, reader cohort, trope fan, or comparable audience the respondent would recommend it to."
+                    },
+                    "discussion_prompt": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "Question, dilemma, reversal, or character choice readers wanted to talk about after reading."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who gave this or equivalent advocacy reason."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this advocacy annotation."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "bookmark_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who would bookmark, save, or mark the work for later continuation."
+              },
+              "follow_or_library_add_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who would follow the work, subscribe, or add it to a platform library."
+              },
+              "return_next_day_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who said they would return after a delay, such as the next day or next update."
+              },
+              "binge_read_intent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who said they wanted to keep reading multiple chapters in the same sitting."
+              },
+              "paid_continuation_intent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who would spend paid currency, subscription attention, or a premium unlock to continue."
+              },
+              "durable_engagement_annotations": {
+                "type": "array",
+                "description": "Structured positive commitment notes that identify why readers would bookmark, follow, return, binge, or pay to continue.",
+                "maxItems": 80,
+                "items": {
+                  "type": "object",
+                  "required": ["commitment_trigger"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Chapter-local scene, paragraph, beat, or closing image that generated durable engagement."
+                    },
+                    "commitment_trigger": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "What made readers want to save, follow, return, binge, or pay to continue."
+                    },
+                    "intended_action": {
+                      "type": "string",
+                      "enum": ["bookmark", "follow", "return", "purchase", "binge"],
+                      "description": "Reader action implied by this commitment trigger."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who gave this or equivalent durable engagement reason."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this durable engagement annotation."
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Why this moment creates a stronger continuation commitment than ordinary liking."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "next_chapter_cta_impression_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Readers who were shown a next-chapter continuation CTA after finishing the sampled chapter."
+              },
+              "next_chapter_click_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Readers who clicked the next-chapter CTA after finishing the sampled chapter."
+              },
+              "next_chapter_open_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Readers who opened the next chapter after the sampled chapter."
+              },
+              "next_chapter_read_start_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Readers who started reading the next chapter after opening or clicking through from the sampled chapter."
+              },
+              "lingering_emotion_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who reported a lingering emotion, mood shift, or emotional aftertaste after reading."
+              },
+              "reflective_comment_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who reported a reflective question, theme, moral tension, or changed interpretation after reading."
+              },
+              "personal_memory_or_meaning_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who connected the chapter to a personal memory, relationship, fear, desire, or self-understanding."
+              },
+              "resonance_annotations": {
+                "type": "array",
+                "description": "Structured post-reading emotional resonance notes that explain what stayed with readers after the chapter ended.",
+                "maxItems": 80,
+                "items": {
+                  "type": "object",
+                  "required": ["lingering_emotion"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Scene, paragraph, image, line, or beat that produced the aftertaste."
+                    },
+                    "lingering_emotion": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "description": "Emotion or mood readers carried after closing the chapter."
+                    },
+                    "reflective_question": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 800,
+                      "description": "Question, dilemma, theme, or interpretation readers kept thinking about."
+                    },
+                    "remembered_image": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 800,
+                      "description": "Concrete image, line, object, gesture, or sensory detail readers remembered as the aftertaste anchor."
+                    },
+                    "personal_meaning": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Personal memory, life comparison, self-understanding, or relationship meaning readers connected to the chapter."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who gave this or equivalent resonance note."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this resonance annotation."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "delayed_follow_up_respondent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Original respondents who completed a delayed memory follow-up after the initial reading."
+              },
+              "delayed_follow_up_hours": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 8760,
+                "description": "Hours between the initial reading and delayed memory follow-up."
+              },
+              "delayed_scene_recall_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Delayed follow-up respondents who still recalled a concrete scene, image, line, object, gesture, or beat."
+              },
+              "delayed_character_recall_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Delayed follow-up respondents who still recalled a character, relationship, decision, wound, cost, or character-specific pressure."
+              },
+              "delayed_next_click_intent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Delayed follow-up respondents who still wanted to click the next chapter."
+              },
+              "delayed_return_intent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Delayed follow-up respondents who still intended to return later for the story."
+              },
+              "delayed_paid_continuation_intent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Delayed follow-up respondents who still reported paid unlock, subscription, or premium continuation intent."
+              },
+              "delayed_memory_annotations": {
+                "type": "array",
+                "description": "Structured delayed follow-up notes that preserve what readers remembered and why they still wanted to continue.",
+                "maxItems": 80,
+                "items": {
+                  "type": "object",
+                  "required": ["delayed_remembered_moment"],
+                  "properties": {
+                    "location": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "description": "Scene, paragraph, image, line, or beat remembered in delayed follow-up."
+                    },
+                    "delayed_remembered_moment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "What the reader still remembered after the delay."
+                    },
+                    "delayed_character_or_relationship": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Character, relationship, decision, wound, or cost that stayed memorable after the delay."
+                    },
+                    "delayed_next_question": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Question or unresolved pressure that still made the reader want the next chapter."
+                    },
+                    "return_or_purchase_reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "Reason the reader still intended to return, bookmark, subscribe, or pay for continuation after the delay."
+                    },
+                    "reader_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "Number of respondents who gave this or equivalent delayed memory note."
+                    },
+                    "reader_segment": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "description": "Target-reader cohort that produced this delayed memory annotation."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "reader_score_standard_deviation": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Standard deviation of reader composite or overall scores. Uses rating_scale units when rating_scale is present; CLI normalizes it to 0-100. Also used with respondent_count to calculate the 95% reader score margin of error."
+              },
+              "high_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose overall response is high enough to count as positive."
+              },
+              "neutral_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose overall response is neither clearly positive nor clearly negative."
+              },
+              "low_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents whose overall response is low enough to count as negative."
+              },
+              "blind_reading": {
+                "type": "boolean",
+                "description": "Whether readers saw the manuscript without author/model/source labels that could bias response."
+              },
+              "author_identity_masked": {
+                "type": "boolean",
+                "description": "Whether author, title, platform, model, or source identity cues were masked before readers evaluated the manuscript."
+              },
+              "prior_exposure_screened": {
+                "type": "boolean",
+                "description": "Whether respondents were screened for prior exposure to the manuscript, earlier versions, or public excerpts."
+              },
+              "unexcluded_prior_exposure_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents with prior manuscript/version exposure who remained in the analyzed sample after exclusions."
+              },
+              "spoiler_exposure_screened": {
+                "type": "boolean",
+                "description": "Whether respondents were screened for spoiler, synopsis, outline, or outside plot-summary exposure before rating the manuscript."
+              },
+              "unexcluded_spoiler_exposure_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents with spoiler, synopsis, or outside plot-summary exposure who remained in the analyzed sample after exclusions."
+              },
+              "neutral_question_wording": {
+                "type": "boolean",
+                "description": "Whether survey questions used neutral wording and avoided leading readers toward positive or negative reactions."
+              },
+              "response_option_order_randomized": {
+                "type": "boolean",
+                "description": "Whether response options or item order were randomized/counterbalanced to reduce order effects."
+              },
+              "sample_order_randomized": {
+                "type": "boolean",
+                "description": "Whether manuscript/sample presentation order was randomized for respondents who evaluated more than one sample."
+              },
+              "manuscript_order_counterbalanced": {
+                "type": "boolean",
+                "description": "Whether manuscript, chapter, or variant order was counterbalanced across respondents to reduce carryover and fatigue effects."
+              },
+              "max_samples_per_respondent": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000,
+                "description": "Maximum manuscript or variant samples assigned to any single respondent in this reader-panel sample."
+              },
+              "order_balance_ratio": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Observed manuscript/sample order balance ratio across repeated-exposure respondents."
+              },
+              "question_wording_disclosed": {
+                "type": "boolean",
+                "description": "Whether the exact survey question wording, response options, and reader instructions are preserved with the sample."
+              },
+              "recruitment_method_disclosed": {
+                "type": "boolean",
+                "description": "Whether recruitment source, sampling method, and target-reader screening rules are documented."
+              },
+              "recruitment_channel_counts": {
+                "type": "object",
+                "description": "Respondent counts per named recruitment channel, such as opt-in panel, newsletter, platform community, or external beta-reader pool. Totals should match respondent_count.",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              },
+              "population_definition_disclosed": {
+                "type": "boolean",
+                "description": "Whether the target reader population and eligibility criteria are defined for this reader-panel sample."
+              },
+              "sampling_frame_disclosed": {
+                "type": "boolean",
+                "description": "Whether the sampling frame, panel source, or source coverage is documented."
+              },
+              "fieldwork_dates_disclosed": {
+                "type": "boolean",
+                "description": "Whether the dates of reader response data collection are preserved with the sample."
+              },
+              "survey_mode_disclosed": {
+                "type": "boolean",
+                "description": "Whether survey mode, reading environment, or administration channel is documented."
+              },
+              "incentive_disclosed": {
+                "type": "boolean",
+                "description": "Whether respondent incentives, compensation, or no-incentive conditions are documented."
+              },
+              "attention_check_pass_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who passed attention or quality checks before inclusion."
+              },
+              "excluded_response_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Responses excluded for duplicate, incomplete, inattentive, or off-target participation."
+              },
+              "comparative_reference_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "description": "Reference chapter, market comp, or alternate draft used in blind pairwise comparison."
+              },
+              "comparative_preference_win_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Share of pairwise comparisons in which readers preferred this manuscript over the reference, with ties optionally counted as half-wins before entry."
+              },
+              "comparative_preference_current_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who preferred this manuscript in the pairwise comparison."
+              },
+              "comparative_preference_reference_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who preferred the reference manuscript in the pairwise comparison."
+              },
+              "comparative_preference_tie_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who marked the pairwise comparison as tied or no clear preference."
+              },
+              "comparative_preference_respondent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents included in the comparative preference test."
+              },
+              "comparative_blind_pairwise": {
+                "type": "boolean",
+                "description": "Whether the comparison hid source, author/model, and reference labels from readers."
+              },
+              "comparative_same_reader_cohort": {
+                "type": "boolean",
+                "description": "Whether the same target-reader cohort rated both the manuscript and reference."
+              },
+              "comparative_question_wording_disclosed": {
+                "type": "boolean",
+                "description": "Whether the exact pairwise preference question wording is preserved with this sample."
+              },
+              "revision_pair_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "description": "Identifier linking the baseline draft and revised draft being compared."
+              },
+              "revision_baseline_reader_score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Reader composite score for the baseline draft before applying revision directives."
+              },
+              "revision_current_reader_score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Reader composite score for the revised draft. If omitted, the current sample composite is used."
+              },
+              "revision_preference_revised_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who preferred the revised draft in a before/after pairwise comparison."
+              },
+              "revision_preference_baseline_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who preferred the baseline draft in a before/after pairwise comparison."
+              },
+              "revision_preference_tie_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents who marked the baseline/revised comparison as tied or no clear preference."
+              },
+              "revision_preference_respondent_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents included in the baseline/revised revision outcome comparison."
+              },
+              "revision_blind_comparison": {
+                "type": "boolean",
+                "description": "Whether readers compared baseline and revised drafts without knowing which was revised."
+              },
+              "revision_same_reader_cohort": {
+                "type": "boolean",
+                "description": "Whether the same or matched target-reader cohort rated both baseline and revised drafts."
+              },
+              "revision_question_wording_disclosed": {
+                "type": "boolean",
+                "description": "Whether the exact before/after revision comparison question wording is preserved with this sample."
+              },
+              "revision_guardrail_regression_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000,
+                "description": "Respondents or tracked dimensions showing the revision harmed a guardrail dimension such as clarity, character attachment, payoff fairness, or style comfort."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

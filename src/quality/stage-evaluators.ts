@@ -47,6 +47,10 @@ import {
   type VoiceConsistencyResult,
   type DialogueAttribution,
 } from '../voice/index.js';
+import {
+  evaluateProseTaste,
+  type ProseTasteIssue,
+} from './prose-taste-gate.js';
 
 // ============================================================================
 // Draft Stage Evaluator
@@ -426,6 +430,46 @@ function styleDeviationToDirective(
   );
 }
 
+function proseTasteIssueToDirective(
+  issue: ProseTasteIssue,
+  paragraphs: Array<{ text: string; index: number; startChar: number; endChar: number }>
+): SurgicalDirective {
+  const priorityMap: Record<string, number> = {
+    critical: 1,
+    high: 2,
+    medium: 4,
+    low: 6,
+  };
+  const priority = priorityMap[issue.severity] || 4;
+  const paragraphIndex =
+    issue.position !== undefined
+      ? findParagraphForPosition(paragraphs, issue.position)
+      : 0;
+  const paragraph = paragraphs[paragraphIndex] || paragraphs[0];
+
+  return createDirective(
+    'style-alignment',
+    priority,
+    {
+      sceneNumber: 1,
+      paragraphStart: paragraphIndex,
+      paragraphEnd: paragraphIndex,
+    },
+    `문체 취향 게이트 실패${formatProseTasteIssueLocation(issue)}: ${issue.message}`,
+    issue.targetText || issue.evidence || paragraph?.text.slice(0, 300) || '',
+    issue.suggestion,
+    2
+  );
+}
+
+function formatProseTasteIssueLocation(issue: ProseTasteIssue): string {
+  const parts: string[] = [];
+  if (issue.paragraphNumber !== undefined) parts.push(`문단 ${issue.paragraphNumber}`);
+  if (issue.sentenceNumber !== undefined) parts.push(`문장 ${issue.sentenceNumber}`);
+  if (issue.lineNumber !== undefined) parts.push(`줄 ${issue.lineNumber}`);
+  return parts.length > 0 ? ` (${parts.join(', ')})` : '';
+}
+
 /**
  * Style Stage Evaluator
  *
@@ -484,6 +528,15 @@ export const StyleStageEvaluator: StageEvaluator = {
     const filterPenalty = Math.min(30, result.assessment.filterWordDensity.count * 3);
     proseScore += (100 - filterPenalty) * filterWeight;
 
+    const tasteGate = evaluateProseTaste(content, {
+      profile: options?.proseTasteProfile,
+      threshold: options?.proseTasteThreshold,
+    });
+    proseScore = proseScore * 0.75 + tasteGate.score * 0.25;
+    if (!tasteGate.passed) {
+      proseScore = Math.min(proseScore, tasteGate.score + 8);
+    }
+
     // If styleProfile is provided, blend with style alignment score
     if (options?.styleProfile) {
       const styleMatch = computeStyleMatch(content, options.styleProfile);
@@ -516,6 +569,19 @@ export const StyleStageEvaluator: StageEvaluator = {
             break;
           }
         }
+      }
+    }
+
+    const tasteGate = evaluateProseTaste(content, {
+      profile: options?.proseTasteProfile,
+      threshold: options?.proseTasteThreshold,
+    });
+    for (const issue of tasteGate.issues) {
+      if (issue.severity === 'low') continue;
+      directives.push(proseTasteIssueToDirective(issue, paragraphs));
+
+      if (directives.filter(d => d.type === 'style-alignment').length >= 2) {
+        break;
       }
     }
 

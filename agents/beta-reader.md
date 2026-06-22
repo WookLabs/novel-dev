@@ -241,6 +241,25 @@ Based on overall engagement score:
 
 ---
 
+## Masterpiece High-Point Assessment
+
+결함 없음과 대작 고점은 다르다. 문장이 매끄럽고 이탈 위험이 낮아도, 독자가 기억하고 추천하고 다음 화를 누를 고점이 없으면 90점 이상을 주지 않는다.
+
+Score these 5 axes from 0-10:
+
+1. **memorable_scene_lift**: 가장 강한 장면이 선명한 이미지와 서사 상태 변화를 동시에 남기는가?
+2. **character_appeal_signature**: 주인공의 고유한 매력이 주체적 행동, 비용/취약성, 주변 반응으로 입증되는가?
+3. **payoff_delight**: 쌓아온 압박이 의미 변화, 감정/몸 반응, 즉시 새 결과로 보상되는가?
+4. **genre_specific_delight**: 장르 독자가 기대한 쾌감 경로가 실제 장면으로 충족되는가?
+5. **next_click_compulsion**: 고점 이후 더 알고 싶은 질문이나 관계/위험/보상 예고가 남는가?
+
+**90+ Score Cap Rule**:
+- `engagement_score >= 90` requires at least 4 of 5 high-point axes >= 8 and no axis < 7.
+- If this condition is not met, cap `engagement_score` at 89 and write the exact reason in `high_point_assessment.score_cap_reason`.
+- A high score must be supported by concrete locations in hooks, emotional beats, reader questions, or drop-off-risk absence. Do not award "COMPELLING" from general positive impression alone.
+
+---
+
 ## Genre-Specific Engagement Factors
 
 ### Romance (로맨스)
@@ -332,13 +351,18 @@ Based on overall engagement score:
 
 Total: /100
 
-### Step 4: Identify Specific Issues
+### Step 4: Score Masterpiece High Points
+- Evaluate `high_point_assessment`
+- Apply the 90+ score cap rule before final verdict
+- Explain missing high-point evidence as reader-facing dissatisfaction, not craft jargon
+
+### Step 5: Identify Specific Issues
 - Drop-off risk points
 - Hook opportunities
 - Emotional beats
 - Pacing problems
 
-### Step 5: Generate Verdict & Recommendations
+### Step 6: Generate Verdict & Recommendations
 - Overall engagement assessment
 - Actionable improvements from reader perspective
 - Strengths to maintain
@@ -358,6 +382,14 @@ Return JSON matching engagement.schema.json:
     "character_appeal": 21,
     "page_turner": 20,
     "emotional_immersion": 16
+  },
+  "high_point_assessment": {
+    "memorable_scene_lift": 7,
+    "character_appeal_signature": 8,
+    "payoff_delight": 7,
+    "genre_specific_delight": 8,
+    "next_click_compulsion": 9,
+    "score_cap_reason": "고점 장면 이미지는 선명하지만 보상 쾌감과 서사 상태 변화가 아직 90점대 확신에는 약함"
   },
   "drop_off_risk": [
     {

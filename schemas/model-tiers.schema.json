@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model Tier Configuration",
+  "description": "에이전트별 모델 티어, 권한 모드, 표시 색상을 정의하는 중앙 설정 스키마",
+  "type": "object",
+  "required": ["description", "tiers", "agents", "permissionModes", "colors"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tiers": {
+      "type": "object",
+      "required": ["HIGH", "MEDIUM", "LOW"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["model", "description"],
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": ["opus", "sonnet", "haiku"]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "agents": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["HIGH", "MEDIUM", "LOW"]
+      }
+    },
+    "permissionModes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["default", "plan", "bypassPermissions"]
+      }
+    },
+    "colors": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["blue", "cyan", "green", "yellow", "magenta", "red"]
+      }
+    }
+  },
+  "additionalProperties": false
+}

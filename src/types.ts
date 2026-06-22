@@ -312,6 +312,7 @@ export interface ChapterMeta {
   meta: ChapterMetadata;
   context: ChapterContext;
   narrative_elements: NarrativeElements;
+  reader_experience: ChapterReaderExperience;
   scenes: Scene[];
   style_guide: ChapterStyleGuide;
 }
@@ -336,6 +337,17 @@ export interface NarrativeElements {
   hooks_reveal: string[]; // Hook IDs
   character_development: string;
   emotional_goal: string;
+  resonance_seed?: string;
+}
+
+export interface ChapterReaderExperience {
+  promise_fulfillment: string;
+  chapter_reward: string;
+  page_turner_question: string;
+  character_appeal_moment: string;
+  drop_off_risk: string;
+  must_click_ending: string;
+  cliffhanger_strength?: number;
 }
 
 export interface Scene {

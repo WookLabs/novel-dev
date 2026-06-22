@@ -182,6 +182,7 @@ describe('StyleStageEvaluator', () => {
         'cliche-replacement',
         'banned-expression',
         'texture-enrichment',
+        'style-alignment',
       ];
 
       for (const directive of directives) {

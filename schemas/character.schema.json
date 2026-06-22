@@ -99,7 +99,7 @@
             },
             "vocabulary": {
               "type": "string",
-              "description": "Typical vocabulary/word choice"
+              "description": "Typical vocabulary/word choice. Recommended format for hard gates: '선호 어휘: 현장로그, 증거번호; 금지 어휘: 운명, 대충'"
             },
             "signature_phrases": {
               "type": "array",

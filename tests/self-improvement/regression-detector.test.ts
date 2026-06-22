@@ -189,6 +189,23 @@ describe('detectRegression', () => {
     expect(result.alertLevel).toBe('none');
   });
 
+  it('should warn when engagement declines even if overall score remains stable', () => {
+    const snapshots = [
+      makeSnapshot(1, 82, { engagement: 90, proseQuality: 82 }),
+      makeSnapshot(2, 82, { engagement: 84, proseQuality: 82 }),
+      makeSnapshot(3, 82, { engagement: 77, proseQuality: 82 }),
+      makeSnapshot(4, 82, { engagement: 69, proseQuality: 82 }),
+      makeSnapshot(5, 82, { engagement: 60, proseQuality: 82 }),
+    ];
+
+    const result = detectRegression(snapshots);
+
+    expect(result.regressionDetected).toBe(true);
+    expect(result.alertLevel).toBe('warning');
+    expect(result.dimensionTrends.engagement.declining).toBe(true);
+    expect(result.alertMessage).toContain('독자 몰입');
+  });
+
   it('should detect regression for gradual decline [85, 80, 75, 70, 65]', () => {
     const snapshots = [
       makeSnapshot(1, 85),

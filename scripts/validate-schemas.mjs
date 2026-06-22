@@ -10,6 +10,7 @@
  */
 
 import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -21,6 +22,7 @@ const schemasDir = join(__dirname, '..', 'schemas');
 const templatesDir = join(__dirname, '..', 'templates');
 
 const ajv = new Ajv({ allErrors: true, strict: false });
+addFormats(ajv);
 
 let hasErrors = false;
 

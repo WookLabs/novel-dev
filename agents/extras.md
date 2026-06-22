@@ -1,8 +1,8 @@
 ---
 name: extras
-description: "엑스트라/단역 캐릭터 전담 에이전트. minor/cameo 역할의 대사, 반응, 행동을 생성."
+description: "엑스트라와 단역 캐릭터의 대사, 반응, 행동을 생성하고 주요 캐릭터 영역을 침범하지 않는 협업 집필 보조 에이전트."
 model: sonnet
-color: gray
+color: cyan
 tools:
   - Read
 ---

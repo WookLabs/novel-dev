@@ -4,7 +4,7 @@
  * Agent Validation Script
  *
  * Validates:
- * 1. Only allowed agents exist (20 agents)
+ * 1. Only allowed agents exist (22 agents)
  * 2. No duplicate agents
  * 3. All required agents are present
  */
@@ -93,7 +93,7 @@ function validateFrontmatter(filePath, agentName) {
   return { errors, warnings };
 }
 
-// Canonical list of allowed agents (v7.0)
+// Canonical list of allowed agents (v8.0)
 const ALLOWED_AGENTS = new Set([
   // Core agents
   'novelist.md',               // opus - 본문 집필
@@ -118,6 +118,8 @@ const ALLOWED_AGENTS = new Set([
   'team-orchestrator.md',      // opus - 팀 오케스트레이터
   // Additional agents
   'narrator.md',
+  'extras.md',
+  'chapter-merger.md',
   'character-designer.md',
   'arc-designer.md',
 ]);

@@ -73,6 +73,171 @@ function getLastAssistantMessage(transcriptPath) {
   }
 }
 
+function toPositiveInteger(value) {
+  const number = Number.parseInt(value, 10);
+  return Number.isInteger(number) && number > 0 ? number : null;
+}
+
+function normalizeChapterList(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(toPositiveInteger)
+    .filter(number => number !== null);
+}
+
+function parseActRangeValue(range) {
+  if (Array.isArray(range) && range.length >= 2) {
+    const start = toPositiveInteger(range[0]);
+    const end = toPositiveInteger(range[1]);
+    return start !== null && end !== null && start <= end ? { start, end } : null;
+  }
+
+  if (Array.isArray(range) && range.length === 1) {
+    const chapter = toPositiveInteger(range[0]);
+    return chapter !== null ? { start: chapter, end: chapter } : null;
+  }
+
+  if (range && typeof range === 'object') {
+    if (Array.isArray(range.chapters)) {
+      return parseActRangeValue(range.chapters);
+    }
+
+    if (range.chapters && typeof range.chapters === 'object') {
+      return parseActRangeValue(range.chapters);
+    }
+
+    const start = toPositiveInteger(range.start ?? range.from);
+    const end = toPositiveInteger(range.end ?? range.to);
+    return start !== null && end !== null && start <= end ? { start, end } : null;
+  }
+
+  return null;
+}
+
+function parseExplicitActRange(state, actNumber) {
+  const ranges = state.act_chapter_ranges || state.act_ranges;
+  if (!Array.isArray(ranges)) return null;
+
+  return parseActRangeValue(ranges[actNumber - 1]);
+}
+
+function parsePlotStructureActRange(projectPath, actNumber) {
+  if (!projectPath) return null;
+
+  const structure = readJsonFile(join(projectPath, 'plot', 'structure.json'));
+  if (!structure || !Array.isArray(structure.acts)) return null;
+
+  const act = structure.acts.find(entry => (
+    toPositiveInteger(entry?.act_number ?? entry?.number ?? entry?.act) === actNumber
+  )) || structure.acts[actNumber - 1];
+
+  return parseActRangeValue(act);
+}
+
+function getActChapterRange(state, actNumber, projectPath = null) {
+  const plotRange = parsePlotStructureActRange(projectPath, actNumber);
+  if (plotRange) return plotRange;
+
+  const explicitRange = parseExplicitActRange(state, actNumber);
+  if (explicitRange) return explicitRange;
+
+  const totalChapters = toPositiveInteger(state.total_chapters);
+  const totalActs = toPositiveInteger(state.total_acts);
+  if (totalChapters === null || totalActs === null || actNumber < 1 || actNumber > totalActs) {
+    return null;
+  }
+
+  const start = Math.floor(((actNumber - 1) * totalChapters) / totalActs) + 1;
+  const end = Math.floor((actNumber * totalChapters) / totalActs);
+  return start <= end ? { start, end } : null;
+}
+
+function chapterRange(start, end) {
+  const chapters = [];
+  for (let chapter = start; chapter <= end; chapter += 1) {
+    chapters.push(chapter);
+  }
+  return chapters;
+}
+
+function formatMissingChapters(missing) {
+  const preview = missing.slice(0, 10).join(', ');
+  if (missing.length <= 10) return preview;
+  return `${preview}, ... (${missing.length} total)`;
+}
+
+function completionGateBlockReason(state) {
+  if (state.requires_user_intervention === true) {
+    const pauseReason = state.pause_reason || 'manual review required';
+    return `user intervention required before completion promise can update Ralph state. Reason: ${pauseReason}`;
+  }
+
+  const failedChapters = Array.isArray(state.failed_chapters) ? state.failed_chapters : [];
+  if (failedChapters.length > 0) {
+    const gateStatus = state.last_gate?.status || 'unknown';
+    return `chapter gate has failed chapters still open: ${failedChapters.join(', ')}. Latest gate status: ${gateStatus}`;
+  }
+
+  const lastGate = state.last_gate;
+  if (!lastGate || typeof lastGate !== 'object') {
+    return 'chapter gate missing. Run apply-chapter-gate before emitting completion promise.';
+  }
+
+  if (lastGate.status !== 'PASS' || lastGate.passed !== true) {
+    return `chapter gate is not PASS. chapter=${lastGate.chapter || 'unknown'}, status=${lastGate.status}, score=${lastGate.score}`;
+  }
+
+  return null;
+}
+
+function actCompletenessBlockReason(actNumber, state, projectPath) {
+  const range = getActChapterRange(state, actNumber, projectPath);
+  if (!range) return null;
+
+  const completed = new Set(normalizeChapterList(state.completed_chapters));
+  const missing = chapterRange(range.start, range.end).filter(chapter => !completed.has(chapter));
+  if (missing.length > 0) {
+    return `act ${actNumber} incomplete: chapters ${range.start}-${range.end} require PASS gates before ACT_${actNumber}_DONE. Missing completed chapters: ${formatMissingChapters(missing)}`;
+  }
+
+  const lastGateChapter = toPositiveInteger(state.last_gate?.chapter);
+  if (lastGateChapter === null || lastGateChapter < range.end) {
+    return `act ${actNumber} incomplete: latest PASS gate must cover chapter ${range.end}, but latest gate chapter is ${state.last_gate?.chapter ?? 'unknown'}`;
+  }
+
+  return null;
+}
+
+function novelCompletenessBlockReason(state) {
+  const totalChapters = toPositiveInteger(state.total_chapters);
+  if (totalChapters === null) return null;
+
+  const completed = new Set(normalizeChapterList(state.completed_chapters));
+  const missing = chapterRange(1, totalChapters).filter(chapter => !completed.has(chapter));
+  if (missing.length > 0) {
+    return `novel incomplete: chapters 1-${totalChapters} require PASS gates before NOVEL_DONE. Missing completed chapters: ${formatMissingChapters(missing)}`;
+  }
+
+  const lastGateChapter = toPositiveInteger(state.last_gate?.chapter);
+  if (lastGateChapter === null || lastGateChapter < totalChapters) {
+    return `novel incomplete: latest PASS gate must cover final chapter ${totalChapters}, but latest gate chapter is ${state.last_gate?.chapter ?? 'unknown'}`;
+  }
+
+  return null;
+}
+
+function actCompletionBlockReason(actPromiseMatch, state) {
+  if (!actPromiseMatch) return null;
+
+  const promisedAct = Number.parseInt(actPromiseMatch[1], 10);
+  const currentAct = state.current_act || 1;
+  if (promisedAct !== currentAct) {
+    return `act completion promise does not match current act. promised act=${promisedAct}, current act=${currentAct}`;
+  }
+
+  return null;
+}
+
 async function main() {
   try {
     const input = await readStdinSafe();
@@ -122,6 +287,39 @@ async function main() {
     const searchText = input + assistantMessage;
     const actPromiseMatch = searchText.match(/<promise>ACT_(\d+)_DONE<\/promise>/);
     const novelDoneMatch = searchText.match(/<promise>NOVEL_DONE<\/promise>/);
+    const actBlockReason = actCompletionBlockReason(actPromiseMatch, state);
+    const gateBlockReason = (actPromiseMatch || novelDoneMatch) && !actBlockReason
+      ? completionGateBlockReason(state)
+      : null;
+    const completenessBlockReason = (actPromiseMatch || novelDoneMatch) && !actBlockReason && !gateBlockReason
+      ? actPromiseMatch
+        ? actCompletenessBlockReason(Number.parseInt(actPromiseMatch[1], 10), state, activeProjectPath)
+        : novelCompletenessBlockReason(state)
+      : null;
+
+    if (actBlockReason) {
+      console.log(JSON.stringify({
+        decision: "block",
+        reason: `[NOVEL RALPH LOOP] Completion promise blocked: ${actBlockReason}`
+      }));
+      return;
+    }
+
+    if (completenessBlockReason) {
+      console.log(JSON.stringify({
+        decision: "block",
+        reason: `[NOVEL RALPH LOOP] Completion promise blocked: ${completenessBlockReason}`
+      }));
+      return;
+    }
+
+    if (gateBlockReason) {
+      console.log(JSON.stringify({
+        decision: "block",
+        reason: `[NOVEL RALPH LOOP] Completion promise blocked: ${gateBlockReason}`
+      }));
+      return;
+    }
 
     if (novelDoneMatch) {
       // 전체 소설 완료
@@ -158,14 +356,20 @@ async function main() {
 
     // 최대 반복 횟수 도달
     if (iteration >= maxIterations) {
+      const pauseReason = `max_iterations reached before act completion: iteration ${iteration}/${maxIterations}. Manual review required before continuing Ralph Loop.`;
       state.ralph_active = false;
+      state.requires_user_intervention = true;
+      state.pause_reason = pauseReason;
+      state.last_failure_reason = pauseReason;
+      state.can_resume = true;
+      state.act_complete = false;
       writeState(activeProjectPath, state);
       // Update notepad
       await updateNotepad(activeProjectPath);
 
       console.log(JSON.stringify({
         decision: "approve",
-        reason: `[NOVEL RALPH LOOP - MAX ITERATIONS] 최대 반복 횟수(${maxIterations})에 도달했습니다. 루프를 종료합니다.`
+        reason: `[NOVEL RALPH LOOP - MAX ITERATIONS] 최대 반복 횟수(${maxIterations})에 도달했습니다. 미완료 상태를 유지하고 사용자 개입 대기 상태로 일시정지합니다.`
       }));
       return;
     }

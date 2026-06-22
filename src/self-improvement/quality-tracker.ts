@@ -16,8 +16,17 @@
 import { promises as fs } from 'fs';
 import { existsSync } from 'fs';
 import path from 'path';
-import type { QualitySnapshot, TrendData } from './types.js';
+import type {
+  EngagementIssueSnapshot,
+  EngagementRevisionDirectiveSnapshot,
+  QualitySnapshot,
+  RecurringEngagementDirective,
+  TrendAnalysis,
+  TrendData,
+} from './types.js';
+import type { EngagementContractEvaluation } from '../quality/engagement-contract.js';
 import { withStateBackup } from '../state/backup.js';
+import { detectRegression } from './regression-detector.js';
 import { createLogger } from '../utils/logger.js';
 const logger = createLogger('quality-tracker');
 
@@ -125,6 +134,94 @@ export async function saveTrendData(
 // Snapshot Recording
 // ============================================================================
 
+export interface CreateEngagementSnapshotInput {
+  chapterNumber: number;
+  version: number;
+  evaluation: EngagementContractEvaluation;
+}
+
+export interface RecordEngagementEvaluationInput extends CreateEngagementSnapshotInput {
+  projectDir: string;
+  projectId: string;
+}
+
+export interface RecordEngagementEvaluationResult {
+  snapshot: QualitySnapshot;
+  trendData: TrendData;
+  regression: TrendAnalysis;
+  recurringEngagementDirectives: RecurringEngagementDirective[];
+}
+
+/**
+ * Convert an engagement contract evaluation into a quality trend snapshot.
+ *
+ * This makes reader pull a first-class tracked dimension for long-serial health.
+ */
+export function createEngagementSnapshot(
+  input: CreateEngagementSnapshotInput
+): QualitySnapshot {
+  const score = clampScore(input.evaluation.score);
+
+  return {
+    chapterNumber: input.chapterNumber,
+    timestamp: new Date().toISOString(),
+    version: input.version,
+    overallScore: score,
+    dimensions: {
+      engagement: score,
+    },
+    verdict: input.evaluation.passed ? 'PASS' : 'REVISE',
+    engagementIssues: (input.evaluation.issues ?? []).map(toEngagementIssueSnapshot),
+    engagementRevisionDirectives: (input.evaluation.revisionDirectives ?? [])
+      .map(toEngagementRevisionDirectiveSnapshot),
+  };
+}
+
+/**
+ * Load trend data, record an engagement evaluation, persist it, and return
+ * regression analysis for the latest active chapter snapshots.
+ */
+export async function recordEngagementEvaluation(
+  input: RecordEngagementEvaluationInput
+): Promise<RecordEngagementEvaluationResult> {
+  const trendData = await loadTrendData(input.projectDir, input.projectId);
+  const existingSnapshot = trendData.snapshots.find(
+    snapshot =>
+      snapshot.chapterNumber === input.chapterNumber &&
+      snapshot.version === input.version
+  );
+  const snapshot = existingSnapshot ?? createEngagementSnapshot(input);
+  const isNewSnapshot = existingSnapshot === undefined;
+
+  const recorded = recordSnapshot(trendData, snapshot);
+  let recalculated = recalculateTrends(recorded);
+  const regression = detectRegression(getLatestSnapshots(recalculated));
+
+  if (isNewSnapshot && regression.regressionDetected) {
+    recalculated = {
+      ...recalculated,
+      metadata: {
+        ...recalculated.metadata,
+        regressionAlertsFired: recalculated.metadata.regressionAlertsFired + 1,
+      },
+    };
+  }
+
+  await saveTrendData(input.projectDir, recalculated);
+
+  const persisted = await loadTrendData(input.projectDir, input.projectId);
+  const persistedRegression = detectRegression(getLatestSnapshots(persisted));
+  const recurringEngagementDirectives =
+    summarizeRecurringEngagementDirectives(persisted);
+
+  return {
+    snapshot,
+    trendData: persisted,
+    regression: persistedRegression,
+    recurringEngagementDirectives,
+  };
+}
+
 /**
  * Record a quality snapshot for a chapter.
  *
@@ -199,6 +296,48 @@ export function getLatestSnapshots(trendData: TrendData): QualitySnapshot[] {
   );
 }
 
+export function summarizeRecurringEngagementDirectives(
+  trendData: TrendData
+): RecurringEngagementDirective[] {
+  const recurring = new Map<string, RecurringEngagementDirective>();
+
+  for (const snapshot of getLatestSnapshots(trendData)) {
+    const seenInSnapshot = new Set<string>();
+    for (const directive of snapshot.engagementRevisionDirectives ?? []) {
+      const key = directive.code ?? directive.action;
+      if (!key || seenInSnapshot.has(key)) continue;
+      seenInSnapshot.add(key);
+
+      const existing = recurring.get(key);
+      if (!existing) {
+        recurring.set(key, {
+          ...directive,
+          count: 1,
+          firstChapter: snapshot.chapterNumber,
+          latestChapter: snapshot.chapterNumber,
+        });
+        continue;
+      }
+
+      recurring.set(key, {
+        ...existing,
+        ...directive,
+        count: existing.count + 1,
+        firstChapter: existing.firstChapter,
+        latestChapter: snapshot.chapterNumber,
+      });
+    }
+  }
+
+  return Array.from(recurring.values())
+    .filter(directive => directive.count >= 2)
+    .sort((left, right) => {
+      const countDelta = right.count - left.count;
+      if (countDelta !== 0) return countDelta;
+      return left.firstChapter - right.firstChapter;
+    });
+}
+
 // ============================================================================
 // Trend Visualization
 // ============================================================================
@@ -206,7 +345,7 @@ export function getLatestSnapshots(trendData: TrendData): QualitySnapshot[] {
 /**
  * Render a markdown table showing quality trends across chapters.
  *
- * Columns: Chapter, Score, Verdict, Prose, Sensory, Rhythm, Voice, Trend
+ * Columns: Chapter, Score, Verdict, Engagement, Prose, Sensory, Rhythm, Voice, Trend
  * Trend: ^ (improved >= 3), v (declined >= 3), - (stable)
  *
  * @param trendData - Trend data to visualize
@@ -218,8 +357,8 @@ export function renderTrendTable(trendData: TrendData): string {
   const lines: string[] = [];
 
   // Header
-  lines.push('| Chapter | Score | Verdict | Prose | Sensory | Rhythm | Voice | Trend |');
-  lines.push('|---------|-------|---------|-------|---------|--------|-------|-------|');
+  lines.push('| Chapter | Score | Verdict | Engagement | Prose | Sensory | Rhythm | Voice | Trend |');
+  lines.push('|---------|-------|---------|------------|-------|---------|--------|-------|-------|');
 
   if (snapshots.length === 0) {
     // Summary row for empty data
@@ -249,12 +388,13 @@ export function renderTrendTable(trendData: TrendData): string {
     }
 
     const prose = dims.proseQuality !== undefined ? dims.proseQuality.toFixed(0) : '-';
+    const engagement = dims.engagement !== undefined ? dims.engagement.toFixed(0) : '-';
     const sensory = dims.sensoryGrounding !== undefined ? dims.sensoryGrounding.toFixed(0) : '-';
     const rhythm = dims.rhythmVariation !== undefined ? dims.rhythmVariation.toFixed(0) : '-';
     const voice = dims.characterVoice !== undefined ? dims.characterVoice.toFixed(0) : '-';
 
     lines.push(
-      `| ${snap.chapterNumber} | ${snap.overallScore.toFixed(1)} | ${snap.verdict} | ${prose} | ${sensory} | ${rhythm} | ${voice} | ${trend} |`
+      `| ${snap.chapterNumber} | ${snap.overallScore.toFixed(1)} | ${snap.verdict} | ${engagement} | ${prose} | ${sensory} | ${rhythm} | ${voice} | ${trend} |`
     );
   }
 
@@ -292,5 +432,43 @@ export function recalculateTrends(trendData: TrendData): TrendData {
       totalSnapshots: latestSnapshots.length,
       lastUpdated: new Date().toISOString(),
     },
+  };
+}
+
+function clampScore(score: number): number {
+  return Math.max(0, Math.min(100, score));
+}
+
+function toEngagementIssueSnapshot(issue: {
+  code?: string;
+  severity?: string;
+  message: string;
+  expected?: string;
+  actual?: string;
+}): EngagementIssueSnapshot {
+  return {
+    code: issue.code,
+    severity: issue.severity,
+    message: issue.message,
+    expected: issue.expected,
+    actual: issue.actual,
+  };
+}
+
+function toEngagementRevisionDirectiveSnapshot(directive: {
+  code?: string;
+  priority?: string;
+  target?: string;
+  action: string;
+  expected?: string;
+  actual?: string;
+}): EngagementRevisionDirectiveSnapshot {
+  return {
+    code: directive.code,
+    priority: directive.priority,
+    target: directive.target,
+    action: directive.action,
+    expected: directive.expected,
+    actual: directive.actual,
   };
 }

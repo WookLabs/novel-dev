@@ -9,6 +9,7 @@ The hooks directory contains Claude Code plugin hook configurations and document
 
 - **SessionStart**: Display current project status when a session begins
 - **UserPromptSubmit**: Detect novel state changes when user submits prompts
+- **PreToolUse**: Validate JSON writes and block manuscript edits until design/style/summary memory gates pass
 - **Stop**: Execute completion and cleanup tasks when the session ends
 
 This enables the plugin to maintain context awareness and automate routine workflows without explicit user commands.
@@ -17,7 +18,8 @@ This enables the plugin to maintain context awareness and automate routine workf
 
 | File | Description |
 |------|-------------|
-| `hooks.json` | Plugin hook configuration with command mappings for three lifecycle events |
+| `hooks.json` | Plugin hook configuration with command mappings for lifecycle events |
+| `pretooluse.py` | JSON schema validation and manuscript design/style/summary memory gate guard |
 | `session-start.md` | Documentation for the SessionStart hook - displays project status on session init |
 
 ## Hook System Overview
@@ -40,11 +42,21 @@ This enables the plugin to maintain context awareness and automate routine workf
 **Action**: Executes `scripts/novel-state-detector.mjs`
 **Purpose**: Detects changes in novel project state and updates internal tracking
 
+### PreToolUse Hook
+
+**Trigger**: Before Write/Edit/MultiEdit tools run
+**Action**: Executes `hooks/pretooluse.py`
+**Purpose**: Validates JSON writes and blocks `chapters/chapter_*.md` / `chapters/ch*.md` manuscript edits unless `reviews/design-gate-report.json` and `reviews/style-gate-report.json` are both `passed=true`, `status=PASS`, and prior chapter summaries used as long-context memory are present, fresh, and substantive.
+
 ### Stop Hook
 
 **Trigger**: When Claude Code session ends
-**Action**: Executes `scripts/act-completion.mjs`
-**Purpose**: Performs cleanup and completion tasks (e.g., save state, close active workflows)
+**Action**: Executes `scripts/act-completion.mjs`, then `hooks/stop.py`
+**Purpose**: Performs Ralph Loop continuation/completion checks.
+
+Completion promises are gate-checked. `ACT_N_DONE` is accepted only when `N` matches `current_act`, every chapter in that act is listed in `completed_chapters`, and the latest passing `last_gate` covers the act end. Act ranges come from `plot/structure.json` first, then explicit state ranges, then an even `total_chapters / total_acts` fallback. `NOVEL_DONE` is accepted only when every chapter through `total_chapters` is completed and the latest passing `last_gate` covers the final chapter. Both promise types also require no `failed_chapters` and no `requires_user_intervention`. This prevents a stale transcript promise, premature act/novel completion, or quality-gate bypass from stopping Ralph Loop.
+
+Generic task completion promises such as `<promise>TASK_COMPLETE</promise>` are not valid while Ralph Loop is active. Active novel writing sessions must use only `ACT_N_DONE` or `NOVEL_DONE`, after their gate and completeness checks pass.
 
 ## For AI Agents
 
@@ -54,7 +66,8 @@ This enables the plugin to maintain context awareness and automate routine workf
 - Understand that hooks run automatically and provide plugin integration points
 - Review hook configurations before modifying plugin behavior
 - Check timeout values (currently 5 seconds per hook) when adding new hooks
-- Use hooks for session context (not for critical writing operations)
+- Use hooks for fast local guardrails; keep heavy writing logic in commands, agents, or CLIs
+- Keep `scripts/act-completion.mjs` and `hooks/stop.py` aligned on completion gate checks
 
 **DON'T:**
 - Modify hook.json without understanding the execution flow

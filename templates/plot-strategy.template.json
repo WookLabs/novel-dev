@@ -8,6 +8,18 @@
       { "act": 3, "chapters": "M-end", "focus": "클라이맥스, 해소, 에필로그", "pacing": "fast→slow" }
     ]
   },
+  "binge_architecture": {
+    "long_hook_threads": [
+      "장기 궁금증/관계/목표 스레드 1",
+      "장기 궁금증/관계/목표 스레드 2"
+    ],
+    "payoff_cadence": "독자 보상 주기 (예: 3화마다 작은 payoff, 10화마다 큰 reversal)",
+    "tension_reset_plan": "고강도 사건 뒤 호흡을 낮추되 새 질문을 남기는 완급 전략",
+    "fatigue_controls": [
+      "같은 갈등 유형 2회 이상 연속 금지",
+      "설정 설명은 scene beat 안에 행동/갈등으로 통합"
+    ]
+  },
   "foreshadowing_schedule": [
     { "id": "fore_XXX", "plant_chapter": 0, "hints": [0, 0, 0], "payoff_chapter": 0, "importance": "A" }
   ],
@@ -32,7 +44,14 @@
       "foreshadowing_collect": [],
       "hooks": "회차 끝 훅 유형",
       "pacing": "fast",
-      "emotional_target": "독자 감정 목표"
+      "emotional_target": "독자 감정 목표",
+      "fun_spec": {
+        "reader_reward": "고유 장치/단서/사건 결과로 독자가 얻는 구체적 보상",
+        "page_turn_question": "고유 장치/단서/위험에 묶인 다음 화 질문",
+        "character_appeal_moment": "주요 캐릭터의 선택/행동/비용이 보이는 매력 순간",
+        "drop_off_risk": "이탈 위험 구간과 행동/압박/교차 진행으로 보이는 예방 전략",
+        "must_click_ending": "새 사건/폭로/위협/단서로 다음 화 클릭을 유도하는 마지막 비트"
+      }
     }
   ]
 }

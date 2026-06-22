@@ -15,7 +15,7 @@
     "voice": {
       "tone": "",
       "speech_pattern": "",
-      "vocabulary": "",
+      "vocabulary": "선호 어휘: ; 금지 어휘: ",
       "signature_phrases": [],
       "speech_examples": [
         {

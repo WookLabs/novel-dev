@@ -23,6 +23,7 @@ import type {
   VocabularyProfile,
   VerbalHabits,
   SentenceStructure,
+  HonorificDefault,
 } from './types.js';
 
 // ============================================================================
@@ -207,6 +208,14 @@ export function analyzeVoiceConsistency(
   );
   deviations.push(...structureDeviations);
 
+  // Check Korean speech level / honorific consistency
+  const honorificDeviations = checkHonorificConsistency(
+    characterDialogue.map(d => d.text),
+    profile.linguisticMarkers.honorificDefault,
+    characterDialogue
+  );
+  deviations.push(...honorificDeviations);
+
   // Calculate overall score
   const overallScore = calculateConsistencyScore(deviations);
 
@@ -367,6 +376,53 @@ export function checkSentenceStructure(
   return deviations;
 }
 
+/**
+ * Check Korean speech-level consistency against profile.
+ *
+ * This catches high-impact OOC drift such as a formal hapsyoche character
+ * suddenly using haeche casual endings, or an intimate haeche character
+ * flattening into formal/polite endings without scene motivation.
+ *
+ * @param dialogueTexts - Dialogue texts from the character
+ * @param expectedHonorific - Expected default speech level
+ * @param attributions - Dialogue attributions for location info
+ * @returns Array of honorific deviations
+ */
+export function checkHonorificConsistency(
+  dialogueTexts: string[],
+  expectedHonorific: HonorificDefault,
+  attributions: DialogueAttribution[]
+): VoiceDeviation[] {
+  const deviations: VoiceDeviation[] = [];
+
+  for (let i = 0; i < dialogueTexts.length; i++) {
+    const text = dialogueTexts[i];
+    const attr = attributions[i];
+    const observed = detectDominantHonorificLevel(text);
+    if (!observed || observed === expectedHonorific) {
+      continue;
+    }
+
+    const severity = honorificDeviationSeverity(expectedHonorific, observed);
+    if (!severity) {
+      continue;
+    }
+
+    deviations.push({
+      location: {
+        paragraphStart: attr.paragraphIndex,
+        paragraphEnd: attr.paragraphIndex,
+      },
+      aspect: 'honorific',
+      expected: `${translateHonorificLevel(expectedHonorific)} 말투`,
+      found: `${translateHonorificLevel(observed)} 말투`,
+      severity,
+    });
+  }
+
+  return deviations;
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -480,6 +536,74 @@ function checkLengthMismatch(
   return null;
 }
 
+function detectDominantHonorificLevel(text: string): HonorificDefault | null {
+  const sentences = splitIntoSentences(text);
+  const targets = sentences.length > 0 ? sentences : [text];
+  const counts: Record<HonorificDefault, number> = {
+    haeche: 0,
+    haeyoche: 0,
+    hapsyoche: 0,
+  };
+
+  for (const raw of targets) {
+    const sentence = raw.trim();
+    if (!sentence) continue;
+
+    if (HAPSYOCHE_ENDING_PATTERN.test(sentence)) {
+      counts.hapsyoche++;
+    } else if (HAEYOCHE_ENDING_PATTERN.test(sentence)) {
+      counts.haeyoche++;
+    } else if (HAECHE_ENDING_PATTERN.test(sentence)) {
+      counts.haeche++;
+    }
+  }
+
+  const ranked = Object.entries(counts).sort(
+    (left, right) => right[1] - left[1]
+  ) as Array<[HonorificDefault, number]>;
+
+  return ranked[0][1] === 0 ? null : ranked[0][0];
+}
+
+const HAPSYOCHE_ENDING_PATTERN =
+  /(습니다|습니까|니다|입니다|합니다|하십시오|하겠습니다|겠습니다|드립니다|드리겠습니다|주시겠습니까|입니까)$/u;
+const HAEYOCHE_ENDING_PATTERN =
+  /(요|죠|군요|네요|세요|예요|이에요|거예요|해요|돼요|가요|봐요|말해요)$/u;
+const HAECHE_ENDING_PATTERN =
+  /(야|지|어|아|해|돼|마|냐|니|거든|겠어|잖아|봐|가|와|말해|넘겨|비켜|열어)$/u;
+
+function honorificDeviationSeverity(
+  expected: HonorificDefault,
+  observed: HonorificDefault
+): DeviationSeverity | null {
+  if (expected === observed) {
+    return null;
+  }
+
+  if (
+    (expected === 'hapsyoche' && observed === 'haeche') ||
+    (expected === 'haeche' && observed === 'hapsyoche')
+  ) {
+    return 'major';
+  }
+
+  if (expected === 'haeyoche' && observed === 'haeche') {
+    return 'moderate';
+  }
+
+  return 'minor';
+}
+
+function translateHonorificLevel(level: HonorificDefault): string {
+  const labels: Record<HonorificDefault, string> = {
+    haeche: '해체/반말',
+    haeyoche: '해요체/비격식 존대',
+    hapsyoche: '합쇼체/격식 존대',
+  };
+
+  return labels[level];
+}
+
 function calculateConsistencyScore(deviations: VoiceDeviation[]): number {
   let score = 100;
 
@@ -525,6 +649,12 @@ function generateRecommendations(
     const struct = profile.speechPatterns.sentenceStructure;
     recommendations.push(
       `문장 길이를 ${struct.preferredLength === 'short' ? '짧게' : struct.preferredLength === 'long' ? '길게' : '보통으로'} 조절해주세요.`
+    );
+  }
+
+  if (aspects.has('honorific')) {
+    recommendations.push(
+      `${profile.characterName}의 기본 말투를 ${translateHonorificLevel(profile.linguisticMarkers.honorificDefault)}로 유지해주세요.`
     );
   }
 

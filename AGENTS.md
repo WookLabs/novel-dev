@@ -4,10 +4,10 @@
 
 ## Purpose
 
-Novel-Sisyphus is a Claude Code plugin for AI-powered Korean novel writing. It provides a multi-agent orchestration system specifically designed for creative writing workflows, featuring 22 specialized agents and 27 skills that support the complete novel creation lifecycle from initial concept to final export.
+Novel-Sisyphus is a Claude Code plugin for AI-powered Korean novel writing. It provides a multi-agent orchestration system specifically designed for creative writing workflows, featuring 22 specialized agents and 29 skills that support the complete novel creation lifecycle from initial concept to final export.
 
 This plugin adapts the oh-my-claude-sisyphus orchestration framework for creative writing, implementing:
-- Agent-based workflow with specialized roles (novelist, editor, critic, lore-keeper, plot-architect, proofreader, summarizer, beta-reader, genre-validator, chapter-verifier, consistency-verifier, engagement-optimizer, character-voice-analyzer, quality-oracle, prose-surgeon, style-curator, team-orchestrator)
+- Agent-based workflow with specialized roles (novelist, editor, critic, lore-keeper, plot-architect, proofreader, summarizer, beta-reader, genre-validator, chapter-verifier, consistency-verifier, engagement-optimizer, character-voice-analyzer, quality-oracle, prose-surgeon, style-curator, team-orchestrator, narrator, character-designer, arc-designer, chapter-merger, extras)
 - Ralph Loop for automated chapter writing with quality gates
 - Comprehensive project structure with JSON schemas
 - Korean-language literary conventions and best practices
@@ -26,10 +26,10 @@ This plugin adapts the oh-my-claude-sisyphus orchestration framework for creativ
 
 | Directory | Purpose | Details |
 |-----------|---------|---------|
-| `agents/` | Agent prompt files | 17 specialized agent definitions |
-| `commands/` | Command implementations | 18 slash commands for writing workflow (.md files) |
+| `agents/` | Agent prompt files | 22 specialized agent definitions |
+| `skills/` | Skill implementations | 29 slash-command workflows and internal pipeline skills |
 | `schemas/` | JSON schemas | Data validation schemas for all project files |
-| `teams/` | Team presets | 6 preset team definitions + custom teams (.team.json files) |
+| `teams/` | Team presets | 15 preset team definitions (.team.json files) |
 | `templates/` | JSON templates | Default templates for project initialization |
 | `scripts/` | Utility scripts | Helper scripts for workflow automation (.mjs files) |
 | `hooks/` | Plugin hooks | Hook configuration for Claude Code integration |
@@ -60,12 +60,17 @@ The plugin implements a multi-agent system with specialized roles:
 | style-curator | sonnet | Style exemplar curation and library management |
 | chapter-verifier | sonnet | Automated chapter verification with parallel validators |
 | team-orchestrator | sonnet | Team orchestration - loads team definitions, spawns agent teams, coordinates workflows |
+| narrator | opus | Collaborative scene lead and prose weaving |
+| character-designer | opus | Character profile, relationship, and agent-file design |
+| arc-designer | sonnet | Sub-arc, foreshadowing, and hook design |
+| chapter-merger | opus | Merges independent chapter drafts into a final version |
+| extras | sonnet | Minor/cameo character dialogue and reaction support |
 
 ### Team System
 
 에이전트를 역할 기반 팀으로 조직화하여 병렬/순차/파이프라인/협업 실행을 지원합니다.
 
-**6개 프리셋 팀:**
+**15개 프리셋 팀:**
 
 | Team | Category | Agents | Workflow | 용도 |
 |------|----------|--------|----------|------|
@@ -92,14 +97,14 @@ Commands are organized by workflow phase:
 1. **Initialization**: `/init` - Project setup
 2. **Design**: `/design_*` - Worldbuilding, characters, plot arcs
 3. **Plot Generation**: `/gen_plot` - Episode-level plot creation
-4. **Writing**: `/write`, `/write_act`, `/write_all` - Prose creation
+4. **Writing**: `/write`, `/write-act`, `/write-all` - Prose creation
 5. **Review**: `/plot-review`, `/act-review` - 플롯/막 단위 품질 검증
 6. **Revision**: `/revise` - 피드백 기반 퇴고
 6. **Completion**: `/timeline`, `/stats`, `/export` - Finalization
 
 ### Ralph Loop
 
-The `/write_all` command activates Ralph Loop mode:
+The `/write-all` command activates Ralph Loop mode:
 - Automated act-by-act writing
 - Quality gate at 70/100 points
 - Automatic revision on failure (max 3 retries)
@@ -193,7 +198,7 @@ Automated chapter verification agent that validates quality before completion cl
 1. `/init` with genre and concept
 2. `/design_world`, `/design_character`, `/design_main_arc`
 3. `/gen_plot` to create episode structure
-4. `/write_all` for automated writing with Ralph Loop
+4. `/write-all` for automated writing with Ralph Loop
 
 **Revising a chapter:**
 1. Read `chapters/chapter_NNN.md` and `reviews/chapter_NNN_review.json`

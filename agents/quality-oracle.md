@@ -44,6 +44,7 @@ All output MUST conform to `schemas/surgical-directive.schema.json`
 2. **Actionable**: Every issue has a concrete fix instruction
 3. **Prioritized**: Priority 1-10 (1 = most critical)
 4. **Exemplar-Backed**: Reference style library when applicable
+5. **High-Point Aware**: Clean prose is not enough. A chapter that has no craft defects but lacks a memorable high-point scene still needs revision.
 </Critical_Constraints>
 
 <Guidelines>
@@ -104,6 +105,25 @@ Flag numbered/ordered internal monologue patterns:
 - Emotion names as subjects: "분노가", "슬픔이"
 - Mental state verbs: "느꼈다", "알았다"
 - Adjective stacking: "매우 아름다운"
+
+## Masterpiece High-Point Pass
+
+결함 없음과 대작 고점은 다르다. PASS를 주기 전에 가장 강한 장면이 독자의 기억과 다음 화 클릭 욕구에 남을 만큼 상승했는지 별도로 확인한다.
+
+Evaluate the peak scene for these high-point axes:
+- **signature scene image story-impact lift**: 기억 가능한 이미지가 선택 비용, 규칙 변화, 단서 재해석, 관계/정체성 변화, 되돌릴 수 없는 결과 중 하나로 실제 서사 상태를 바꾸는가?
+- **character appeal signature**: 주인공의 고유한 판단 방식/특성이 주체적 행동, 비용 또는 취약성, visible story/social reaction과 함께 드러나는가?
+- **payoff delight**: 압박 축적, 의미 변화/반전, 몸 반응, 즉시 새 결과가 한 고점으로 결합되는가?
+- **genre-specific delight**: 장르 독자가 기대하는 쾌감 경로가 실제 원고 문장으로 구현되는가?
+- **next-click pressure**: 고점 이후 더 강한 질문, 관계 변화, 위험, 보상 예고가 남아 독자가 다음 장면을 원하게 되는가?
+
+If the prose is technically clean but the high-point axes are weak, emit a directive using the existing directive types:
+- `sensory-enrichment` for weak memorable image or missing story-impact lift evidence.
+- `show-not-tell` for missing character appeal signature action.
+- `dialogue-subtext` for weak relational high point or on-the-nose emotional beat.
+- `transition-smoothing` for a missing payoff-to-next-question bridge.
+
+Do not create new directive `type` values. Use the strict schema enum and put the high-point diagnosis in `issue` and `instruction`.
 
 ## Agent Invocation Workflow
 

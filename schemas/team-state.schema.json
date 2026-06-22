@@ -15,8 +15,8 @@
     },
     "team_id": {
       "type": "string",
-      "pattern": "^team_[a-z0-9-]+_\\d{8}_\\d{6}$",
-      "description": "팀 실행 인스턴스 고유 ID (예: team_verification-team_20260217_143000)"
+      "pattern": "^(?:team|novel-team)_[a-z0-9-]+_\\d{8}_\\d{6}$",
+      "description": "팀 실행 인스턴스 고유 ID (예: team_verification-team_20260217_143000 또는 novel-team_verification-team_20260217_143000)"
     },
     "team_definition": {
       "type": "string",
@@ -52,6 +52,13 @@
         }
       },
       "description": "실행 컨텍스트"
+    },
+    "context_manifest": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/contextManifestEntry"
+      },
+      "description": "품질 게이트 팀이 실제로 읽은 파일, 상태, 이슈, 지시, task output의 freshness와 사용처를 기록한다"
     },
     "members": {
       "type": "array",
@@ -108,6 +115,35 @@
       },
       "description": "품질 게이트 결과"
     },
+    "validation_conflicts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/validationConflict"
+      },
+      "description": "검증자 간 PASS/FAIL, 심각도, 지시, 근거 이견을 보존하고 최종 판정 전 해결 여부를 기록"
+    },
+    "handoff_contracts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/handoffContract"
+      },
+      "description": "에이전트 또는 workflow step 간 전달되는 산출물, 필수 payload, acceptance check, 손실 위험을 기록"
+    },
+    "execution_trace": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/traceEvent"
+      },
+      "description": "팀 실행 재현과 실패 귀속을 위한 단계별 trace 이벤트"
+    },
+    "failure_attribution": {
+      "$ref": "#/definitions/failureAttribution",
+      "description": "실패 또는 품질 게이트 차단 시 원인 에이전트와 결정적 단계를 기록"
+    },
+    "recovery_plan": {
+      "$ref": "#/definitions/recoveryPlan",
+      "description": "실패 귀속 이후 재실행할 단계, 적용할 개입, 성공 기준, 검증 명령을 기록"
+    },
     "started_at": {
       "type": "string",
       "format": "date-time",
@@ -129,7 +165,111 @@
       "maxLength": 1000
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "required": ["quality_gate"],
+        "properties": {
+          "quality_gate": {
+            "required": ["enabled"],
+            "properties": {
+              "enabled": { "const": true }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["context_manifest"]
+      }
+    },
+    {
+      "if": {
+        "required": ["execution_trace"],
+        "properties": {
+          "execution_trace": {
+            "contains": {
+              "type": "object",
+              "required": ["event_type"],
+              "properties": {
+                "event_type": { "const": "handoff" }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["handoff_contracts"]
+      }
+    }
+  ],
   "definitions": {
+    "contextManifestEntry": {
+      "type": "object",
+      "required": ["ref", "source_type", "loaded_at", "status", "required", "used_by"],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "파일 경로, task output, issue, directive, state ref 등 재확인 가능한 컨텍스트 참조"
+        },
+        "source_type": {
+          "type": "string",
+          "enum": ["file", "glob", "task_output", "issue", "directive", "schema", "state", "external"],
+          "description": "컨텍스트 출처 유형"
+        },
+        "loaded_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "오케스트레이터가 이 컨텍스트를 읽거나 확인한 시간"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["loaded", "missing", "stale", "superseded", "not_applicable"],
+          "description": "품질 게이트 판정에 사용할 수 있는 최신 컨텍스트인지 여부"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "true이면 missing/stale/superseded 상태가 최종 PASS를 차단한다"
+        },
+        "used_by": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "이 컨텍스트를 입력으로 받은 agent, workflow step, gate 이름"
+        },
+        "checksum": {
+          "type": "string",
+          "description": "가능하면 파일 내용 또는 task output의 해시"
+        },
+        "mtime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "파일 기반 컨텍스트의 마지막 수정 시간"
+        },
+        "version": {
+          "type": "string",
+          "description": "chapter version, task version, state revision 등 비교 가능한 버전"
+        },
+        "freshness_checked_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "stale 여부를 마지막으로 확인한 시간"
+        },
+        "stale_reason": {
+          "type": "string",
+          "description": "missing, stale, superseded 판정의 구체적 이유"
+        },
+        "blocking": {
+          "type": "boolean",
+          "description": "true이면 이 항목만으로도 PASS 금지"
+        },
+        "notes": {
+          "type": "string",
+          "description": "컨텍스트 사용 또는 freshness 판단에 대한 보충 설명"
+        }
+      },
+      "additionalProperties": false
+    },
     "memberState": {
       "type": "object",
       "required": ["agent", "status"],
@@ -188,6 +328,390 @@
           "type": "string"
         }
       }
+    },
+    "traceEvent": {
+      "type": "object",
+      "required": ["trace_event_id", "step_id", "step_name", "agent", "event_type", "timestamp", "input_refs", "output_refs", "status"],
+      "properties": {
+        "trace_event_id": {
+          "type": "string",
+          "description": "trace 내에서 참조 가능한 이벤트 ID"
+        },
+        "step_id": {
+          "type": "string",
+          "description": "팀 workflow step 식별자"
+        },
+        "step_name": {
+          "type": "string",
+          "description": "팀 workflow step 이름"
+        },
+        "agent": {
+          "type": "string",
+          "description": "이 이벤트를 생성한 에이전트 또는 orchestrator"
+        },
+        "event_type": {
+          "type": "string",
+          "enum": ["dispatch", "handoff", "agent_result", "validator_issue", "retry", "block", "error"],
+          "description": "trace 이벤트 유형"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "running", "completed", "failed", "blocked", "skipped"]
+        },
+        "input_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "이 단계가 읽은 파일, 이전 출력, issue, directive 참조"
+        },
+        "output_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "이 단계가 생성한 파일, 결과, issue, directive 참조"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "선행 trace_event_id 목록"
+        },
+        "issue_codes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "이벤트와 연결된 validator issue code 목록"
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "판정 또는 실패 귀속에 사용한 증거 스니펫"
+        },
+        "directive": {
+          "type": "string",
+          "description": "해당 이벤트에서 나온 수정 지시"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "verdict": {
+          "type": "string"
+        }
+      }
+    },
+    "validationConflict": {
+      "type": "object",
+      "required": [
+        "conflict_id",
+        "conflict_type",
+        "agents",
+        "severity",
+        "issue_codes",
+        "trace_event_ids",
+        "status",
+        "minority_position",
+        "resolution",
+        "blocks_pass",
+        "rationale"
+      ],
+      "properties": {
+        "conflict_id": {
+          "type": "string",
+          "description": "validation_conflicts 안에서 참조 가능한 이견 ID"
+        },
+        "conflict_type": {
+          "type": "string",
+          "enum": ["pass_fail_split", "severity_disagreement", "directive_conflict", "evidence_conflict", "score_spread", "missing_evidence"],
+          "description": "검증자 이견 유형"
+        },
+        "agents": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string" },
+          "description": "이견에 관여한 검증 에이전트 목록"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "major", "minor", "informational"],
+          "description": "이견 자체의 처리 우선순위"
+        },
+        "issue_codes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "이견과 연결된 issue code 목록. 점수 편차만 있는 경우 비울 수 있음"
+        },
+        "trace_event_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "이견을 만든 validator issue, agent result, quality gate trace_event_id 목록"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["unresolved", "resolved", "blocked", "escalated", "not_applicable"],
+          "description": "이견 해결 상태"
+        },
+        "minority_position": {
+          "type": "string",
+          "description": "평균 점수나 다수 의견에 묻힐 수 있는 소수 검증자 의견"
+        },
+        "winning_decision": {
+          "type": "string",
+          "description": "최종 판정에 반영한 결정. resolved일 때 왜 이 결정을 채택했는지 resolution에 근거를 남긴다"
+        },
+        "resolution": {
+          "type": "string",
+          "minLength": 1,
+          "description": "이견을 해결하거나 차단한 방식"
+        },
+        "required_follow_up": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "이견 해결을 위해 필요한 재검토, 재작성, 재검증 작업"
+        },
+        "blocks_pass": {
+          "type": "boolean",
+          "description": "true이면 status가 resolved가 되기 전까지 최종 PASS 금지"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "이견의 위험도와 처리 결정을 설명하는 근거"
+        }
+      }
+    },
+    "handoffContract": {
+      "type": "object",
+      "required": [
+        "handoff_id",
+        "from_agent",
+        "to_agent",
+        "from_step",
+        "to_step",
+        "input_refs",
+        "output_refs",
+        "required_payloads",
+        "acceptance_criteria",
+        "status",
+        "verified_by",
+        "blocks_pass",
+        "rationale"
+      ],
+      "properties": {
+        "handoff_id": {
+          "type": "string",
+          "description": "handoff_contracts 안에서 참조 가능한 계약 ID"
+        },
+        "from_agent": {
+          "type": "string",
+          "description": "전달 산출물을 만든 agent 또는 orchestrator"
+        },
+        "to_agent": {
+          "type": "string",
+          "description": "전달 산출물을 입력으로 받는 agent 또는 workflow step"
+        },
+        "from_step": {
+          "type": "string",
+          "description": "전달이 시작된 workflow step_id"
+        },
+        "to_step": {
+          "type": "string",
+          "description": "전달을 소비하는 workflow step_id"
+        },
+        "trace_event_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "이 handoff를 만들거나 검증한 trace_event_id 목록"
+        },
+        "input_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "handoff 생성에 사용된 파일, task output, issue, directive, state 참조"
+        },
+        "output_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "수신자가 반드시 입력으로 받아야 하는 산출물 참조"
+        },
+        "required_payloads": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["kind", "ref", "status"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["issue", "directive", "evidence", "file", "state", "task_output", "schema", "score", "verdict", "context"],
+                "description": "전달되어야 하는 payload 유형"
+              },
+              "ref": {
+                "type": "string",
+                "description": "issue code, directive ref, evidence ref, 파일 경로 등 재확인 가능한 참조"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["present", "missing", "stale", "superseded", "weakened", "not_applicable"],
+                "description": "수신 단계에 payload가 원래 강도와 최신성으로 전달됐는지 여부"
+              },
+              "source_trace_event_id": {
+                "type": "string",
+                "description": "payload를 처음 만든 trace_event_id"
+              },
+              "notes": {
+                "type": "string",
+                "description": "누락, 약화, 대체, 최신성 판단 근거"
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "다음 agent에게 반드시 같은 강도로 넘어가야 하는 issue, directive, evidence, score, verdict, context 목록"
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "handoff를 accepted로 볼 수 있는 검증 조건"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "accepted", "blocked", "failed", "superseded", "not_applicable"],
+          "description": "handoff 계약 검증 상태"
+        },
+        "loss_risks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "지시 약화, evidence 누락, score 무시, 파일 버전 혼동 등 전달 손실 위험"
+        },
+        "verified_by": {
+          "type": "string",
+          "description": "handoff acceptance를 검증한 agent 또는 orchestrator"
+        },
+        "blocks_pass": {
+          "type": "boolean",
+          "description": "true이면 accepted 전까지 최종 PASS 금지"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "handoff 상태와 PASS 차단 여부를 설명하는 근거"
+        }
+      },
+      "additionalProperties": false
+    },
+    "failureAttribution": {
+      "type": "object",
+      "required": ["status", "responsible_agent", "decisive_step", "failure_mode", "supporting_trace_events", "recoverability"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_applicable", "suspected", "confirmed"],
+          "description": "실패 귀속 확정 수준"
+        },
+        "responsible_agent": {
+          "type": "string",
+          "description": "원인 단계의 에이전트. 해당 없음이면 orchestrator 또는 none"
+        },
+        "decisive_step": {
+          "type": "string",
+          "description": "실패를 만든 결정적 workflow step_id"
+        },
+        "failure_mode": {
+          "type": "string",
+          "enum": ["not_applicable", "missing_evidence", "stale_context", "validator_conflict", "quality_gate_block", "agent_error", "handoff_loss", "policy_violation", "unknown"],
+          "description": "실패 유형"
+        },
+        "supporting_trace_events": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "귀속 판단을 뒷받침하는 trace_event_id 목록"
+        },
+        "recoverability": {
+          "type": "string",
+          "enum": ["retry_from_step", "requires_revision", "requires_user_input", "unrecoverable", "unknown", "not_applicable"],
+          "description": "복구 전략"
+        },
+        "recommended_retry_from_step": {
+          "type": "string",
+          "description": "재시도 시 돌아갈 workflow step_id"
+        },
+        "propagated_to": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "원인 이슈가 전파된 후속 trace_event_id 목록"
+        },
+        "counterfactual_fix": {
+          "type": "string",
+          "description": "이 단계가 고쳐졌다면 결과가 회복되는지 설명"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "실패 귀속 판단 근거"
+        }
+      }
+    },
+    "recoveryPlan": {
+      "type": "object",
+      "required": ["status", "from_step", "intervention_type", "required_context_refs", "directives_to_apply", "success_criteria", "verification_commands"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_applicable", "planned", "in_progress", "completed", "abandoned"],
+          "description": "복구 계획 상태"
+        },
+        "from_step": {
+          "type": "string",
+          "description": "재실행을 시작할 workflow step_id. 해당 없음이면 none"
+        },
+        "intervention_type": {
+          "type": "string",
+          "enum": ["not_applicable", "revise_context", "rerun_agent", "rerun_validator", "rerun_pipeline_from_step", "request_user_input", "manual_rewrite", "abort"],
+          "description": "복구 개입 유형"
+        },
+        "preserve_prefix_trace_until": {
+          "type": "string",
+          "description": "재실행 시 보존할 마지막 trace_event_id. prefix-preserving replay 기준점"
+        },
+        "target_agents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "복구 개입 대상 에이전트 목록"
+        },
+        "required_context_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "복구 전에 다시 읽거나 수정해야 하는 파일, task, issue, directive 참조"
+        },
+        "directives_to_apply": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "복구 단계에 반드시 반영할 수정 지시"
+        },
+        "issue_codes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "복구 계획이 해결해야 하는 issue code 목록"
+        },
+        "success_criteria": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "복구 완료를 판단할 관찰 가능한 조건"
+        },
+        "verification_commands": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "복구 후 실행할 검증 명령 또는 팀 검증 절차"
+        },
+        "rollback_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "복구 실패 시 되돌릴 수 있는 상태, 백업, 이전 산출물 참조"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "이 복구 계획이 실패 원인을 해결한다고 보는 근거"
+        }
+      }
     }
   },
   "examples": [
@@ -200,6 +724,19 @@
         "chapter": 5,
         "target_files": ["chapters/chapter_005.md"]
       },
+      "context_manifest": [
+        {
+          "ref": "chapters/chapter_005.md",
+          "source_type": "file",
+          "loaded_at": "2026-02-17T14:30:00Z",
+          "status": "loaded",
+          "required": true,
+          "used_by": ["critic", "beta-reader", "genre-validator"],
+          "freshness_checked_at": "2026-02-17T14:30:00Z",
+          "blocking": false,
+          "version": "chapter-5"
+        }
+      ],
       "members": [
         { "agent": "critic", "status": "running", "task_id": "t1", "started_at": "2026-02-17T14:30:05Z" },
         { "agent": "beta-reader", "status": "running", "task_id": "t2", "started_at": "2026-02-17T14:30:05Z" },
@@ -218,6 +755,162 @@
       },
       "started_at": "2026-02-17T14:30:00Z",
       "last_updated": "2026-02-17T14:31:20Z"
+    },
+    {
+      "team_id": "team_verification-team_20260621_001200",
+      "team_definition": "verification-team.team.json",
+      "status": "failed",
+      "context": {
+        "novel_id": "novel_20260621_000000",
+        "chapter": 12,
+        "target_files": ["chapters/chapter_012.md", "chapters/chapter_012.json"]
+      },
+      "context_manifest": [
+        {
+          "ref": "chapters/chapter_012.md",
+          "source_type": "file",
+          "loaded_at": "2026-06-21T00:12:00Z",
+          "status": "loaded",
+          "required": true,
+          "used_by": ["critic", "beta-reader"],
+          "freshness_checked_at": "2026-06-21T00:12:00Z",
+          "blocking": false,
+          "version": "chapter-12-v1"
+        },
+        {
+          "ref": "chapters/chapter_012.json",
+          "source_type": "file",
+          "loaded_at": "2026-06-21T00:12:00Z",
+          "status": "loaded",
+          "required": true,
+          "used_by": ["critic", "beta-reader"],
+          "freshness_checked_at": "2026-06-21T00:12:00Z",
+          "blocking": false,
+          "version": "chapter-12-v1"
+        }
+      ],
+      "members": [
+        {
+          "agent": "critic",
+          "status": "completed",
+          "task_id": "t1",
+          "started_at": "2026-06-21T00:12:05Z",
+          "completed_at": "2026-06-21T00:13:10Z",
+          "result": {
+            "score": 82,
+            "verdict": "FAIL"
+          }
+        },
+        {
+          "agent": "beta-reader",
+          "status": "completed",
+          "task_id": "t2",
+          "started_at": "2026-06-21T00:12:05Z",
+          "completed_at": "2026-06-21T00:13:12Z",
+          "result": {
+            "score": 79,
+            "verdict": "PASS"
+          }
+        }
+      ],
+      "workflow_progress": {
+        "total_steps": 1,
+        "completed_steps": 1,
+        "current_step": "validate"
+      },
+      "quality_gate": {
+        "enabled": true,
+        "results": {
+          "critic": {
+            "score": 82,
+            "threshold": 85,
+            "pass": false,
+            "verdict": "FAIL"
+          },
+          "beta-reader": {
+            "score": 79,
+            "threshold": 75,
+            "pass": true,
+            "verdict": "PASS"
+          }
+        },
+        "overall_pass": false,
+        "composite_score": 80.5
+      },
+      "execution_trace": [
+        {
+          "trace_event_id": "trace_validate_critic_dispatch",
+          "step_id": "validate",
+          "step_name": "parallel_validation",
+          "agent": "orchestrator",
+          "event_type": "dispatch",
+          "timestamp": "2026-06-21T00:12:05Z",
+          "status": "completed",
+          "input_refs": ["chapters/chapter_012.md", "chapters/chapter_012.json"],
+          "output_refs": ["task:t1"]
+        },
+        {
+          "trace_event_id": "trace_validate_critic_issue",
+          "step_id": "validate",
+          "step_name": "parallel_validation",
+          "agent": "critic",
+          "event_type": "validator_issue",
+          "timestamp": "2026-06-21T00:13:10Z",
+          "status": "failed",
+          "input_refs": ["task:t1", "chapters/chapter_012.md"],
+          "output_refs": ["issue:manuscript-long-hook-thread-not-advanced"],
+          "depends_on": ["trace_validate_critic_dispatch"],
+          "issue_codes": ["manuscript-long-hook-thread-not-advanced"],
+          "evidence": ["장기 떡밥의 단서가 반복되지만 새 정보나 상태 변화가 없다."],
+          "directive": "장기 미스터리에 새 단서, 해석 변화, 추적 행동 중 하나를 추가한다.",
+          "score": 82,
+          "verdict": "FAIL"
+        },
+        {
+          "trace_event_id": "trace_validate_gate_block",
+          "step_id": "quality_gate",
+          "step_name": "quality_gate",
+          "agent": "orchestrator",
+          "event_type": "block",
+          "timestamp": "2026-06-21T00:13:15Z",
+          "status": "blocked",
+          "input_refs": ["issue:manuscript-long-hook-thread-not-advanced"],
+          "output_refs": ["failure_attribution", "recovery_plan"],
+          "depends_on": ["trace_validate_critic_issue"],
+          "issue_codes": ["manuscript-long-hook-thread-not-advanced"],
+          "evidence": ["critical_blocks_pass=true and critic score 82 < threshold 85"],
+          "directive": "retry_from_step 또는 revise 단계로 되돌린다."
+        }
+      ],
+      "failure_attribution": {
+        "status": "confirmed",
+        "responsible_agent": "critic",
+        "decisive_step": "validate",
+        "failure_mode": "quality_gate_block",
+        "supporting_trace_events": ["trace_validate_critic_issue", "trace_validate_gate_block"],
+        "recoverability": "requires_revision",
+        "recommended_retry_from_step": "revise",
+        "propagated_to": ["trace_validate_gate_block"],
+        "counterfactual_fix": "validate 단계에서 지적된 장기 떡밥 정체를 수정하면 quality_gate 차단 조건이 해소된다.",
+        "rationale": "첫 실패 issue를 생성한 critic trace가 품질 게이트 차단의 직접 입력이다."
+      },
+      "recovery_plan": {
+        "status": "planned",
+        "from_step": "revise",
+        "intervention_type": "rerun_pipeline_from_step",
+        "preserve_prefix_trace_until": "trace_validate_critic_issue",
+        "target_agents": ["editor", "critic"],
+        "required_context_refs": ["chapters/chapter_012.md", "issue:manuscript-long-hook-thread-not-advanced", "directive:장기 미스터리에 새 단서, 해석 변화, 추적 행동 중 하나를 추가한다."],
+        "directives_to_apply": ["장기 훅 단서가 반복되는 문단을 새 정보, 가설 변화, 추적 행동 중 하나로 수정한다."],
+        "issue_codes": ["manuscript-long-hook-thread-not-advanced"],
+        "success_criteria": ["critic score >= 85", "manuscript-long-hook-thread-not-advanced issue absent", "quality_gate.overall_pass === true"],
+        "verification_commands": ["npx vitest run tests/teams/team-definitions.test.ts", "/team run verification-team 12"],
+        "rollback_refs": ["chapters/chapter_012.md@pre-revise"],
+        "rationale": "원인 trace 이전 dispatch와 critic issue는 보존하고, 수정 가능한 원고 단계부터 재실행하면 전체 팀 run을 반복하지 않고 차단 issue를 검증할 수 있다."
+      },
+      "started_at": "2026-06-21T00:12:00Z",
+      "completed_at": "2026-06-21T00:13:15Z",
+      "last_updated": "2026-06-21T00:13:15Z"
     }
   ]
 }

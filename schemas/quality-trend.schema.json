@@ -48,6 +48,7 @@
               "rhythm_variation": { "type": "number" },
               "character_voice": { "type": "number" },
               "transition_quality": { "type": "number" },
+              "engagement": { "type": "number" },
               "honorific_consistency": { "type": "number" },
               "korean_texture": { "type": "number" },
               "style_alignment": { "type": "number" }
@@ -58,6 +59,41 @@
             "type": "string",
             "enum": ["PASS", "REVISE"],
             "description": "Final verdict from Quality Oracle"
+          },
+          "engagement_issues": {
+            "type": "array",
+            "description": "Engagement contract issues captured for this snapshot",
+            "items": {
+              "type": "object",
+              "required": ["message"],
+              "properties": {
+                "code": { "type": "string" },
+                "severity": { "type": "string" },
+                "message": { "type": "string" },
+                "expected": { "type": "string" },
+                "actual": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "default": []
+          },
+          "engagement_revision_directives": {
+            "type": "array",
+            "description": "Actionable engagement revision directives captured for this snapshot",
+            "items": {
+              "type": "object",
+              "required": ["action"],
+              "properties": {
+                "code": { "type": "string" },
+                "priority": { "type": "string" },
+                "target": { "type": "string" },
+                "action": { "type": "string" },
+                "expected": { "type": "string" },
+                "actual": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "default": []
           },
           "superseded": {
             "type": "boolean",

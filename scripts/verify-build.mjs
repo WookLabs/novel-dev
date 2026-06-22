@@ -21,6 +21,27 @@ const REQUIRED_FILES = [
   // Root entry point
   'index.js',
 
+  // CLI bridges used by plugin skills
+  'cli/apply-chapter-gate.js',
+  'cli/apply-design-gate.js',
+  'cli/apply-style-gate.js',
+  'cli/calibrate-reader-response.js',
+  'cli/character-relationship-benchmark-project.js',
+  'cli/engagement-benchmark-project.js',
+  'cli/engagement-project.js',
+  'cli/masterpiece-readiness-project.js',
+  'cli/premise-appeal-benchmark-project.js',
+  'cli/prose-taste-benchmark-project.js',
+  'cli/reader-response-project.js',
+  'cli/record-engagement.js',
+  'cli/run-character-relationship-benchmark.js',
+  'cli/run-engagement-benchmark.js',
+  'cli/run-masterpiece-readiness.js',
+  'cli/run-premise-appeal-benchmark.js',
+  'cli/run-prose-taste-benchmark.js',
+  'cli/run-series-retention-benchmark.js',
+  'cli/series-retention-benchmark-project.js',
+
   // Context system (used by context-budget.mjs)
   'context/index.js',
   'context/loader.js',
@@ -31,6 +52,7 @@ const REQUIRED_FILES = [
   // State system (used by hooks)
   'state/lock.js',
   'state/backup.js',
+  'state/ralph-gate.js',
 
   // Retry system
   'retry/index.js',

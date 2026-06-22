@@ -1,0 +1,181 @@
+{
+  "$schema": "../schemas/premise-appeal-benchmark.schema.json",
+  "required_genres": ["mystery", "romance", "fantasy"],
+  "required_target_readers": ["webnovel-core"],
+  "minimum_panel_size": 3,
+  "minimum_commented_responses": 2,
+  "minimum_samples_per_genre": 2,
+  "minimum_samples_per_target_reader": 2,
+  "minimum_holdout_samples": 1,
+  "minimum_usable_holdout_samples": 1,
+  "minimum_failing_holdout_samples": 1,
+  "minimum_usable_failing_holdout_samples": 1,
+  "require_promise_evidence": true,
+  "require_behavioral_intent_evidence": true,
+  "require_behavioral_protocol": true,
+  "require_behavioral_allocation_integrity": true,
+  "minimum_behavioral_impressions": 100,
+  "minimum_click_through_rate": 0.04,
+  "minimum_first_chapter_open_rate": 0.025,
+  "minimum_save_or_follow_rate": 0.008,
+  "minimum_behavioral_observation_window_hours": 24,
+  "minimum_sample_ratio_mismatch_p_value": 0.001,
+  "samples": [
+    {
+      "id": "premise-good-mystery",
+      "label": "타깃 독자가 읽고 싶다고 반응한 미스터리 전제",
+      "genre": "mystery",
+      "target_reader": "webnovel-core",
+      "automated_score": 91,
+      "expected_appealing": true,
+      "calibration_split": "calibration",
+      "rating_scale": "likert-7",
+      "behavioral_evidence": {
+        "platform": "blind-listing-panel",
+        "variant_label": "mystery-hook-a",
+        "acquisition_source": "target-reader-listing-test",
+        "observation_window_hours": 48,
+        "blind_listing_test": true,
+        "impression_count": 240,
+        "click_count": 24,
+        "first_chapter_open_count": 18,
+        "library_add_count": 5,
+        "follow_count": 4,
+        "expected_variant_allocation_ratio": 0.5,
+        "observed_variant_allocation_ratio": 0.51,
+        "sample_ratio_mismatch_p_value": 0.62
+      },
+      "reader_responses": [
+        {
+          "reader_id": "reader-001",
+          "target_reader_fit": true,
+          "ratings": {
+            "curiosity_gap": 7,
+            "novelty": 6,
+            "protagonist_investment": 6,
+            "emotional_pull": 6,
+            "clarity": 6,
+            "target_fit": 7,
+            "next_chapter_anticipation": 7
+          },
+          "would_read": true,
+          "comment": "예고 앱의 규칙과 주인공 가족 실종이 바로 연결되어 첫 화를 확인하고 싶다.",
+          "attractive_elements": ["구체적인 정보 격차", "주인공이 위험을 감수할 이유"],
+          "rewrite_suggestion": "첫 장면에서 앱의 규칙을 설명보다 행동으로 증명하면 더 좋다."
+        },
+        {
+          "reader_id": "reader-002",
+          "target_reader_fit": true,
+          "ratings": {
+            "curiosity_gap": 6,
+            "novelty": 6,
+            "protagonist_investment": 6,
+            "emotional_pull": 5,
+            "clarity": 6,
+            "target_fit": 6,
+            "next_chapter_anticipation": 6
+          },
+          "would_read": true,
+          "comment": "왜 주인공에게만 알림이 오는지 궁금하고 장기 미스터리 방향도 보인다.",
+          "attractive_elements": ["왜 하필 주인공인가", "미제 사건 번호"],
+          "rewrite_suggestion": "감정 보상은 가족 실종과 더 일찍 묶이면 강해진다."
+        },
+        {
+          "reader_id": "reader-003",
+          "target_reader_fit": true,
+          "ratings": {
+            "curiosity_gap": 7,
+            "novelty": 5,
+            "protagonist_investment": 6,
+            "emotional_pull": 6,
+            "clarity": 6,
+            "target_fit": 6,
+            "next_chapter_anticipation": 7
+          },
+          "would_read": true,
+          "comment": "앱 알림이 실제 살인과 맞아떨어지는 장면을 보고 싶다.",
+          "attractive_elements": ["규칙 증명", "다음 수신자"],
+          "rewrite_suggestion": "앱 개발자 떡밥은 한 문장으로 더 선명해도 된다."
+        }
+      ]
+    },
+    {
+      "id": "premise-bad-generic",
+      "label": "자동 점수는 높지만 타깃 독자 반응이 약한 전제",
+      "genre": "mystery",
+      "target_reader": "webnovel-core",
+      "automated_score": 88,
+      "expected_appealing": false,
+      "calibration_split": "holdout",
+      "rating_scale": "likert-7",
+      "behavioral_evidence": {
+        "platform": "blind-listing-panel",
+        "variant_label": "generic-mystery-holdout",
+        "acquisition_source": "target-reader-listing-test",
+        "observation_window_hours": 48,
+        "blind_listing_test": true,
+        "impression_count": 230,
+        "click_count": 3,
+        "first_chapter_open_count": 1,
+        "library_add_count": 0,
+        "follow_count": 0,
+        "expected_variant_allocation_ratio": 0.5,
+        "observed_variant_allocation_ratio": 0.49,
+        "sample_ratio_mismatch_p_value": 0.71
+      },
+      "reader_responses": [
+        {
+          "reader_id": "reader-004",
+          "target_reader_fit": true,
+          "ratings": {
+            "curiosity_gap": 3,
+            "novelty": 3,
+            "protagonist_investment": 2,
+            "emotional_pull": 3,
+            "clarity": 5,
+            "target_fit": 4,
+            "next_chapter_anticipation": 3
+          },
+          "would_read": false,
+          "comment": "앱과 살인 예고는 알겠지만 주인공이 왜 중요한지 덜 느껴진다.",
+          "confusion_points": ["주인공의 개인적 대가가 약함", "새로움이 장르 클리셰처럼 보임"],
+          "rewrite_suggestion": "첫 알림을 주인공의 숨긴 죄책감이나 가족 실종과 직접 묶어야 한다."
+        },
+        {
+          "reader_id": "reader-005",
+          "target_reader_fit": true,
+          "ratings": {
+            "curiosity_gap": 4,
+            "novelty": 3,
+            "protagonist_investment": 3,
+            "emotional_pull": 3,
+            "clarity": 5,
+            "target_fit": 4,
+            "next_chapter_anticipation": 3
+          },
+          "would_read": false,
+          "comment": "중심 질문은 있지만 답을 알아야 할 이유가 아직 약하다.",
+          "confusion_points": ["보상 쾌감이 설명적임"],
+          "rewrite_suggestion": "첫 화에서 독자가 보고 싶은 구체 장면을 전제에 넣어야 한다."
+        },
+        {
+          "reader_id": "reader-006",
+          "target_reader_fit": true,
+          "ratings": {
+            "curiosity_gap": 3,
+            "novelty": 3,
+            "protagonist_investment": 3,
+            "emotional_pull": 2,
+            "clarity": 6,
+            "target_fit": 4,
+            "next_chapter_anticipation": 3
+          },
+          "would_read": false,
+          "comment": "설정은 이해되지만 지금 당장 첫 화를 누르게 만드는 감정이 부족하다.",
+          "confusion_points": ["주인공 욕망이 흐림"],
+          "rewrite_suggestion": "주인공이 잃을 사람이나 돌이킬 수 없는 선택을 앞세우면 낫다."
+        }
+      ]
+    }
+  ]
+}

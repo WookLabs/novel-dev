@@ -1,0 +1,94 @@
+{
+  "chapter_allocation": {
+    "total_chapters": 2,
+    "act_breakdown": [
+      {
+        "act": 1,
+        "chapters": "1-2",
+        "focus": "예고 앱의 위협과 주인공의 개입 이유 확립",
+        "pacing": "fast"
+      }
+    ]
+  },
+  "binge_architecture": {
+    "long_hook_threads": [
+      "예고 앱이 주인공을 첫 번째 수신자로 선택한 이유",
+      "앱 로고와 주인공 가족 실종 사건의 연결"
+    ],
+    "payoff_cadence": "매 회차 작은 단서 보상, 2화마다 새 예고로 다음 목표를 제시한다.",
+    "tension_reset_plan": "사건 직후 짧은 추리 호흡을 주되, 같은 장면 끝에 새 알림으로 긴장을 되살린다.",
+    "fatigue_controls": [
+      "앱 규칙은 사건 결과로 증명한다.",
+      "같은 장소 조사 장면을 연속 배치하지 않는다."
+    ]
+  },
+  "foreshadowing_schedule": [
+    {
+      "id": "fore_app_logo",
+      "plant_chapter": 1,
+      "hints": [1, 2],
+      "payoff_chapter": 5,
+      "importance": "A"
+    }
+  ],
+  "tension_curve": {
+    "description": "1화에서 첫 예고로 급상승, 2화에서 두 번째 예고와 개인사 단서로 재상승한다.",
+    "key_peaks": [
+      {
+        "chapter": 1,
+        "event": "첫 알림의 장소에서 실제 피해자가 발견된다.",
+        "tension_level": 8
+      },
+      {
+        "chapter": 2,
+        "event": "두 번째 예고의 대상이 주인공의 조력자로 드러난다.",
+        "tension_level": 9
+      }
+    ]
+  },
+  "pov_rotation": {
+    "strategy": "주인공 고정 3인칭 제한 시점",
+    "exceptions": []
+  },
+  "subplot_integration": [
+    {
+      "subplot": "주인공 가족 실종",
+      "chapters": "1-2",
+      "intersection_with_main": [1, 2]
+    }
+  ],
+  "per_chapter_guide": [
+    {
+      "chapter": 1,
+      "arc_beats": "주인공이 예고 앱의 첫 알림을 받고 현장으로 향하지만 구조에 실패한다.",
+      "foreshadowing_plant": ["fore_app_logo"],
+      "foreshadowing_collect": [],
+      "hooks": "첫 피해자 휴대폰에도 같은 앱이 설치되어 있다.",
+      "pacing": "fast",
+      "emotional_target": "불길함, 지적 호기심, 즉각적 위기감",
+      "fun_spec": {
+        "reader_reward": "앱 알림이 실제 사건과 맞아떨어지는 첫 규칙 증명",
+        "page_turn_question": "앱은 왜 주인공에게만 첫 알림을 보냈고, 예고 앱은 실제 살인을 어떻게 알았는가?",
+        "character_appeal_moment": "주인공이 경찰 신고보다 현장 도착 시간을 먼저 계산해 뛰쳐나간다.",
+        "drop_off_risk": "앱 설명이 길어질 위험 — 알림, 이동, 현장 실패 순서로 규칙을 행동으로 보여준다.",
+        "must_click_ending": "피해자의 휴대폰에서 새 예고가 뜨며 주인공 이름과 과거 미제 사건 번호가 현재 사건 기록에 함께 연결된다."
+      }
+    },
+    {
+      "chapter": 2,
+      "arc_beats": "주인공이 알림 로그를 역추적하고 두 번째 예고의 대상이 조력자임을 알아낸다.",
+      "foreshadowing_plant": ["fore_app_logo"],
+      "foreshadowing_collect": ["fore_app_logo"],
+      "hooks": "두 번째 예고의 시간이 이미 시작된 뒤라는 사실",
+      "pacing": "medium",
+      "emotional_target": "추리 쾌감, 관계 긴장, 절박함",
+      "fun_spec": {
+        "reader_reward": "첫 알림 로그에서 앱 로고와 과거 미제 사건 번호가 일치한다는 단서 발견",
+        "page_turn_question": "예고 앱은 실제 살인을 어떻게 알고 조력자를 두 번째 대상으로 좁혔는가?",
+        "character_appeal_moment": "주인공이 공포보다 패턴을 먼저 읽고 위험을 감수해 조력자를 구하려 자신의 과거 약점을 공개한다.",
+        "drop_off_risk": "조사 장면이 정적으로 보일 위험 — 로그 분석 중 실시간 알림 카운트다운을 병치한다.",
+        "must_click_ending": "두 번째 예고 대상의 위치가 주인공 바로 옆 건물로 좁혀지고, 앱 로고의 과거 미제 사건 번호가 새 예고와 현재 사건 기록에 다시 연결된다."
+      }
+    }
+  ]
+}

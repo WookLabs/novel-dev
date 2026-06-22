@@ -205,7 +205,13 @@ export interface VoiceProfile {
 /**
  * Aspect of voice that deviated
  */
-export type VoiceAspect = 'vocabulary' | 'structure' | 'habit' | 'rhythm' | 'monologue';
+export type VoiceAspect =
+  | 'vocabulary'
+  | 'structure'
+  | 'habit'
+  | 'rhythm'
+  | 'monologue'
+  | 'honorific';
 
 /**
  * Severity of voice deviation

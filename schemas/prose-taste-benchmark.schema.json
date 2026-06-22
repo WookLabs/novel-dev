@@ -1,0 +1,1092 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://novel-dev.org/schemas/prose-taste-benchmark.schema.json",
+  "title": "Prose Taste Benchmark Samples",
+  "description": "Labeled preferred/rejected prose samples used to benchmark project-specific prose taste gates.",
+  "type": "object",
+  "required": ["samples"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "default_profile": {
+      "$ref": "#/definitions/prose_taste_profile"
+    },
+    "threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "required_reader_segments": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "maxItems": 20,
+      "uniqueItems": true,
+      "description": "Reader taste cohorts that must be represented before using this benchmark set to tune prose style gates."
+    },
+    "minimum_reader_segment_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "minimum_samples_per_reader_segment": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "minimum_failing_samples_per_reader_segment": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "maximum_dominant_reader_segment_ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "minimum_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum reserved prose taste holdout samples required before using this suite to tune style gates."
+    },
+    "minimum_usable_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum holdout samples that must pass their benchmark expectations before style gate tuning is considered ready."
+    },
+    "minimum_failing_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum disliked or irritating prose holdout samples required before tuning style gates."
+    },
+    "minimum_usable_failing_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum disliked prose holdout samples that must pass their benchmark expectations before style gate tuning is considered ready."
+    },
+    "minimum_friction_annotations": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum reader-located style friction annotations required on disliked prose samples before style tuning is considered ready."
+    },
+    "minimum_actionable_friction_annotations": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum style friction annotations that must include location, reason, reader segment, and rewrite suggestion."
+    },
+    "require_friction_annotations": {
+      "type": "boolean",
+      "description": "When true, disliked prose samples without covered style_friction_annotations cannot make style tuning ready."
+    },
+    "minimum_style_highlight_annotations": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum reader-located positive style highlight annotations required on preferred prose samples before style tuning is considered ready."
+    },
+    "minimum_actionable_style_highlight_annotations": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum positive style highlight annotations that must include location, reason, reader segment, quality, and transfer guidance."
+    },
+    "require_style_highlight_annotations": {
+      "type": "boolean",
+      "description": "When true, preferred prose samples without covered style_highlight_annotations cannot make style tuning ready."
+    },
+    "minimum_style_highlight_quality_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20,
+      "description": "Minimum number of distinct positive prose highlight qualities required before style tuning is considered ready."
+    },
+    "require_style_highlight_quality_diversity": {
+      "type": "boolean",
+      "description": "When true, preferred prose highlights must cover multiple craft strengths so tuning does not overfit to one bland positive signal."
+    },
+    "minimum_style_fingerprint_samples_per_polarity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum usable preferred and disliked prose samples required on each side before comparing style fingerprints."
+    },
+    "minimum_style_fingerprint_distance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Minimum average metric distance between preferred and disliked prose fingerprints before style tuning is considered ready."
+    },
+    "minimum_style_fingerprint_signal_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum number of prose metrics that must clearly separate preferred and disliked samples."
+    },
+    "require_style_fingerprint_separation": {
+      "type": "boolean",
+      "description": "When true, preferred and disliked prose samples must separate on measurable style fingerprint metrics before style tuning is considered ready."
+    },
+    "minimum_authorial_style_continuity_samples": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 50,
+      "description": "Minimum usable chapter-numbered preferred prose samples required before checking authorial style continuity across a series."
+    },
+    "maximum_authorial_style_drift": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Maximum average stylometric drift allowed between adjacent preferred chapter samples before authorial voice continuity is considered weak."
+    },
+    "require_authorial_style_continuity": {
+      "type": "boolean",
+      "description": "When true, preferred chapter samples must preserve a stable authorial style fingerprint across chapters before style tuning is considered ready."
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": ["id", "expected_passed"],
+        "anyOf": [
+          { "required": ["content"] },
+          { "required": ["content_path"] },
+          { "required": ["chapter"] }
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "reader_segment": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Reader taste cohort that supplied or represents this preferred/rejected prose sample."
+          },
+          "calibration_split": {
+            "type": "string",
+            "enum": ["calibration", "validation", "holdout"],
+            "description": "Reserved role for style-gate calibration. Holdout samples are required before tuning style thresholds."
+          },
+          "chapter": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "Project-relative or absolute path to a prose sample markdown/text file."
+          },
+          "expected_passed": {
+            "type": "boolean"
+          },
+          "profile": {
+            "$ref": "#/definitions/prose_taste_profile"
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "expected_issue_codes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "functional-ai-report",
+                "over-embodied-reaction",
+                "body-reaction-subject-chain",
+                "cliche-emotion-image-chain",
+                "symbolic-abstraction-stack",
+                "over-sensory-density",
+                "sensory-wallpaper-run",
+                "forced-metaphor-chain",
+                "flat-emotion-label",
+                "emotion-label-carousel",
+                "hedged-perception-haze",
+                "listified-inner-monologue",
+                "monotone-short-sentence-run",
+                "uniform-sentence-length-cadence",
+                "same-ending-run",
+                "dominant-ending-cadence-lock",
+                "dialogue-ending-cadence-lock",
+                "dialogue-starter-cadence-lock",
+                "dialogue-question-cascade",
+                "dialogue-vocative-cadence-lock",
+                "dialogue-lexical-echo-chain",
+                "dialogue-paraphrase-confirmation-chain",
+                "abstract-exposition-drift",
+                "cognitive-filtering-overload",
+                "therapy-speak-self-analysis",
+                "backstory-info-dump-block",
+                "relationship-montage-summary",
+                "time-skip-summary-chain",
+                "contrastive-reframe-cadence",
+                "lore-name-overload",
+                "system-stat-block-dump",
+                "declared-resolve-loop",
+                "revelation-summary-leap",
+                "procedural-checklist-cadence",
+                "action-choreography-loop",
+                "nominalized-explanation-chain",
+                "translationese-formula-drift",
+                "connective-crutch-rhythm",
+                "filler-adverb-cadence",
+                "simultaneous-action-cadence",
+                "status-quo-action-loop",
+                "prop-fidget-loop",
+                "gaze-choreography-loop",
+                "comma-rhythm-overload",
+                "reporting-tail-summary",
+                "punctuation-emphasis-overload",
+                "repeated-subject-rhythm",
+                "detached-camera-description",
+                "expository-dialogue-dump",
+                "monologue-dialogue-dump",
+                "talking-head-dialogue-run",
+                "rote-dialogue-response-chain",
+                "mechanical-dialogue-tag-chain",
+                "dialogue-silence-stall-chain",
+                "melodramatic-emotion-caption-chain",
+                "stock-reaction-beat-chain",
+                "facial-expression-crutch-chain",
+                "vague-atmosphere-modifier-chain",
+                "evaluative-modifier-stack",
+                "rhetorical-question-drift",
+                "subtext-overexplanation-chain",
+                "ambiguous-reference-chain",
+                "generic-omniscient-teaser",
+                "thin-cliffhanger-ending",
+                "pov-mind-hop-chain",
+                "scene-transition-grounding-gap",
+                "topic-marker-cadence-lock",
+                "design-jargon-in-prose",
+                "explicit-disliked-phrase"
+              ]
+            },
+            "maxItems": 20,
+            "uniqueItems": true
+          },
+          "expected_min_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "expected_max_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "style_friction_annotations": {
+            "type": "array",
+            "maxItems": 50,
+            "description": "Reader-located prose friction points explaining why this disliked sample feels irritating and how to revise it.",
+            "items": {
+              "$ref": "#/definitions/style_friction_annotation"
+            }
+          },
+          "style_highlight_annotations": {
+            "type": "array",
+            "maxItems": 50,
+            "description": "Reader-located prose strengths explaining why this preferred sample feels good and how to transfer that craft move.",
+            "items": {
+              "$ref": "#/definitions/style_highlight_annotation"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "definitions": {
+    "prose_taste_profile": {
+      "type": "object",
+      "properties": {
+        "preferred_mode": {
+          "type": "string",
+          "enum": ["plain", "balanced", "lyrical", "webnovel-fast"]
+        },
+        "disliked_phrases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "minimum_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_sensory_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_embodied_reaction_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_body_reaction_subject_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_body_reaction_subject_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_cliche_emotion_image_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_cliche_emotion_image_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_symbolic_abstraction_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_symbolic_abstraction_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_metaphor_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_sensory_wallpaper_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_emotion_label_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_emotion_label_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_hedged_perception_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_abstract_noun_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_cognitive_filter_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_therapy_speak_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_therapy_speak_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_backstory_exposition_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of past-history/backstory exposition sentences before the present scene feels paused."
+        },
+        "max_backstory_exposition_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive past-history/backstory exposition sentences before the passage reads like an info dump."
+        },
+        "max_relationship_montage_summary_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of relationship/emotional-development summary sentences before relationship turns feel skipped."
+        },
+        "max_relationship_montage_summary_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive relationship/emotional-development summary sentences before the passage reads like a montage synopsis."
+        },
+        "max_time_skip_summary_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of time-skip preparation/investigation/status summary sentences before important change feels skipped instead of dramatized."
+        },
+        "max_time_skip_summary_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive time-skip summary sentences without evidence, choice cost, failure condition, travel path, or changed next action."
+        },
+        "max_contrastive_reframe_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of not-X-but-Y contrastive reframe sentences before the prose reads like sloganized explanation rather than scene."
+        },
+        "max_contrastive_reframe_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive contrastive reframe sentences without concrete action, evidence, cost, or changed response."
+        },
+        "max_lore_term_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of invented lore/proper-noun terms before worldbuilding terminology overwhelms the scene."
+        },
+        "max_lore_term_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive sentences overloaded with lore/proper-noun terms before the passage reads like a setting glossary."
+        },
+        "max_system_stat_block_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of status-window/stat/level/reward system sentences per 1000 characters before a system-genre scene reads like a UI log rather than consequential fiction."
+        },
+        "max_system_stat_block_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive system stat block sentences without resource cost, failure condition, time pressure, bodily/spatial consequence, relationship risk, or next-choice cost."
+        },
+        "max_declared_resolve_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of resolve/decision declarations per 1000 characters before choices are treated as stated rather than enacted."
+        },
+        "max_declared_resolve_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive resolve/decision declaration sentences without concrete action, evidence, or cost."
+        },
+        "max_revelation_summary_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of clue/truth/answer revelation summaries per 1000 characters before deduction payoff is treated as summarized rather than dramatized."
+        },
+        "max_revelation_summary_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive revelation summary sentences without on-page clue comparison, evidence verification, corrected misread, or consequential action."
+        },
+        "max_procedural_checklist_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of procedural checking/comparing/listing sentences per 1000 characters before investigation reads like a checklist rather than a scene."
+        },
+        "max_procedural_checklist_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive procedural checklist sentences without a changed hypothesis, contradiction, suspect reaction, risk, cost, or next action."
+        },
+        "max_action_choreography_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum density of attack/dodge/block/swing action beats per 1000 characters before a fight reads like choreography logging rather than consequential scene movement."
+        },
+        "max_action_choreography_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive action choreography sentences without injury, positional change, objective gain/loss, environmental consequence, or reversal."
+        },
+        "max_nominalized_explanation_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_translationese_formula_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_connective_starter_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_filler_adverb_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_filler_adverb_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_simultaneous_action_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_simultaneous_action_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_status_quo_action_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_status_quo_action_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_gaze_choreography_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_gaze_choreography_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "min_causal_turn_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_comma_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_reporting_tail_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_emphasis_punctuation_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_emphasis_punctuation_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_static_description_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_generic_teaser_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_thin_cliffhanger_ending_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "max_pov_mind_jump_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_pov_mind_jump_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_expository_dialogue_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_dialogue_turn_length": {
+          "type": "integer",
+          "minimum": 20,
+          "maximum": 600
+        },
+        "max_average_dialogue_turn_length": {
+          "type": "integer",
+          "minimum": 20,
+          "maximum": 400
+        },
+        "max_dialogue_grounding_gap_run": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 20
+        },
+        "max_dialogue_question_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Maximum share of dialogue turns that may be questions before the scene is considered a question-answer cascade."
+        },
+        "max_dialogue_question_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive dialogue question turns before the scene is considered an interrogation-like cascade."
+        },
+        "max_dialogue_vocative_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Maximum share of dialogue turns that may begin with direct address before the scene is considered dependent on repeated names or titles."
+        },
+        "max_dialogue_vocative_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive dialogue turns that may begin with direct address before the cadence feels artificial."
+        },
+        "max_dialogue_lexical_echo_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Maximum share of dialogue turns that may echo a content word from the immediately previous turn before the scene feels repetitive."
+        },
+        "max_dialogue_lexical_echo_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive dialogue turns that may echo content words from the previous turn before the exchange feels scripted."
+        },
+        "max_dialogue_paraphrase_confirmation_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Maximum share of dialogue turns that may restate or confirm previous information with paraphrase markers before the exchange feels like summary rather than conflict."
+        },
+        "max_dialogue_paraphrase_confirmation_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive dialogue turns that may use paraphrase/confirmation formulas before the exchange feels procedural."
+        },
+        "max_rote_dialogue_reply_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_rote_dialogue_reply_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_neutral_dialogue_tag_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_neutral_dialogue_tag_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_silence_stall_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_silence_stall_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_melodramatic_caption_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_melodramatic_caption_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_stock_reaction_beat_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_stock_reaction_beat_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_prop_fidget_beat_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_prop_fidget_beat_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_facial_expression_beat_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_facial_expression_beat_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_vague_atmosphere_modifier_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_vague_atmosphere_modifier_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_evaluative_modifier_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_evaluative_modifier_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_rhetorical_question_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_rhetorical_question_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_subtext_explanation_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_subtext_explanation_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_ambiguous_reference_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_ambiguous_reference_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_scene_transition_grounding_gap_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_scene_transition_grounding_gap_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_topic_marker_starter_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_topic_marker_starter_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "min_sentence_length_variation_coefficient": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_uniform_sentence_length_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_same_ending_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "max_dominant_sentence_ending_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Maximum share of eligible narration sentences that may use the same sentence-final ending family before prose cadence is considered locked."
+        },
+        "max_dominant_dialogue_ending_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Maximum share of dialogue turns that may use the same final spoken ending formula before character dialogue cadence is considered locked."
+        },
+        "max_dominant_dialogue_starter_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Maximum share of dialogue turns that may open with the same discourse-marker starter before character dialogue cadence is considered locked."
+        },
+        "min_viewpoint_anchor_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_short_sentence_run": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 12
+        },
+        "max_repeated_subject_run": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 20
+        },
+        "max_repeated_connective_starter_run": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 20
+        }
+      },
+      "additionalProperties": false
+    },
+    "style_friction_annotation": {
+      "type": "object",
+      "required": ["location", "reason"],
+      "properties": {
+        "location": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "issue_code": {
+          "type": "string",
+          "enum": [
+            "functional-ai-report",
+            "over-embodied-reaction",
+            "body-reaction-subject-chain",
+            "cliche-emotion-image-chain",
+            "symbolic-abstraction-stack",
+            "over-sensory-density",
+            "sensory-wallpaper-run",
+            "forced-metaphor-chain",
+            "flat-emotion-label",
+            "emotion-label-carousel",
+            "hedged-perception-haze",
+            "listified-inner-monologue",
+            "monotone-short-sentence-run",
+            "uniform-sentence-length-cadence",
+            "same-ending-run",
+            "dominant-ending-cadence-lock",
+            "dialogue-ending-cadence-lock",
+            "dialogue-starter-cadence-lock",
+            "dialogue-question-cascade",
+            "dialogue-vocative-cadence-lock",
+            "dialogue-lexical-echo-chain",
+            "dialogue-paraphrase-confirmation-chain",
+            "abstract-exposition-drift",
+            "cognitive-filtering-overload",
+            "therapy-speak-self-analysis",
+            "backstory-info-dump-block",
+            "relationship-montage-summary",
+            "time-skip-summary-chain",
+            "contrastive-reframe-cadence",
+            "lore-name-overload",
+            "system-stat-block-dump",
+            "declared-resolve-loop",
+            "revelation-summary-leap",
+            "procedural-checklist-cadence",
+            "action-choreography-loop",
+            "nominalized-explanation-chain",
+            "translationese-formula-drift",
+            "connective-crutch-rhythm",
+            "filler-adverb-cadence",
+            "simultaneous-action-cadence",
+            "status-quo-action-loop",
+            "prop-fidget-loop",
+            "gaze-choreography-loop",
+            "comma-rhythm-overload",
+            "reporting-tail-summary",
+            "punctuation-emphasis-overload",
+            "repeated-subject-rhythm",
+            "detached-camera-description",
+            "expository-dialogue-dump",
+            "monologue-dialogue-dump",
+            "talking-head-dialogue-run",
+            "rote-dialogue-response-chain",
+            "mechanical-dialogue-tag-chain",
+            "dialogue-silence-stall-chain",
+            "melodramatic-emotion-caption-chain",
+            "stock-reaction-beat-chain",
+            "facial-expression-crutch-chain",
+            "vague-atmosphere-modifier-chain",
+            "evaluative-modifier-stack",
+            "rhetorical-question-drift",
+            "subtext-overexplanation-chain",
+            "ambiguous-reference-chain",
+            "generic-omniscient-teaser",
+            "thin-cliffhanger-ending",
+            "pov-mind-hop-chain",
+            "scene-transition-grounding-gap",
+            "topic-marker-cadence-lock",
+            "design-jargon-in-prose",
+            "explicit-disliked-phrase"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "reader_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "reader_segment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "rewrite_suggestion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 700
+        },
+        "target_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "style_highlight_annotation": {
+      "type": "object",
+      "required": ["location", "reason"],
+      "properties": {
+        "location": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "quality": {
+          "type": "string",
+          "enum": [
+            "clarity",
+            "rhythm",
+            "sensory-grounding",
+            "voice",
+            "emotional-precision",
+            "subtext",
+            "image",
+            "sentence-flow",
+            "narrative-momentum"
+          ]
+        },
+        "reader_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "reader_segment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "target_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "transfer_guidance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 700
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

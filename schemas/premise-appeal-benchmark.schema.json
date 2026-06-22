@@ -1,0 +1,415 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://novel-dev.org/schemas/premise-appeal-benchmark.schema.json",
+  "title": "Premise Appeal Benchmark Samples",
+  "description": "Target-reader premise response samples used to compare automated premise scores with actual curiosity, novelty, protagonist investment, emotional pull, clarity, target fit, and read-intent.",
+  "type": "object",
+  "required": ["samples"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "required_genres": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "required_target_readers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "maxItems": 40,
+      "uniqueItems": true
+    },
+    "minimum_panel_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_commented_responses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_samples_per_genre": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_samples_per_target_reader": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "minimum_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum reserved holdout premise samples required before design gate tuning is considered ready."
+    },
+    "minimum_usable_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum evidence-sufficient reserved holdout premise samples required before design gate tuning is considered ready."
+    },
+    "minimum_failing_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum known-bad reserved holdout premise samples required to catch weak-concept false positives."
+    },
+    "minimum_usable_failing_holdout_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Minimum evidence-sufficient known-bad reserved holdout premise samples required before design gate tuning is considered ready."
+    },
+    "require_behavioral_intent_evidence": {
+      "type": "boolean",
+      "description": "Whether premise gate tuning requires listing-level behavioral evidence such as impressions, clicks, first-chapter opens, and save/follow counts."
+    },
+    "require_promise_evidence": {
+      "type": "boolean",
+      "description": "Whether premise gate tuning requires each sample to include concrete promise evidence: hook, question, protagonist appeal, novelty angle, emotional payoff, binge reason, and long-series engine."
+    },
+    "require_behavioral_protocol": {
+      "type": "boolean",
+      "description": "Whether premise gate tuning requires behavioral evidence to come from a disclosed platform/source/variant protocol with blind listing status and an adequate observation window."
+    },
+    "require_behavioral_allocation_integrity": {
+      "type": "boolean",
+      "description": "Whether premise gate tuning requires listing A/B evidence to include allocation integrity fields and pass a sample-ratio-mismatch check."
+    },
+    "minimum_behavioral_impressions": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000000,
+      "description": "Minimum listing impressions required before behavioral intent evidence is considered usable."
+    },
+    "minimum_click_through_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Minimum impression-to-click rate required for a premise package to confirm acquisition appeal."
+    },
+    "minimum_first_chapter_open_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Minimum impression-to-first-chapter-open rate required for a premise package to confirm read-start appeal."
+    },
+    "minimum_save_or_follow_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Minimum impression-to-library-add-or-follow rate required for a premise package to confirm durable premise interest."
+    },
+    "minimum_behavioral_observation_window_hours": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 8760,
+      "description": "Minimum behavioral test observation window required before click/open/save evidence can be treated as a trustworthy protocol."
+    },
+    "minimum_sample_ratio_mismatch_p_value": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Minimum SRM p-value required before behavioral variant allocation is considered trustworthy."
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/definitions/premiseAppealSample"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "premiseAppealSample": {
+      "type": "object",
+      "required": ["id", "reader_responses"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "genre": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "target_reader": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "premise": {
+          "$ref": "#/definitions/premise"
+        },
+        "calibration_split": {
+          "type": "string",
+          "enum": ["calibration", "validation", "holdout"],
+          "description": "Reserved split for premise calibration. Holdout samples must not be used to tune thresholds."
+        },
+        "automated_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "expected_appealing": {
+          "type": "boolean"
+        },
+        "rating_scale": {
+          "$ref": "#/definitions/ratingScale"
+        },
+        "behavioral_evidence": {
+          "$ref": "#/definitions/behavioralEvidence"
+        },
+        "reader_responses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/definitions/readerResponse"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "behavioralEvidence": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "variant_label": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "acquisition_source": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "observation_window_hours": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 8760
+        },
+        "blind_listing_test": {
+          "type": "boolean"
+        },
+        "impression_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "click_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "first_chapter_open_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "sample_read_start_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "library_add_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "follow_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "paid_preview_click_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "benchmark_click_through_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "benchmark_first_chapter_open_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "benchmark_save_or_follow_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "expected_variant_allocation_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "observed_variant_allocation_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "sample_ratio_mismatch_p_value": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "premise": {
+      "type": "object",
+      "properties": {
+        "target_reader": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "core_hook": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "irresistible_question": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "protagonist_appeal": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "novelty_angle": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "emotional_payoff": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "binge_reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "long_series_engine": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "first_five_chapter_retention_plan": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 5
+        }
+      },
+      "additionalProperties": true
+    },
+    "readerResponse": {
+      "type": "object",
+      "required": ["ratings"],
+      "properties": {
+        "reader_id": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "target_reader_fit": {
+          "type": "boolean"
+        },
+        "rating_scale": {
+          "$ref": "#/definitions/ratingScale"
+        },
+        "ratings": {
+          "type": "object",
+          "properties": {
+            "curiosity_gap": {
+              "$ref": "#/definitions/rating"
+            },
+            "novelty": {
+              "$ref": "#/definitions/rating"
+            },
+            "protagonist_investment": {
+              "$ref": "#/definitions/rating"
+            },
+            "emotional_pull": {
+              "$ref": "#/definitions/rating"
+            },
+            "clarity": {
+              "$ref": "#/definitions/rating"
+            },
+            "target_fit": {
+              "$ref": "#/definitions/rating"
+            },
+            "next_chapter_anticipation": {
+              "$ref": "#/definitions/rating"
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        },
+        "would_read": {
+          "type": "boolean"
+        },
+        "would_read_score": {
+          "$ref": "#/definitions/rating"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "confusion_points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "attractive_elements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "maxItems": 20
+        },
+        "rewrite_suggestion": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "additionalProperties": false
+    },
+    "ratingScale": {
+      "type": "string",
+      "enum": ["likert-7", "percent-100"]
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+}

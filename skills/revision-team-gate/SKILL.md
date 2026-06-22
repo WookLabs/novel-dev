@@ -1,6 +1,6 @@
 ---
 name: revision-team-gate
-description: "Internal skill for automated revision-team execution after writing. Invoked by /write, /write-act, /write-all with --team flag."
+description: "Use this skill when automatically running the revision-team gate after /write, /write-act, or /write-all with the --team flag."
 user-invocable: false
 ---
 

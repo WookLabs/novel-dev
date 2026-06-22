@@ -20,7 +20,17 @@
     "hooks_plant": [],
     "hooks_reveal": [],
     "character_development": "",
-    "emotional_goal": ""
+    "emotional_goal": "",
+    "resonance_seed": "회차 말미에 독자가 떠올릴 사물/공간/몸동작 이미지와 그 이미지가 남길 감정·의미 변화·다음 선택 결과를 한 문장으로 작성"
+  },
+  "reader_experience": {
+    "promise_fulfillment": "",
+    "chapter_reward": "",
+    "page_turner_question": "",
+    "character_appeal_moment": "",
+    "drop_off_risk": "",
+    "must_click_ending": "",
+    "cliffhanger_strength": 0
   },
   "scenes": [
     {
@@ -28,8 +38,8 @@
       "purpose": "",
       "characters": [],
       "location": "",
-      "conflict": "",
-      "beat": "",
+      "conflict": "장면 갈등/압박/선택을 구체적으로 작성",
+      "beat": "장면 전환/상황 변화/결과를 원고에 실행 가능하게 작성; 확인/대조/메모만 있고 결과/악화가 없으면 금지",
       "emotional_tone": "",
       "estimated_words": 1000
     }

@@ -1,8 +1,8 @@
 ---
 name: character-designer
-description: "캐릭터 프로필 설계 및 collaborative 집필용 에이전트 파일 자동 생성"
+description: "캐릭터 프로필, 관계 동력, 성장 아크를 설계하고 collaborative 집필용 에이전트 파일을 생성"
 model: opus
-color: pink
+color: magenta
 tools:
   - Read
   - Write

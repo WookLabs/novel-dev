@@ -18,8 +18,13 @@
       "pattern": "^novel_\\d{8}_\\d{6}$"
     },
     "mode": {
-      "enum": ["writing", "revising", "evaluating", "validating", "idle"],
+      "enum": ["writing", "revising", "evaluating", "validating", "write-all", "idle"],
       "default": "idle"
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ralph Loop가 복구할 프로젝트 ID"
     },
     "current_chapter": {
       "type": "integer",
@@ -38,10 +43,38 @@
       "type": "integer",
       "minimum": 1
     },
+    "total_chapters": {
+      "type": "integer",
+      "minimum": 1
+    },
     "quality_retries": {
       "type": "integer",
       "minimum": 0,
       "maximum": 3
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "description": "현재 챕터의 통합 게이트 재시도 횟수"
+    },
+    "completed_chapters": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "description": "통합 게이트를 통과한 챕터 목록"
+    },
+    "failed_chapters": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "description": "재시도 또는 사용자 개입이 필요한 챕터 목록"
     },
     "iteration": {
       "type": "integer",
@@ -53,6 +86,10 @@
       "default": 100
     },
     "ralph_active": {
+      "type": "boolean",
+      "default": false
+    },
+    "can_resume": {
       "type": "boolean",
       "default": false
     },
@@ -114,6 +151,89 @@
       },
       "description": "마지막 multi-validation 결과"
     },
+    "last_gate": {
+      "type": "object",
+      "properties": {
+        "chapter": { "type": "integer", "minimum": 1 },
+        "status": { "enum": ["PASS", "RETRY", "USER_INTERVENTION"] },
+        "passed": { "type": "boolean" },
+        "should_retry": { "type": "boolean" },
+        "strategy": {
+          "enum": ["none", "revise", "revise_with_feedback", "partial_rewrite", "user_intervention"]
+        },
+        "score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "blocking_reasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "retry_prompt": { "type": "string" },
+        "decided_at": { "type": "string", "format": "date-time" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["status"],
+            "properties": {
+              "status": { "const": "PASS" }
+            }
+          },
+          "then": {
+            "required": ["passed", "should_retry", "strategy", "blocking_reasons"],
+            "properties": {
+              "passed": { "const": true },
+              "should_retry": { "const": false },
+              "strategy": { "const": "none" },
+              "blocking_reasons": { "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["status"],
+            "properties": {
+              "status": { "const": "RETRY" }
+            }
+          },
+          "then": {
+            "required": ["passed", "should_retry", "strategy"],
+            "properties": {
+              "passed": { "const": false },
+              "should_retry": { "const": true },
+              "strategy": {
+                "enum": ["revise", "revise_with_feedback", "partial_rewrite"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["status"],
+            "properties": {
+              "status": { "const": "USER_INTERVENTION" }
+            }
+          },
+          "then": {
+            "required": ["passed", "should_retry", "strategy"],
+            "properties": {
+              "passed": { "const": false },
+              "should_retry": { "const": false },
+              "strategy": { "const": "user_intervention" }
+            }
+          }
+        }
+      ],
+      "description": "마지막 통합 챕터 게이트 판정"
+    },
+    "requires_user_intervention": {
+      "type": "boolean",
+      "default": false,
+      "description": "통합 게이트 실패로 사용자 개입이 필요한지 여부"
+    },
+    "pause_reason": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Ralph Loop가 일시정지된 이유"
+    },
     "masterpiece_mode": {
       "type": "boolean",
       "default": true,
@@ -124,5 +244,19 @@
       "default": true,
       "description": "1화 특별 품질 게이트 활성화 여부 (90점 기준)"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["mode", "can_resume"],
+        "properties": {
+          "mode": { "const": "write-all" },
+          "can_resume": { "const": true }
+        }
+      },
+      "then": {
+        "required": ["project_id", "current_act", "current_chapter", "last_safe_chapter"]
+      }
+    }
+  ]
 }

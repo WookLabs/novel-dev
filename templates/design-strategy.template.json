@@ -6,6 +6,28 @@
     "character_design_approach": "캐릭터 설계 방침 (예: '주인공 중심 방사형 — 모든 캐릭터가 주인공과의 관계로 정의됨')",
     "arc_structure": "아크 구조 전략 (예: '3막 구조, Act 2에서 서브플롯 3개 동시 진행')"
   },
+  "reader_promise_contract": {
+    "$comment": "core_hook, novelty_angle, irresistible_question, binge_reason, long_series_engine, first_five_chapter_retention_plan은 같은 전제 앵커를 공유해야 함",
+    "target_reader": "핵심 독자층과 기대 쾌감 (예: '회귀 복수물 독자 — 정보 우위, 카타르시스, 판 뒤집기')",
+    "core_hook": "첫 소개/1화에서 즉시 전달할 핵심 매력",
+    "irresistible_question": "독자가 계속 답을 알고 싶어해야 하는 중심 질문",
+    "emotional_payoff": "반복 제공할 감정 보상 (예: 통쾌함, 설렘, 공포, 경이)",
+    "protagonist_appeal": "주인공을 응원하거나 지켜보고 싶게 만드는 결정적 매력",
+    "novelty_angle": "같은 장르의 흔한 작품과 다르게 느껴지는 신선한 각도",
+    "binge_reason": "한 화 더 누르게 만드는 반복 동력",
+    "first_five_chapter_retention_plan": [
+      "1화: 클릭 즉시 보상할 사건/질문",
+      "2화: 주인공 매력을 증명할 선택",
+      "3화: 장기 갈등의 윤곽 제시",
+      "4화: 관계/세계관의 추가 보상",
+      "5화: 첫 미니 payoff와 더 큰 질문"
+    ],
+    "long_series_engine": "30화 이후에도 유지될 장기 목표, 관계, 미스터리, 성장 동력",
+    "risk_factors": [
+      "초반 설정 과다로 이탈 위험 — 행동 장면 속에 설정을 분산",
+      "중반 반복 위험 — 5화마다 payoff 또는 관계 변화 배치"
+    ]
+  },
   "agent_directives": {
     "style_curator": "문체 설계 시 구체적 방향 (예: '1인칭은 피하고 3인칭 제한 시점, 대화 비율 50% 이상')",
     "lore_keeper": "세계관 설계 시 구체적 방향 (예: '마법 시스템은 비용 기반, 종족 간 위계 명확히')",

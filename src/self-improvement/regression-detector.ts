@@ -59,6 +59,7 @@ const DIMENSION_KOREAN_NAMES: Record<string, string> = {
   rhythmVariation: '리듬 변화',
   characterVoice: '캐릭터 음성',
   transitionQuality: '전환 품질',
+  engagement: '독자 몰입',
   honorificConsistency: '경어 일관성',
   koreanTexture: '한국어 텍스처',
   styleAlignment: '문체 정합성',
@@ -279,7 +280,10 @@ export function detectRegression(
     // If stdDev is 0 (all identical), z-score stays 0
   }
 
-  // Determine alert level
+  // Per-dimension trends
+  const dimensionTrends = computeDimensionTrends(snapshots, cfg.windowSize);
+
+  // Determine alert level from overall score first.
   let alertLevel: AlertLevel = 'none';
   if (zScoreValue <= cfg.criticalThreshold || slope <= cfg.slopeCriticalThreshold) {
     alertLevel = 'critical';
@@ -287,8 +291,16 @@ export function detectRegression(
     alertLevel = 'warning';
   }
 
-  // Per-dimension trends
-  const dimensionTrends = computeDimensionTrends(snapshots, cfg.windowSize);
+  // Engagement is a first-class long-serial risk: prose can remain stable while
+  // reader pull declines. Treat that as a warning even without overall-score drop.
+  const engagementTrend = dimensionTrends.engagement;
+  if (
+    alertLevel === 'none' &&
+    engagementTrend?.declining &&
+    engagementTrend.slope <= cfg.slopeWarningThreshold
+  ) {
+    alertLevel = 'warning';
+  }
 
   // Build alert message
   const alertMessage = buildAlertMessage(

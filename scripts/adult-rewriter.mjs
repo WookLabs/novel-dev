@@ -18,6 +18,9 @@
  *   node scripts/adult-rewriter.mjs --input chapter.md --project ./novels/my-novel --mode selective
  *   node scripts/adult-rewriter.mjs --input chapter.md --project ./novels/my-novel --dry-run
  *
+ * Non-dry-run rewrites require design/style gate PASS and fresh prior-chapter
+ * summaries before API calls or output writes.
+ *
  * Options:
  *   --input FILE       입력 챕터 파일 (필수)
  *   --project PATH     소설 프로젝트 경로 (필수, adult_writing 스타일 로드용)
@@ -34,6 +37,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { assertWritingPreflight } from './writing-preflight.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -121,6 +125,12 @@ ${colors.yellow}옵션:${colors.reset}
   --max-retries N    JSON 파싱 실패 시 재시도 횟수 (기본: 2)
   --help, -h         도움말
 
+${colors.yellow}Preflight:${colors.reset}
+  dry-run이 아니면 reviews/design-gate-report.json 및
+  reviews/style-gate-report.json의 passed=true, status=PASS와
+  직전 3회차 요약의 존재/신선도/최소 충실도를 요구합니다.
+  실패 시 recommendedCommands의 benchmark/gate 명령을 먼저 실행하세요.
+
 ${colors.yellow}환경 설정:${colors.reset}
   ~/.env 파일에 XAI_API_KEY를 설정하세요:
   XAI_API_KEY=xai-xxxxxxxxxxxx
@@ -134,6 +144,11 @@ ${colors.yellow}예시:${colors.reset}
   node scripts/adult-rewriter.mjs --input ch.md --project ./novels/my-novel --mode full --output ch.md
   node scripts/adult-rewriter.mjs --input ch.md --project ./novels/my-novel --mode selective --output ch.md
 `);
+}
+
+function inferChapterNumberFromPath(filePath) {
+  const match = path.basename(filePath).match(/(?:chapter_|ch)(\d{1,4})/i);
+  return match ? Number.parseInt(match[1], 10) : null;
 }
 
 // ─── API Key Loading ─────────────────────────────────────────────────────────
@@ -572,6 +587,19 @@ async function main() {
   const originalText = fs.readFileSync(inputPath, 'utf-8');
 
   console.error(`${colors.blue}[Chapter Polisher]${colors.reset} 모드: ${args.mode}`);
+
+  if (!args.dryRun) {
+    try {
+      assertWritingPreflight(projectDir, {
+        actionLabel: 'Grok 리라이트',
+        chapterNumber: inferChapterNumberFromPath(inputPath),
+      });
+      console.error(`${colors.blue}[Chapter Polisher]${colors.reset} 설계/문체/요약 컨텍스트 gate PASS 확인`);
+    } catch (err) {
+      console.error(`${colors.red}[ERROR]${colors.reset} ${err.message}`);
+      process.exit(2);
+    }
+  }
 
   // API 키 확인 (dry-run 전에 체크하지 않음)
   const apiKey = args.dryRun ? null : getApiKey();

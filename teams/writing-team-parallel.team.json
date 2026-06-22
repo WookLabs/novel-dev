@@ -48,6 +48,7 @@
     "steps": [
       {
         "name": "parallel-write",
+        "agents": ["narrator", "characters/*", "extras"],
         "execution": "parallel",
         "output": "Claude 버전 + Codex 버전",
         "branches": [

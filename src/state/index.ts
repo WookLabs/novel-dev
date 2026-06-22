@@ -6,3 +6,10 @@
 
 export { acquireLock } from './lock.js';
 export { withStateBackup } from './backup.js';
+export {
+  applyChapterGateState,
+  applyChapterGateDecisionToState,
+  loadRalphGateState,
+  type ApplyChapterGateStateOptions,
+  type RalphGateState,
+} from './ralph-gate.js';
