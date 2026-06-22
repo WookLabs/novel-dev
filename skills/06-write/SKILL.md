@@ -127,6 +127,7 @@ Task(subagent_type="novel-dev:novelist", model="opus", prompt="
 문체 주의:
 - `prose_taste_profile.max_short_sentence_run` 기준을 넘는 연속 단문 끊어쓰기를 피하세요. 짧은 문장은 타격점에만 남기고, 원인/대조/결과가 이어지는 문장은 중문이나 복문으로 묶어 문장 리듬을 변주합니다.
 - `monotone-short-sentence-run`이 나오면 짧은 서술문이 기계적으로 끊어진 AI 문체로 판정됩니다.
+- `prose_taste_profile.min_immersive_rhythm_anchor_density_per_1000` 또는 `max_immersive_rhythm_flatline_run` 기준을 어기면 `immersive-rhythm-flatline`으로 판정됩니다. 설명/판단 문장을 늘이는 대신 물증, 손동작, 대사 반응, 선택 비용, 감각 앵커를 두세 문장마다 넣어 문단이 장면 안에서 숨 쉬게 씁니다.
 - `prose_taste_profile.max_hedged_perception_density_per_1000` 기준을 넘는 듯했다/것 같았다/느껴졌다/어쩐지/묘하게/희미하게 같은 완충 표현 반복을 피하세요. `hedged-perception-haze`가 나오면 인물이 실제로 본 것, 한 선택, 틀린 판단의 결과를 문장에 직접 세워 다시 씁니다.
 - `prose_taste_profile.max_sensory_wallpaper_run` 기준을 넘는 차가운 빛, 비릿한 냄새, 축축한 바람, 희미한 그림자식 감각 묘사 연쇄를 피하세요. `sensory-wallpaper-run`이 나오면 감각 묘사 일부를 새 단서 확인, 인물의 선택, 위험 변화, 관계 반응, 즉각적 결과로 바꿔 감각이 장면 상태를 움직이게 씁니다.
 - `prose_taste_profile.max_gaze_choreography_density_per_1000` 또는 `max_gaze_choreography_run` 기준을 넘는 시선/눈길/눈빛/고개/바라봄 beat 연쇄를 피하세요. `gaze-choreography-loop`이 나오면 반복 시선 연출 일부를 새 단서 확인, 선택 비용, 거절의 결과, 상대 조건 변화로 바꿔 장면 상태가 움직이게 씁니다.
@@ -412,7 +413,7 @@ if (proseCraft.passed === false) {
 - `PASS`: `current_chapter`를 N + 1로 이동하고 `completed_chapters`에 N 추가
 - `RETRY`: N을 `failed_chapters`에 남기고 `retry_count` 증가
 - `USER_INTERVENTION`: `ralph_active=false`, `requires_user_intervention=true`로 일시정지
-- `proseCraft` 실패: 필터워드, 감각 grounding, 감각 장식 연쇄(`sensory-wallpaper-run`), 문장 리듬, 연속 단문 끊어쓰기(`monotone-short-sentence-run`), 완충 인식 표현 과밀(`hedged-perception-haze`), 감정 라벨 연쇄(`emotion-label-carousel`), 추상·상징어 누적(`symbolic-abstraction-stack`), 장면 밖 해결 요약(`offscreen-resolution-summary`), 기계적 확인·동의 대사 연쇄(`rote-dialogue-response-chain`), 중립 대사 태그 연쇄(`mechanical-dialogue-tag-chain`), 지시어 연쇄(`ambiguous-reference-chain`), 금지/AI체 표현 등 원고 문장 품질을 `Prose Craft Revision Directives` 기준으로 수정
+- `proseCraft` 실패: 필터워드, 감각 grounding, 감각 장식 연쇄(`sensory-wallpaper-run`), 문장 리듬, 장면 앵커 없이 설명/판단문이 이어지는 `immersive-rhythm-flatline`, 연속 단문 끊어쓰기(`monotone-short-sentence-run`), 완충 인식 표현 과밀(`hedged-perception-haze`), 감정 라벨 연쇄(`emotion-label-carousel`), 추상·상징어 누적(`symbolic-abstraction-stack`), 장면 밖 해결 요약(`offscreen-resolution-summary`), 기계적 확인·동의 대사 연쇄(`rote-dialogue-response-chain`), 중립 대사 태그 연쇄(`mechanical-dialogue-tag-chain`), 지시어 연쇄(`ambiguous-reference-chain`), 금지/AI체 표현 등 원고 문장 품질을 `Prose Craft Revision Directives` 기준으로 수정
 - 반복 독자 몰입 실패가 3회 이상이면 `retry_count`가 남아 있어도 `USER_INTERVENTION`입니다. 이때 `gateDecision.retryPrompt`의 **구조적 재검토** 지시를 우선 적용합니다.
 
 **3-4. 품질 검토 (선택)**

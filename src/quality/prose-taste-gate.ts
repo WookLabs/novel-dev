@@ -23,6 +23,7 @@ export type ProseTasteIssueCode =
   | 'emotion-label-carousel'
   | 'hedged-perception-haze'
   | 'listified-inner-monologue'
+  | 'immersive-rhythm-flatline'
   | 'monotone-short-sentence-run'
   | 'uniform-sentence-length-cadence'
   | 'same-ending-run'
@@ -197,6 +198,8 @@ export interface ProseTasteProfile {
   maxDominantDialogueEndingShare?: number;
   maxDominantDialogueStarterShare?: number;
   minViewpointAnchorDensityPer1000?: number;
+  minImmersiveRhythmAnchorDensityPer1000?: number;
+  maxImmersiveRhythmFlatlineRun?: number;
   maxShortSentenceRun?: number;
   maxRepeatedSubjectRun?: number;
   maxRepeatedConnectiveStarterRun?: number;
@@ -326,6 +329,8 @@ export interface ProseTasteMetrics {
   sentenceLengthVariationCoefficient: number;
   longestUniformSentenceLengthRun: number;
   viewpointAnchorDensityPer1000: number;
+  immersiveRhythmAnchorDensityPer1000: number;
+  longestImmersiveRhythmFlatlineRun: number;
   listMarkerCount: number;
   designJargonCount: number;
   longestShortSentenceRun: number;
@@ -474,6 +479,8 @@ interface ModeThresholds {
   maxDominantDialogueEndingShare: number;
   maxDominantDialogueStarterShare: number;
   minViewpointAnchorDensityPer1000: number;
+  minImmersiveRhythmAnchorDensityPer1000: number;
+  maxImmersiveRhythmFlatlineRun: number;
   maxShortSentenceRun: number;
   maxRepeatedSubjectRun: number;
   maxRepeatedConnectiveStarterRun: number;
@@ -588,6 +595,8 @@ const MODE_THRESHOLDS: Record<ProseTasteMode, ModeThresholds> = {
     maxDominantDialogueEndingShare: 0.84,
     maxDominantDialogueStarterShare: 0.58,
     minViewpointAnchorDensityPer1000: 2,
+    minImmersiveRhythmAnchorDensityPer1000: 1.8,
+    maxImmersiveRhythmFlatlineRun: 5,
     maxShortSentenceRun: 5,
     maxRepeatedSubjectRun: 3,
     maxRepeatedConnectiveStarterRun: 2,
@@ -698,6 +707,8 @@ const MODE_THRESHOLDS: Record<ProseTasteMode, ModeThresholds> = {
     maxDominantDialogueEndingShare: 0.82,
     maxDominantDialogueStarterShare: 0.62,
     minViewpointAnchorDensityPer1000: 2.5,
+    minImmersiveRhythmAnchorDensityPer1000: 2.4,
+    maxImmersiveRhythmFlatlineRun: 5,
     maxShortSentenceRun: 5,
     maxRepeatedSubjectRun: 4,
     maxRepeatedConnectiveStarterRun: 3,
@@ -808,6 +819,8 @@ const MODE_THRESHOLDS: Record<ProseTasteMode, ModeThresholds> = {
     maxDominantDialogueEndingShare: 0.86,
     maxDominantDialogueStarterShare: 0.68,
     minViewpointAnchorDensityPer1000: 2,
+    minImmersiveRhythmAnchorDensityPer1000: 2,
+    maxImmersiveRhythmFlatlineRun: 6,
     maxShortSentenceRun: 6,
     maxRepeatedSubjectRun: 5,
     maxRepeatedConnectiveStarterRun: 4,
@@ -918,6 +931,8 @@ const MODE_THRESHOLDS: Record<ProseTasteMode, ModeThresholds> = {
     maxDominantDialogueEndingShare: 0.88,
     maxDominantDialogueStarterShare: 0.7,
     minViewpointAnchorDensityPer1000: 3,
+    minImmersiveRhythmAnchorDensityPer1000: 3,
+    maxImmersiveRhythmFlatlineRun: 5,
     maxShortSentenceRun: 7,
     maxRepeatedSubjectRun: 5,
     maxRepeatedConnectiveStarterRun: 4,
@@ -1143,6 +1158,12 @@ const EXPLICIT_REFERENCE_ANCHOR_PATTERN =
 const VIEWPOINT_ANCHOR_PATTERN =
   /(눈앞|시야|귓가|손끝|손바닥|목구멍|입안|등골|지금|여기|방금|왜|설마|젠장|빌어먹을|아니|그럴\s*리|하필|기어코|차라리|이미|아직|그제야|늦었다|들켰다|틀렸다|끝났다|놓칠\s*수\s*없|믿을\s*수\s*없|피하고\s*싶|하고\s*싶지\s*않|감추고\s*싶|해야\s*했|떠올랐|망설였|후회했|참았|삼켰|노려봤|이를\s*악물|숨을\s*삼켰)/gu;
 
+const IMMERSIVE_RHYTHM_ANCHOR_PATTERN =
+  /(?:봉투|사진|녹음기|휴대폰|화면|문자|전화|번호|주소|기록|파일|단서|증거|손잡이|문틈|컵|의자|계단|복도|피|상처|소리|냄새|빛|바람|발소리|잠금|열쇠|시계|카운트다운|기한|통제선|신고서|계약서|서명|말했|물었|대답했|속삭였|웃었|멈췄|돌아섰|다가섰|물러섰|확인했|바뀌었|사라졌|켜졌|꺼졌|줄어들|늦었|놓쳤|닫혔|막혔|선택했|거절했|포기했|찢었|숨겼|건넸|내밀었|잡았|놓았|밀었|당겼|꺼냈|닫았|열었)/u;
+
+const FLATLINE_EXPLANATORY_CLOSURE_PATTERN =
+  /(?:것이었다|수\s*있었다|상태였다|상황이었다|문제였다|의미였다|결과였다|이유였다|때문이었다|필요했다|중요했다|분명했다|확실했다|알\s*수\s*있었다|느낄\s*수\s*있었다|생각했다|깨달았다|이해했다|정리했다|판단했다|보였다|드러났다|이어졌다|남아\s*있었다|존재했다|가능했다|불가능했다|달라졌다|깊어졌다|커졌다|작아졌다|멀어졌다|가까워졌다)/u;
+
 const LIST_MARKER_PATTERN = /(?:하나|둘|셋|첫째|둘째|셋째|첫\s*번째|두\s*번째|세\s*번째)[,.]?/gu;
 
 const DESIGN_JARGON_PATTERN =
@@ -1262,6 +1283,7 @@ export function evaluateProseTaste(
   addProceduralChecklistCadenceIssue(content, metrics, thresholds, issues);
   addActionChoreographyLoopIssue(content, metrics, thresholds, issues);
   addListifiedInnerMonologueIssue(content, metrics, issues);
+  addImmersiveRhythmFlatlineIssue(content, metrics, thresholds, issues);
   addShortSentenceRunIssue(content, metrics, thresholds, issues);
   addUniformSentenceLengthCadenceIssue(content, metrics, thresholds, issues);
   addSameEndingIssue(content, metrics, thresholds, issues);
@@ -1384,6 +1406,7 @@ export function analyzeProseTasteMetrics(content: string): ProseTasteMetrics {
   const dialogueEndingCadence = analyzeDialogueEndingCadence(content);
   const dialogueStarterCadence = analyzeDialogueStarterCadence(content);
   const viewpointAnchorCount = countRegexMatches(content, VIEWPOINT_ANCHOR_PATTERN);
+  const immersiveRhythmAnchorCount = countImmersiveRhythmAnchorSentences(content);
   const listMarkerCount = countRegexMatches(content, LIST_MARKER_PATTERN);
   const designJargonCount = countRegexMatches(content, DESIGN_JARGON_PATTERN);
 
@@ -1524,6 +1547,8 @@ export function analyzeProseTasteMetrics(content: string): ProseTasteMetrics {
       calculateSentenceLengthVariationCoefficient(narrationSentenceLengths),
     longestUniformSentenceLengthRun: findLongestUniformSentenceLengthRun(content),
     viewpointAnchorDensityPer1000: round1(viewpointAnchorCount / scale),
+    immersiveRhythmAnchorDensityPer1000: round1(immersiveRhythmAnchorCount / scale),
+    longestImmersiveRhythmFlatlineRun: findLongestImmersiveRhythmFlatlineRun(content),
     listMarkerCount,
     designJargonCount,
     longestShortSentenceRun: findLongestShortSentenceRun(content),
@@ -1760,6 +1785,11 @@ function getThresholds(profile: ProseTasteProfile, mode: ProseTasteMode): ModeTh
       profile.maxDominantDialogueStarterShare ?? base.maxDominantDialogueStarterShare,
     minViewpointAnchorDensityPer1000:
       profile.minViewpointAnchorDensityPer1000 ?? base.minViewpointAnchorDensityPer1000,
+    minImmersiveRhythmAnchorDensityPer1000:
+      profile.minImmersiveRhythmAnchorDensityPer1000 ??
+      base.minImmersiveRhythmAnchorDensityPer1000,
+    maxImmersiveRhythmFlatlineRun:
+      profile.maxImmersiveRhythmFlatlineRun ?? base.maxImmersiveRhythmFlatlineRun,
     maxShortSentenceRun: profile.maxShortSentenceRun ?? base.maxShortSentenceRun,
     maxRepeatedSubjectRun: profile.maxRepeatedSubjectRun ?? base.maxRepeatedSubjectRun,
     maxRepeatedConnectiveStarterRun:
@@ -4066,6 +4096,48 @@ function addShortSentenceRunIssue(
     evidence: findShortSentenceRunEvidence(content, thresholds.maxShortSentenceRun + 1),
     suggestion: '연속 단문 일부를 원인/대조/결과가 있는 중문이나 복문으로 묶고, 한두 개의 단문만 타격점에 남기세요.',
     penalty: Math.min(26, 12 + overflow * 4),
+  });
+}
+
+function addImmersiveRhythmFlatlineIssue(
+  content: string,
+  metrics: ProseTasteMetrics,
+  thresholds: ModeThresholds,
+  issues: ProseTasteIssue[]
+): void {
+  const runOverflow =
+    metrics.longestImmersiveRhythmFlatlineRun - thresholds.maxImmersiveRhythmFlatlineRun;
+  const anchorGap =
+    thresholds.minImmersiveRhythmAnchorDensityPer1000 -
+    metrics.immersiveRhythmAnchorDensityPer1000;
+  const hasFlatlineRun = runOverflow > 0;
+  const hasAnchorShortage =
+    metrics.characterCount >= 500 &&
+    anchorGap > 0 &&
+    metrics.longestImmersiveRhythmFlatlineRun >=
+      Math.max(3, thresholds.maxImmersiveRhythmFlatlineRun - 1);
+
+  if (!hasFlatlineRun && !hasAnchorShortage) return;
+
+  const evidenceRunLength = hasFlatlineRun
+    ? thresholds.maxImmersiveRhythmFlatlineRun + 1
+    : Math.max(3, thresholds.maxImmersiveRhythmFlatlineRun - 1);
+
+  issues.push({
+    code: 'immersive-rhythm-flatline',
+    severity:
+      runOverflow >= 3 ||
+      metrics.immersiveRhythmAnchorDensityPer1000 <=
+        thresholds.minImmersiveRhythmAnchorDensityPer1000 / 2
+        ? 'high'
+        : 'medium',
+    message:
+      `설명/판단 중심 문장이 ${metrics.longestImmersiveRhythmFlatlineRun}문장 이어지고 ` +
+      `문단 리듬이 평평합니다. 장면 앵커 밀도는 ${metrics.immersiveRhythmAnchorDensityPer1000}/1000자입니다.`,
+    evidence: findImmersiveRhythmFlatlineEvidence(content, evidenceRunLength),
+    suggestion:
+      '설명/판단 문장을 그대로 늘리지 말고, 두세 문장마다 물증, 손동작, 대사 반응, 선택 비용, 감각 앵커를 넣어 문단이 장면 안에서 숨 쉬게 하세요.',
+    penalty: Math.min(20, 8 + Math.max(0, runOverflow) * 3 + Math.ceil(Math.max(0, anchorGap) * 2)),
   });
 }
 
@@ -7709,6 +7781,79 @@ function extractSentenceStarterConnective(sentence: string): string {
   return match?.[1]?.replace(/\s+/gu, ' ') ?? '';
 }
 
+function countImmersiveRhythmAnchorSentences(content: string): number {
+  return splitSentences(content).filter(isImmersiveRhythmAnchorSentence).length;
+}
+
+function findLongestImmersiveRhythmFlatlineRun(content: string): number {
+  let longest = 0;
+
+  for (const paragraph of splitParagraphs(content)) {
+    let current = 0;
+    for (const sentence of splitSentences(paragraph)) {
+      if (isImmersiveRhythmFlatlineSentence(sentence)) {
+        current += 1;
+        longest = Math.max(longest, current);
+      } else {
+        current = 0;
+      }
+    }
+  }
+
+  return longest;
+}
+
+function findImmersiveRhythmFlatlineEvidence(content: string, minRun: number): string {
+  for (const paragraph of splitParagraphs(content)) {
+    const current: string[] = [];
+
+    for (const sentence of splitSentences(paragraph)) {
+      if (isImmersiveRhythmFlatlineSentence(sentence)) {
+        current.push(sentence);
+      } else {
+        current.length = 0;
+      }
+
+      if (current.length >= minRun) {
+        return current.slice(0, minRun).join(' ');
+      }
+    }
+  }
+
+  return splitSentences(content)
+    .filter(isImmersiveRhythmFlatlineSentence)
+    .slice(0, minRun)
+    .join(' ');
+}
+
+function isImmersiveRhythmAnchorSentence(sentence: string): boolean {
+  const trimmed = sentence.trim();
+  if (!trimmed) return false;
+  if (/["“”'‘’「」『』]/u.test(trimmed)) return true;
+
+  return (
+    IMMERSIVE_RHYTHM_ANCHOR_PATTERN.test(trimmed) ||
+    SENSORY_STORY_TURN_PATTERN.test(trimmed) ||
+    DIALOGUE_GROUNDING_BEAT_PATTERN.test(trimmed)
+  );
+}
+
+function isImmersiveRhythmFlatlineSentence(sentence: string): boolean {
+  const trimmed = sentence.trim();
+  if (!trimmed || !/[.!?]$/u.test(trimmed)) return false;
+  if (countTextUnits(trimmed) < 14) return false;
+  if (/["“”'‘’「」『』]/u.test(trimmed)) return false;
+  if (isImmersiveRhythmAnchorSentence(trimmed)) return false;
+
+  return (
+    FLATLINE_EXPLANATORY_CLOSURE_PATTERN.test(trimmed) ||
+    new RegExp(ABSTRACT_NOUN_PATTERN.source, 'u').test(trimmed) ||
+    new RegExp(EVALUATIVE_MODIFIER_PATTERN.source, 'u').test(trimmed) ||
+    new RegExp(HEDGED_PERCEPTION_PATTERN.source, 'u').test(trimmed) ||
+    new RegExp(COGNITIVE_FILTER_PATTERN.source, 'u').test(trimmed)
+  );
+}
+
 function findShortSentenceRunEvidence(content: string, minRun: number): string {
   const sentences = splitSentences(content);
   const current: string[] = [];
@@ -7736,6 +7881,13 @@ function isShortNarrationSentence(sentence: string): boolean {
   if (textUnits === 0 || textUnits > 18) return false;
 
   return /[.!?]$/u.test(trimmed);
+}
+
+function splitParagraphs(content: string): string[] {
+  return content
+    .split(/\n{2,}/u)
+    .map(paragraph => paragraph.trim())
+    .filter(Boolean);
 }
 
 function splitSentences(content: string): string[] {
@@ -8043,6 +8195,8 @@ function hasTasteCalibration(profile: ProseTasteProfile): boolean {
       profile.maxDominantDialogueEndingShare !== undefined ||
       profile.maxDominantDialogueStarterShare !== undefined ||
       profile.minViewpointAnchorDensityPer1000 !== undefined ||
+      profile.minImmersiveRhythmAnchorDensityPer1000 !== undefined ||
+      profile.maxImmersiveRhythmFlatlineRun !== undefined ||
       profile.maxShortSentenceRun !== undefined ||
       profile.maxRepeatedSubjectRun !== undefined ||
       profile.maxRepeatedConnectiveStarterRun !== undefined ||

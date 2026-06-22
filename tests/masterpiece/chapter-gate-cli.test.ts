@@ -3039,6 +3039,72 @@ CCTV 시간을 정리했다.
     expect(output.gate.retryPrompt).toContain('Prose Craft Revision Directives');
   });
 
+  it('blocks completion when style-guide prose taste profile rejects immersive rhythm flatlines', async () => {
+    const workDir = await mkdtemp(join(tmpdir(), 'chapter-gate-cli-immersive-rhythm-fail-'));
+    tempDirs.push(workDir);
+
+    const projectDir = join(workDir, 'sample-project');
+    await cp(sampleProject, projectDir, { recursive: true });
+    await seedRalphState(projectDir);
+
+    const styleGuidePath = join(projectDir, 'meta', 'style-guide.json');
+    const styleGuide = await readJson(styleGuidePath);
+    styleGuide.prose_taste_profile = {
+      preferred_mode: 'balanced',
+      minimum_score: 95,
+      min_immersive_rhythm_anchor_density_per_1000: 2.4,
+      max_immersive_rhythm_flatline_run: 5,
+    };
+    await writeJson(styleGuidePath, styleGuide);
+
+    const manuscriptPath = join(projectDir, 'chapters', 'chapter_001.md');
+    const originalManuscript = await readFile(manuscriptPath, 'utf8');
+    await writeFile(
+      manuscriptPath,
+      `${originalManuscript}
+
+서연은 이 상황이 더 이상 단순한 오해가 아니라고 생각했다.
+민준의 침묵은 두 사람 사이의 거리를 보여 주는 결과였다.
+관계는 이미 예전과 다른 상태가 되어 있었다.
+모든 선택은 결국 서로를 시험하는 의미였다.
+불안은 더 커졌고 확신은 점점 작아졌다.
+그녀는 자신이 왜 멀어졌는지 알 수 있었다.
+그 시간은 두 사람에게 중요한 의미로 남아 있었다.
+`,
+      'utf8'
+    );
+
+    const cliPath = await bundleCli(workDir);
+    const result = spawnSync(
+      process.execPath,
+      [
+        cliPath,
+        '--project',
+        projectDir,
+        '--chapter',
+        '1',
+        '--version',
+        '1',
+        '--quality-score',
+        '95',
+        '--threshold',
+        '90',
+        '--json',
+      ],
+      { encoding: 'utf8' }
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output.proseCraft).toMatchObject({
+      passed: false,
+      verdict: 'REVISE',
+    });
+    expect(JSON.stringify(output.proseCraft)).toContain('문단 리듬이 평평합니다');
+    expect(output.gate.status).toBe('RETRY');
+    expect(output.gate.retryPrompt).toContain('Prose Craft Revision Directives');
+  });
+
   it('blocks completion when style-guide prose taste profile rejects same ending cadence', async () => {
     const workDir = await mkdtemp(join(tmpdir(), 'chapter-gate-cli-same-ending-fail-'));
     tempDirs.push(workDir);

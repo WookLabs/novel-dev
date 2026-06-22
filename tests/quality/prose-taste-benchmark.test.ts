@@ -253,6 +253,16 @@ const SYMBOLIC_ABSTRACTION_STACK_PROSE = `
 선택과 대가는 끝없는 상징의 어둠으로 가라앉았다.
 `.trim();
 
+const IMMERSIVE_RHYTHM_FLATLINE_PROSE = `
+서연은 이 상황이 더 이상 단순한 오해가 아니라고 생각했다.
+민준의 침묵은 두 사람 사이의 거리를 보여 주는 결과였다.
+관계는 이미 예전과 다른 상태가 되어 있었다.
+모든 선택은 결국 서로를 시험하는 의미였다.
+불안은 더 커졌고 확신은 점점 작아졌다.
+그녀는 자신이 왜 멀어졌는지 알 수 있었다.
+그 시간은 두 사람에게 중요한 의미로 남아 있었다.
+`.trim();
+
 const UNIFORM_SENTENCE_LENGTH_PROSE = `
 서연은 낡은 지도를 접어 탁자 가장자리에 조심스럽게 올려두었다.
 민준은 꺼진 녹음기를 확인하고 손바닥으로 먼지를 한 번 밀어냈다.
@@ -871,6 +881,23 @@ describe('evaluateProseTasteBenchmark', () => {
     expect(result.sampleResults[0].issueCodes).toContain('uniform-sentence-length-cadence');
     expect(result.sampleResults[0].gate.metrics.sentenceLengthVariationCoefficient).toBeLessThan(0.24);
     expect(result.sampleResults[0].gate.metrics.longestUniformSentenceLengthRun).toBeGreaterThan(6);
+  });
+
+  it('benchmarks immersive rhythm flatline as disliked prose friction', () => {
+    const result = evaluateProseTasteBenchmark([
+      {
+        id: 'immersive-rhythm-flatline-style-fail',
+        content: IMMERSIVE_RHYTHM_FLATLINE_PROSE,
+        expectedPassed: false,
+        expectedIssueCodes: ['immersive-rhythm-flatline'],
+        expectedMaxScore: 87,
+      },
+    ]);
+
+    expect(result.failed).toBe(0);
+    expect(result.sampleResults[0].issueCodes).toContain('immersive-rhythm-flatline');
+    expect(result.sampleResults[0].gate.metrics.longestImmersiveRhythmFlatlineRun).toBeGreaterThan(5);
+    expect(result.sampleResults[0].gate.metrics.immersiveRhythmAnchorDensityPer1000).toBe(0);
   });
 
   it('benchmarks vague atmosphere modifier chains as disliked prose friction', () => {

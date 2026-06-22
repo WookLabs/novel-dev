@@ -903,6 +903,18 @@
           "minimum": 0,
           "maximum": 100
         },
+        "min_immersive_rhythm_anchor_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Minimum density of concrete scene anchors per 1000 characters before explanatory rhythm is considered under-grounded."
+        },
+        "max_immersive_rhythm_flatline_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum consecutive explanatory/evaluative narration sentences without concrete scene anchors."
+        },
         "max_short_sentence_run": {
           "type": "integer",
           "minimum": 3,

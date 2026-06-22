@@ -199,6 +199,8 @@ interface StyleGuideWithTasteProfile {
     max_dominant_dialogue_ending_share?: number;
     max_dominant_dialogue_starter_share?: number;
     min_viewpoint_anchor_density_per_1000?: number;
+    min_immersive_rhythm_anchor_density_per_1000?: number;
+    max_immersive_rhythm_flatline_run?: number;
     max_short_sentence_run?: number;
     max_repeated_subject_run?: number;
     max_repeated_connective_starter_run?: number;
@@ -3270,6 +3272,9 @@ async function readProseTasteProfile(
       maxDominantDialogueEndingShare: profile.max_dominant_dialogue_ending_share,
       maxDominantDialogueStarterShare: profile.max_dominant_dialogue_starter_share,
       minViewpointAnchorDensityPer1000: profile.min_viewpoint_anchor_density_per_1000,
+      minImmersiveRhythmAnchorDensityPer1000:
+        profile.min_immersive_rhythm_anchor_density_per_1000,
+      maxImmersiveRhythmFlatlineRun: profile.max_immersive_rhythm_flatline_run,
       maxShortSentenceRun: profile.max_short_sentence_run,
       maxRepeatedSubjectRun: profile.max_repeated_subject_run,
       maxRepeatedConnectiveStarterRun: profile.max_repeated_connective_starter_run,

@@ -31,6 +31,24 @@ const CHOPPY_AI_PROSE = `
 아무도 말하지 않았다.
 `.trim();
 
+const IMMERSIVE_RHYTHM_FLATLINE_PROSE = `
+서연은 이 상황이 더 이상 단순한 오해가 아니라고 생각했다.
+민준의 침묵은 두 사람 사이의 거리를 보여 주는 결과였다.
+관계는 이미 예전과 다른 상태가 되어 있었다.
+모든 선택은 결국 서로를 시험하는 의미였다.
+불안은 더 커졌고 확신은 점점 작아졌다.
+그녀는 자신이 왜 멀어졌는지 알 수 있었다.
+그 시간은 두 사람에게 중요한 의미로 남아 있었다.
+`.trim();
+
+const GROUNDED_IMMERSIVE_RHYTHM_PROSE = `
+서연은 봉투를 컵 아래로 밀었다.
+민준은 대답 대신 녹음기의 빨간 불을 껐다.
+복도 끝 발소리가 멎자 그녀는 사진 뒷면의 번호를 확인했다.
+"네가 고르면 내가 책임질게."
+그 말 뒤에 문 잠금장치가 한 번 더 내려갔다.
+`.trim();
+
 const HEDGED_PERCEPTION_PROSE = `
 서연은 문 앞에 선 것 같았다. 안쪽의 침묵은 어쩐지 대답처럼 느껴졌다. 손잡이는 묘하게 차가운 듯했다.
 
@@ -2332,6 +2350,40 @@ describe('evaluateProseTaste', () => {
     expect(result.calibration).toBe('profiled');
     expect(result.issues.map(issue => issue.code)).not.toContain(
       'uniform-sentence-length-cadence'
+    );
+  });
+
+  it('fails prose whose explanatory paragraph loses immersive rhythm anchors', () => {
+    const result = evaluateProseTaste(IMMERSIVE_RHYTHM_FLATLINE_PROSE);
+    const codes = result.issues.map(issue => issue.code);
+
+    expect(result.passed).toBe(false);
+    expect(result.metrics.longestImmersiveRhythmFlatlineRun).toBeGreaterThan(5);
+    expect(result.metrics.immersiveRhythmAnchorDensityPer1000).toBe(0);
+    expect(codes).toContain('immersive-rhythm-flatline');
+  });
+
+  it('allows scene-grounded rhythm when concrete anchors break explanatory cadence', () => {
+    const result = evaluateProseTaste(GROUNDED_IMMERSIVE_RHYTHM_PROSE);
+
+    expect(result.metrics.immersiveRhythmAnchorDensityPer1000).toBeGreaterThan(2.4);
+    expect(result.metrics.longestImmersiveRhythmFlatlineRun).toBe(0);
+    expect(result.issues.map(issue => issue.code)).not.toContain(
+      'immersive-rhythm-flatline'
+    );
+  });
+
+  it('allows projects to loosen immersive rhythm flatline limits for deliberate essay-like narration', () => {
+    const result = evaluateProseTaste(IMMERSIVE_RHYTHM_FLATLINE_PROSE, {
+      profile: {
+        minImmersiveRhythmAnchorDensityPer1000: 0,
+        maxImmersiveRhythmFlatlineRun: 20,
+      },
+    });
+
+    expect(result.calibration).toBe('profiled');
+    expect(result.issues.map(issue => issue.code)).not.toContain(
+      'immersive-rhythm-flatline'
     );
   });
 

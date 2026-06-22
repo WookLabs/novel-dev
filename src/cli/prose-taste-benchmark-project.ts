@@ -354,6 +354,10 @@ interface RawProseTasteProfile {
   maxDominantDialogueStarterShare?: number;
   min_viewpoint_anchor_density_per_1000?: number;
   minViewpointAnchorDensityPer1000?: number;
+  min_immersive_rhythm_anchor_density_per_1000?: number;
+  minImmersiveRhythmAnchorDensityPer1000?: number;
+  max_immersive_rhythm_flatline_run?: number;
+  maxImmersiveRhythmFlatlineRun?: number;
   max_short_sentence_run?: number;
   maxShortSentenceRun?: number;
   max_repeated_subject_run?: number;
@@ -1545,6 +1549,21 @@ function normalizeProfile(raw: RawProseTasteProfile | undefined): ProseTasteProf
     profile.minViewpointAnchorDensityPer1000 =
       raw.min_viewpoint_anchor_density_per_1000 ?? raw.minViewpointAnchorDensityPer1000;
   }
+  if (
+    (raw.min_immersive_rhythm_anchor_density_per_1000 ??
+      raw.minImmersiveRhythmAnchorDensityPer1000) !== undefined
+  ) {
+    profile.minImmersiveRhythmAnchorDensityPer1000 =
+      raw.min_immersive_rhythm_anchor_density_per_1000 ??
+      raw.minImmersiveRhythmAnchorDensityPer1000;
+  }
+  if (
+    (raw.max_immersive_rhythm_flatline_run ?? raw.maxImmersiveRhythmFlatlineRun) !==
+    undefined
+  ) {
+    profile.maxImmersiveRhythmFlatlineRun =
+      raw.max_immersive_rhythm_flatline_run ?? raw.maxImmersiveRhythmFlatlineRun;
+  }
   if ((raw.max_short_sentence_run ?? raw.maxShortSentenceRun) !== undefined) {
     profile.maxShortSentenceRun = raw.max_short_sentence_run ?? raw.maxShortSentenceRun;
   }
@@ -1954,6 +1973,13 @@ function mergeProfiles(
     }
     if (profile.minViewpointAnchorDensityPer1000 !== undefined) {
       merged.minViewpointAnchorDensityPer1000 = profile.minViewpointAnchorDensityPer1000;
+    }
+    if (profile.minImmersiveRhythmAnchorDensityPer1000 !== undefined) {
+      merged.minImmersiveRhythmAnchorDensityPer1000 =
+        profile.minImmersiveRhythmAnchorDensityPer1000;
+    }
+    if (profile.maxImmersiveRhythmFlatlineRun !== undefined) {
+      merged.maxImmersiveRhythmFlatlineRun = profile.maxImmersiveRhythmFlatlineRun;
     }
     if (profile.maxShortSentenceRun !== undefined) {
       merged.maxShortSentenceRun = profile.maxShortSentenceRun;

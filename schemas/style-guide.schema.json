@@ -862,6 +862,18 @@
           "maximum": 100,
           "description": "1000자당 인물 감각, 판단, 말투, 시간/공간 직시어 등 POV 앵커 최소 밀도. 부족하면 묘사가 인물 내부에 붙지 않은 것으로 본다."
         },
+        "min_immersive_rhythm_anchor_density_per_1000": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "1000자당 물증, 손동작, 대사 반응, 선택 비용, 감각 변화 같은 장면 앵커 최소 밀도. 부족하면 설명/판단문이 장면 안에서 호흡하지 못하는 것으로 본다."
+        },
+        "max_immersive_rhythm_flatline_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "장면 앵커 없이 설명/판단 중심 서술문이 연속될 수 있는 최대 문장 수. 초과하면 문단 리듬이 평평한 것으로 본다."
+        },
         "max_short_sentence_run": {
           "type": "integer",
           "minimum": 3,

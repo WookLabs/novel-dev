@@ -131,6 +131,8 @@
     "max_dominant_dialogue_ending_share": 0.82,
     "max_dominant_dialogue_starter_share": 0.62,
     "min_viewpoint_anchor_density_per_1000": 2.5,
+    "min_immersive_rhythm_anchor_density_per_1000": 2.4,
+    "max_immersive_rhythm_flatline_run": 5,
     "max_short_sentence_run": 5,
     "max_repeated_subject_run": 4,
     "max_repeated_connective_starter_run": 3,
