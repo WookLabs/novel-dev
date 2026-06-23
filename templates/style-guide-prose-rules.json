@@ -14,6 +14,30 @@
         "severity": "warning"
       },
       {
+        "id": "repeated-subject-rhythm",
+        "description": "같은 주어/화제어로 문장을 반복 시작하여 AI식 박자가 생김",
+        "detection_hint": "동일 주어 또는 동일 명사구 시작이 5문장 이상 이어질 때 오류",
+        "severity": "error"
+      },
+      {
+        "id": "uniform-sentence-length-cadence",
+        "description": "비슷한 길이와 구조의 문장이 계속 이어져 산문 리듬이 평평해짐",
+        "detection_hint": "문장 길이 변동계수가 낮고 동일 구조의 단문/중문이 연속될 때 경고",
+        "severity": "warning"
+      },
+      {
+        "id": "immersive-rhythm-flatline",
+        "description": "행동, 감각, 사물, 공간 앵커 없이 설명문이 이어져 몰입 리듬이 끊김",
+        "detection_hint": "5문장 이상 장면 앵커 없이 판단/설명/요약 문장이 이어질 때 오류",
+        "severity": "error"
+      },
+      {
+        "id": "dominant-ending-cadence-lock",
+        "description": "문단 전체가 같은 종결 리듬에 묶여 낭독감이 단조로워짐",
+        "detection_hint": "한 문단에서 동일 어미 계열 점유율이 72%를 넘으면 경고",
+        "severity": "warning"
+      },
+      {
         "id": "list-monologue",
         "description": "내적 독백이 번호/순서형 리스트로 나열됨 (하나, 둘, 셋 / 첫째, 둘째)",
         "detection_hint": "하나/둘/셋, 첫째/둘째, 1./2./3. 패턴 감지",
@@ -36,6 +60,18 @@
         "description": "접속사/전환어 과다 사용 (한편, 그런데, 그러나, 결국, 그래서)",
         "detection_hint": "500자 내 접속사 3회 이상",
         "severity": "warning"
+      },
+      {
+        "id": "functional-ai-report",
+        "description": "인물의 경험을 '감각이 왔다', '반응이 잡혔다', '변화가 있었다' 같은 기능 보고체로 처리함",
+        "detection_hint": "상태/반응/변화/감각을 추상 명사 + 있었다/왔다/잡혔다로 보고하는 문장",
+        "severity": "error"
+      },
+      {
+        "id": "explicit-disliked-phrase",
+        "description": "프로젝트 prose_taste_profile에 등록된 독자 거슬림 표현을 그대로 사용함",
+        "detection_hint": "meta/style-guide.json의 prose_taste_profile.disliked_phrases와 직접 매칭",
+        "severity": "error"
       }
     ],
     "positive_patterns": [
@@ -49,6 +85,21 @@
         "id": "sentence-length-rhythm",
         "description": "단문(~15자)-중문(15~40자)-장문(40자+) 순환으로 리듬 변주",
         "example_hint": "짧은 충격 → 중간 설명 → 긴 감각 묘사 → 짧은 반전"
+      },
+      {
+        "id": "immersive-rhythm-anchors",
+        "description": "행동, 감각, 사물, 공간을 문단 안에 배치해 독자가 장면 안에서 호흡하도록 함",
+        "example_hint": "판단을 먼저 설명하지 말고 컵의 온도, 발소리, 손의 지연 같은 장면 앵커로 감정과 정보를 묶기"
+      },
+      {
+        "id": "action-consequence-sentence-openings",
+        "description": "주어 반복 대신 결과, 반작용, 장소, 사물, 감각을 문장 시작점으로 섞음",
+        "example_hint": "'그는' 반복 → '문고리가 식었다. 대답은 없었다. 그제야 그는 손을 내렸다.'"
+      },
+      {
+        "id": "subtextual-action-rhythm",
+        "description": "감정 이름을 반복하지 않고 침묵, 지연, 물건 조작, 시선 회피로 하위텍스트를 만듦",
+        "example_hint": "'화가 났다' → '그는 젓가락을 내려놓지 않았다. 금속 끝이 접시 가장자리를 한 번 더 긁었다.'"
       },
       {
         "id": "sensory-emotion-transfer",
