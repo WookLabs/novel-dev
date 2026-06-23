@@ -132,6 +132,7 @@ export type EngagementIssueCode =
   | 'manuscript-scene-state-delta-not-evidenced'
   | 'manuscript-scene-novelty-matrix-not-evidenced'
   | 'manuscript-causal-chain-not-evidenced'
+  | 'manuscript-micro-turn-density-not-evidenced'
   | 'manuscript-convenient-resolution-not-evidenced'
   | 'manuscript-pov-focalization-not-evidenced'
   | 'manuscript-narrative-transportation-not-evidenced'
@@ -2177,6 +2178,7 @@ function directiveCategoryRank(code: EngagementIssueCode): number {
     code === 'manuscript-scene-state-delta-not-evidenced' ||
     code === 'manuscript-scene-novelty-matrix-not-evidenced' ||
     code === 'manuscript-causal-chain-not-evidenced' ||
+    code === 'manuscript-micro-turn-density-not-evidenced' ||
     code === 'manuscript-convenient-resolution-not-evidenced' ||
     code === 'manuscript-pov-focalization-not-evidenced' ||
     code === 'manuscript-summary-prose' ||
@@ -2804,6 +2806,11 @@ function directiveTemplate(
       return {
         target: 'manuscript',
         action: 'Rewrite adjacent facts into a cause-and-effect chain: pressure changes the protagonist action, the action triggers a consequence, and the consequence opens the next beat.',
+      };
+    case 'manuscript-micro-turn-density-not-evidenced':
+      return {
+        target: 'manuscript',
+        action: 'Rewrite adjacent manuscript sentences into denser micro-turns: every few sentences should alter reader prediction, narrow a choice, raise risk, shift a relationship, change tactics, create a cost, or sharpen the next question instead of listing adjacent facts.',
       };
     case 'manuscript-convenient-resolution-not-evidenced':
       return {
@@ -3852,6 +3859,20 @@ function evaluateManuscriptEvidence(
       expected:
         'cause-and-effect chain: pressure changes protagonist action, action causes a consequence, and consequence opens the next beat.',
       actual: causalChain.actual,
+    });
+  }
+
+  const microTurnDensity = assessManuscriptMicroTurnDensity(text);
+  if (!microTurnDensity.passed) {
+    manuscriptMomentum -= 65;
+    issues.push({
+      code: 'manuscript-micro-turn-density-not-evidenced',
+      severity: 'critical',
+      message:
+        'The manuscript has too many adjacent sentence windows that list facts without changing reader prediction, choice pressure, risk, relationship state, tactics, cost, or next-question pull.',
+      expected:
+        'micro-turn density: at least 45% of adjacent 3-sentence windows should contain a concrete clue or pressure plus a turn family such as hypothesis revision, choice narrowing, risk increase, relationship shift, tactic change, visible cost, or sharpened next question, with no long flat run.',
+      actual: microTurnDensity.actual,
     });
   }
 
@@ -7951,6 +7972,11 @@ interface ManuscriptCausalChainAssessment {
   actual: string;
 }
 
+interface ManuscriptMicroTurnDensityAssessment {
+  passed: boolean;
+  actual: string;
+}
+
 interface ManuscriptConvenientResolutionAssessment {
   passed: boolean;
   actual: string;
@@ -7984,6 +8010,23 @@ const CAUSAL_CHAIN_CLUE_PATTERN =
   /(단서|기록|로그|번호|파일|로고|좌표|알림|휴대폰|화면|규칙|패턴|사건|피해자|이름|수신자|실종|미제)/u;
 const CAUSAL_CHAIN_REACTION_PATTERN =
   /(목덜미|목구멍|손바닥|손끝|심장|가슴|숨|입\s*안|혀끝|땀|떨림|두근|차갑|얼음|쓴맛|조이|삼켰|움켜|쥐었|쥔|멈췄|고개|눈)/u;
+
+const MICRO_TURN_CLUE_PATTERN =
+  /(단서|증거|기록|로그|번호|파일|로고|문자|메시지|휴대폰|화면|알림|사진|서명|좌표|흔적|얼룩|혈흔|열쇠|봉투|신분증|이름|수신자|피해자|현장|통제선)/u;
+const MICRO_TURN_HYPOTHESIS_PATTERN =
+  /(가설|추론|의심|용의자|범인|배후|의미|해석|다시\s*(?:봤|계산|정렬|짚|읽)|바뀌|뒤집|좁혀|제외|확정|맞물리자|겹치며\s*드러|드러났|밝혀|깨달)/u;
+const MICRO_TURN_CHOICE_PATTERN =
+  /(선택해야|선택지가\s*닫히|결정|포기|감수|대신|갈지|넘길지|신고(?:할지|해|하자|하려|보다|를\s*미루|를\s*접|를\s*남기)|택했|해야\s*했다|물러설\s*수\s*없)/u;
+const MICRO_TURN_RISK_PATTERN =
+  /(위험|위협|제한\s*시간|카운트다운|기한|늦|꺼졌|꺼뜨|잠겼|막혔|차단|고립|표적|수신자|추격|공격|죽|사망|실종|다음\s*(?:알림|수신자|표적|피해자)|새\s*(?:위협|알림|예고))/u;
+const MICRO_TURN_RELATIONSHIP_PATTERN =
+  /(신뢰|불신|동맹|배신|조건|거절|수락|협상|요구|침묵|시선|말끝|비밀|숨기|믿|의심|관계|거리|편들|문\s*앞을\s*비켰|파일(?:을)?\s*넘기)/u;
+const MICRO_TURN_TACTIC_PATTERN =
+  /(계획(?:을)?\s*(?:바꾸|접|수정)|전술|우회|비상계단|다른\s*(?:길|문|통로|방법|수단)|경로(?:를)?\s*바꾸|동선(?:을)?\s*바꾸|다음\s*행동(?:을)?\s*(?:바꾸|정했|선택)|새\s*(?:단서|로그|증거)(?:를)?\s*(?:이용|따라)|수단\s*전환)/u;
+const MICRO_TURN_COST_PATTERN =
+  /(대가로|비용|손실|희생|실패|놓쳤|잃|닫히|사라져|노출|발각|체포|되돌릴\s*수\s*없|돌이킬\s*수\s*없|돌아갈\s*수\s*없|고립|다쳤|피(?:가|를|로|투성이|흘)|상처|알리바이\s*선택지)/u;
+const MICRO_TURN_QUESTION_PATTERN =
+  /(왜|어떻게|누가|무엇|어디서|다음\s*(?:질문|표적|수신자|알림|사건)|알\s*수\s*없|모른|미해결|남았|궁금|열린\s*질문|정체|비밀)/u;
 
 function assessManuscriptCausalChain(
   manuscript: string
@@ -8053,6 +8096,73 @@ function assessManuscriptCausalChain(
         .join(', ') || 'none'}); ` +
       `action signals=${actionSignals}, pressure signals=${pressureSignals}, consequence signals=${consequenceSignals}`,
   };
+}
+
+function assessManuscriptMicroTurnDensity(
+  manuscript: string
+): ManuscriptMicroTurnDensityAssessment {
+  const sentences = splitManuscriptSentences(manuscript);
+  if (sentences.length < 8) {
+    return {
+      passed: true,
+      actual: `micro-turn density check skipped: sentences=${sentences.length}`,
+    };
+  }
+
+  const totalWindows = sentences.length - 2;
+  const requiredTurnWindows = Math.max(2, Math.ceil(totalWindows * 0.45));
+  let turnWindows = 0;
+  let longestFlatRun = 0;
+  let currentFlatRun = 0;
+  const flatWindowSummaries: string[] = [];
+
+  for (let index = 0; index < totalWindows; index++) {
+    const windowText = sentences.slice(index, index + 3).join(' ');
+    const families = microTurnFamilies(windowText);
+    const actionableFamilies = families.filter(
+      family => family !== 'clue' && family !== 'risk'
+    );
+    const isTurnWindow = families.length >= 2 && actionableFamilies.length >= 1;
+
+    if (isTurnWindow) {
+      turnWindows += 1;
+      currentFlatRun = 0;
+    } else {
+      currentFlatRun += 1;
+      longestFlatRun = Math.max(longestFlatRun, currentFlatRun);
+      if (flatWindowSummaries.length < 4) {
+        flatWindowSummaries.push(
+          `${index + 1}:${families.length > 0 ? families.join('/') : 'none'}`
+        );
+      }
+    }
+  }
+
+  const ratio = turnWindows / totalWindows;
+  const passed = turnWindows >= requiredTurnWindows && longestFlatRun <= 4;
+
+  return {
+    passed,
+    actual:
+      `micro-turn windows=${turnWindows}/${totalWindows} (${ratio.toFixed(2)}), ` +
+      `required=${requiredTurnWindows}, longest flat run=${longestFlatRun}, ` +
+      `flat windows=${flatWindowSummaries.join(', ') || 'none'}`,
+  };
+}
+
+function microTurnFamilies(windowText: string): string[] {
+  const families: string[] = [];
+
+  if (MICRO_TURN_CLUE_PATTERN.test(windowText)) families.push('clue');
+  if (MICRO_TURN_HYPOTHESIS_PATTERN.test(windowText)) families.push('hypothesis');
+  if (MICRO_TURN_CHOICE_PATTERN.test(windowText)) families.push('choice');
+  if (MICRO_TURN_RISK_PATTERN.test(windowText)) families.push('risk');
+  if (MICRO_TURN_RELATIONSHIP_PATTERN.test(windowText)) families.push('relationship');
+  if (MICRO_TURN_TACTIC_PATTERN.test(windowText)) families.push('tactic');
+  if (MICRO_TURN_COST_PATTERN.test(windowText)) families.push('cost');
+  if (MICRO_TURN_QUESTION_PATTERN.test(windowText)) families.push('question');
+
+  return families;
 }
 
 const CONVENIENT_RESOLUTION_PRESSURE_PATTERN =

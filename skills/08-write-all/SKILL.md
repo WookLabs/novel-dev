@@ -149,6 +149,7 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 - **Manuscript Tactical Adaptation Gate**: tactical adaptation은 장면 반전 뒤 전술 재계산이 보이는지 확인합니다. 장애물/반격/차단이 첫 계획을 막았는데도 주인공이 계획 변경, 우회, 수단 전환, 새 단서 활용, 다음 행동 변경 없이 처음 계획대로 진행하면 `manuscript-tactical-adaptation-not-evidenced`
 - **Manuscript Consequence/Escalation Gate**: 원고에서 장면 압박 뒤 결과 악화가 없고 대가, 손실, 회복 불가 변화, 새 위협이 보이지 않으면 `manuscript-consequence-not-evidenced`
 - **Manuscript Cause-Effect Chain Gate**: 원고가 압박, 행동, 결과를 각각 말하지만 원인과 결과의 사슬로 묶지 않으면 `manuscript-causal-chain-not-evidenced`. 압박이 행동을 바꾸고, 행동이 결과를 만들고, 결과가 다음 비트를 열어야 함
+- **Manuscript Micro-Turn Density Gate**: micro-turn density는 인접 문장 창마다 독자 예측, 선택 압박, 위험, 관계 상태, 전술, 비용, 다음 질문 중 하나가 바뀌는지 확인합니다. 단서/기록/알림을 나열하지만 3문장 안에서 가설 수정, 선택 축소, 위험 상승, 관계 변화, 다음 행동 변경, 대가, 다음 질문으로 이어지지 않으면 `manuscript-micro-turn-density-not-evidenced`
 - **Manuscript Convenient Resolution Gate**: 원고가 위기 해결을 우연한 해결, 갑작스러운 외부 구조, 마침 도착한 증거/조력자에 맡기면 `manuscript-convenient-resolution-not-evidenced`. 구조/체포/탈출/증거 발견은 사전 설치, 주인공이 작동시킨 선택/행동, 해결 뒤 대가가 함께 있어야 earned resolution으로 인정함
 - **Manuscript POV Focalization Gate**: 원고가 사건/단서/보상/말미 훅을 객관 정보처럼 나열하고 POV 시점 앵커와 몸감각, 시선, 해석, 미해결 의문을 같은 장면 문장에 붙이지 않으면 `manuscript-pov-focalization-not-evidenced`
 - **Manuscript Narrative Transportation Gate**: narrative transportation / 체험 몰입은 구체 공간/사물/행동, POV 감정 반응, 집중점이 인접 장면 문장에 결속되어 독자가 줄거리를 심상으로 떠올리고 인물 압박을 느끼는지 확인합니다. 사건 증거만 있고 추상 기능 요약으로 흐르면 `manuscript-narrative-transportation-not-evidenced`
@@ -610,6 +611,9 @@ for act in acts:
 
         if any(issue.code == "manuscript-causal-chain-not-evidenced" for issue in engagement.issues):
             diagnostic.add("원고 인과 사슬 누락", "chapters/chapter_XXX.md manuscript에서 압박이 행동을 바꾸고, 행동이 결과를 만들고, 결과가 다음 비트를 여는 cause-and-effect 사슬로 다시 씁니다.")
+
+        if any(issue.code == "manuscript-micro-turn-density-not-evidenced" for issue in engagement.issues):
+            diagnostic.add("원고 micro-turn density 부족", "chapters/chapter_XXX.md manuscript에서 인접 문장 창마다 독자 예측, 선택, 위험, 관계, 전술, 비용, 다음 질문 중 하나가 바뀌게 다시 씁니다. 단서/기록/알림 나열을 가설 수정, 선택 축소, 위험 상승, 관계 변화, 다음 행동 변경, 대가, 다음 질문으로 연결합니다.")
 
         if any(issue.code == "manuscript-convenient-resolution-not-evidenced" for issue in engagement.issues):
             diagnostic.add("우연한 해결 보정", "chapters/chapter_XXX.md manuscript에서 구조/체포/탈출/증거 발견을 사전 설치, 주인공이 작동시킨 선택/행동, 해결 뒤 대가가 있는 earned resolution으로 다시 씁니다.")

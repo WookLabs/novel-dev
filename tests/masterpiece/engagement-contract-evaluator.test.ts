@@ -733,6 +733,9 @@ describe('evaluateEngagementContract', () => {
     expect(issueCodes(result.issues)).not.toContain(
       'manuscript-tension-wave-not-evidenced'
     );
+    expect(issueCodes(result.issues)).not.toContain(
+      'manuscript-micro-turn-density-not-evidenced'
+    );
     expect(result.breakdown.sceneMomentum).toBe(100);
   });
 
@@ -793,6 +796,41 @@ describe('evaluateEngagementContract', () => {
           priority: 'critical',
           target: 'manuscript',
           expected: expect.stringContaining('cause-and-effect'),
+        }),
+      ])
+    );
+  });
+
+  it('fails when manuscript has low scene micro-turn density across adjacent sentence windows', () => {
+    const result = evaluateEngagementContract({
+      design,
+      plot,
+      chapter: alignedChapter,
+      manuscript: [
+        '예고 앱의 첫 알림에는 피해자 이름과 사건 번호가 있었다.',
+        '현장 기록에는 같은 사건 번호와 같은 사망 시각이 있었다.',
+        '피해자의 휴대폰 로그에도 같은 시각과 같은 위치가 있었다.',
+        '앱 로고는 과거 미제 사건 파일의 로고와 같았다.',
+        '주인공 가족 실종 파일에도 같은 로고와 같은 관리 번호가 있었다.',
+        '통제선의 조명은 꺼져 있었고 현장 철문은 안쪽에서 잠겨 있었다.',
+        '공식 신고 기록은 비어 있었고 알리바이 기록은 남아 있지 않았다.',
+        '피해자의 휴대폰 마지막 화면에는 주인공 이름이 다음 수신자로 있었다.',
+        '주인공은 앱이 아직 벌어지지 않은 살인을 어떻게 알고 있었는지 궁금했다.',
+      ].join('\n'),
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.score).toBeLessThan(85);
+    expect(issueCodes(result.issues)).toContain(
+      'manuscript-micro-turn-density-not-evidenced'
+    );
+    expect(result.revisionDirectives).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'manuscript-micro-turn-density-not-evidenced',
+          priority: 'critical',
+          target: 'manuscript',
+          expected: expect.stringContaining('micro-turn'),
         }),
       ])
     );

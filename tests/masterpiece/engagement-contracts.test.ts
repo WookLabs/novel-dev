@@ -1128,6 +1128,23 @@ describe('masterpiece engagement contracts', () => {
     }
   });
 
+  it('writing and verification workflows should require manuscript scene micro-turn density', () => {
+    const writeSkill = readText('skills/06-write/SKILL.md');
+    const writeAllSkill = readText('skills/08-write-all/SKILL.md');
+    const verifyChapterSkill = readText('skills/verify-chapter/SKILL.md');
+
+    for (const skill of [writeSkill, writeAllSkill, verifyChapterSkill]) {
+      expect(skill).toContain('micro-turn density');
+      expect(skill).toContain('manuscript-micro-turn-density-not-evidenced');
+      expect(skill).toContain('문장 창');
+      expect(skill).toContain('예측');
+      expect(skill).toContain('선택');
+      expect(skill).toContain('위험');
+      expect(skill).toContain('관계');
+      expect(skill).toContain('다음 질문');
+    }
+  });
+
   it('plot, writing, and verification workflows should require spatial blocking for action scenes', () => {
     const plotSkill = readText('skills/05-gen-plot/SKILL.md');
     const writeSkill = readText('skills/06-write/SKILL.md');
