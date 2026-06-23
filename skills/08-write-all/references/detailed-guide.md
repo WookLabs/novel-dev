@@ -739,7 +739,7 @@ v6.0.0부터 성인 콘텐츠는 2-Pass 파이프라인으로 처리합니다:
 4. ralph-state.json 상태 업데이트
 5. Multi-Validator 품질 게이트 (Claude가 수행)
    - validator consensus >= 95점
-   - beta-reader >= 80점
+   - beta-reader >= 95점
    - genre-validator >= 95점
 6. 미달 시 editor(Claude)로 퇴고 -> 재검증
 ```

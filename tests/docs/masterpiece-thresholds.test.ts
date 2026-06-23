@@ -119,6 +119,28 @@ describe('masterpiece operating thresholds', () => {
     }
   });
 
+  it('keeps write-all examples and 2-pass notes from teaching relaxed validator gates', () => {
+    const exampleDoc = readText('skills/08-write-all/examples/example-usage.md');
+    const detailedGuide = readText('skills/08-write-all/references/detailed-guide.md');
+
+    for (const doc of [exampleDoc, detailedGuide]) {
+      expect(doc).not.toContain('threshold: 80');
+      expect(doc).not.toContain('threshold: 85');
+      expect(doc).not.toContain('beta-reader >= 80점');
+      expect(doc).not.toContain('critic >= 85');
+      expect(doc).not.toContain('beta-reader >= 80');
+    }
+
+    expect(exampleDoc).not.toContain('Average quality: 88.3/100');
+    expect(exampleDoc).not.toContain('Average score: 91/100 (S tier)');
+    expect(exampleDoc).not.toContain('Average quality │ 88.5/100');
+    expect(exampleDoc).not.toContain('80-89  (A):');
+    expect(exampleDoc).not.toContain('70-79  (B):');
+    expect(exampleDoc).toContain('Quality threshold: 95 (Masterpiece Mode)');
+    expect(exampleDoc).toContain('├─ beta-reader: 96/100 ✓ (threshold: 95)');
+    expect(detailedGuide).toContain('- beta-reader >= 95점');
+  });
+
   it('keeps Codex reviewer prompt gates at the 95 point operating bar', () => {
     const script = readText('scripts/codex-reviewer.mjs');
 
