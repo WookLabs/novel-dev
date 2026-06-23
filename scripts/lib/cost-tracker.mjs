@@ -25,7 +25,6 @@ const __filename = fileURLToPath(import.meta.url);
 
 const DEFAULT_COST_WEIGHTS = {
   'claude:opus': 1.0,
-  'claude:sonnet': 0.2,
   'claude:haiku': 0.05,
   'codex:gpt-5.4': 0.15,
   'grok:grok-4.20-0309-reasoning': 0.3
@@ -34,7 +33,6 @@ const DEFAULT_COST_WEIGHTS = {
 // Estimated $/1K tokens by provider:model
 const TOKEN_COSTS = {
   'claude:opus': 0.015,
-  'claude:sonnet': 0.003,
   'claude:haiku': 0.00025,
   'codex:gpt-5.4': 0.002,
   'grok:grok-4.20-0309-reasoning': 0.005

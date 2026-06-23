@@ -84,7 +84,7 @@ export interface RevisionStage {
    * Model configuration for this stage
    */
   modelConfig: {
-    model: 'opus' | 'sonnet';
+    model: 'opus';
     temperature: number;
   };
 

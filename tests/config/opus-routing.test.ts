@@ -41,4 +41,22 @@ describe('opus routing compatibility', () => {
     expect(config.tiers.MEDIUM.model).toBe('opus');
     expect(config.tiers.LOW.model).toBe('haiku');
   });
+
+  it('does not leave legacy sonnet references in runtime docs or configs', () => {
+    const files = [
+      ...['agents', 'skills', 'src', 'config', 'scripts'].flatMap(dir => listFiles(join(ROOT, dir))),
+      join(ROOT, 'README.md'),
+      join(ROOT, 'AGENTS.md'),
+      join(ROOT, 'package.json'),
+    ].filter(file => /\.(md|ts|mjs|json)$/.test(file));
+
+    const offenders = files.flatMap(file => {
+      const relative = file.slice(ROOT.length + 1).replace(/\\/g, '/');
+      const content = readFileSync(file, 'utf-8');
+      const matches = [...content.matchAll(/claude-sonnet|sonnet|Sonnet|4\.6/g)];
+      return matches.map(match => `${relative}: ${match[0]}`);
+    });
+
+    expect(offenders).toEqual([]);
+  });
 });

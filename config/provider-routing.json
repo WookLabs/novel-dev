@@ -4,7 +4,7 @@
   "providers": {
     "claude": {
       "label": "Claude (Anthropic)",
-      "tiers": ["opus", "sonnet", "haiku"]
+      "tiers": ["opus", "haiku"]
     },
     "codex": {
       "label": "Codex (GPT-5.4)",
@@ -48,7 +48,6 @@
   },
   "cost_weights": {
     "claude:opus": 1.0,
-    "claude:sonnet": 0.2,
     "claude:haiku": 0.05,
     "codex:gpt-5.4": 0.15,
     "grok:grok-4.20-0309-reasoning": 0.3

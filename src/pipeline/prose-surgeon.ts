@@ -25,7 +25,7 @@ const logger = createLogger('prose-surgeon');
  * Higher creativity tasks use Opus with higher temperature.
  * Mechanical tasks also use Opus for Claude model compatibility, with lower temperature.
  */
-export const MODEL_ROUTING: Record<DirectiveType, { model: 'opus' | 'sonnet'; temperature: number }> = {
+export const MODEL_ROUTING: Record<DirectiveType, { model: 'opus'; temperature: number }> = {
   'show-not-tell': { model: 'opus', temperature: 0.8 },
   'filter-word-removal': { model: 'opus', temperature: 0.4 },
   'sensory-enrichment': { model: 'opus', temperature: 0.7 },
@@ -139,7 +139,7 @@ export interface DirectiveExecutionRecord {
 export type SurgeonCallback = (
   prompt: string,
   directive: SurgicalDirective,
-  config: { model: 'opus' | 'sonnet'; temperature: number }
+  config: { model: 'opus'; temperature: number }
 ) => Promise<string>;
 
 // ============================================================================
@@ -575,6 +575,6 @@ export function shouldCircuitBreak(records: DirectiveExecutionRecord[]): boolean
 /**
  * Get model routing for a directive type
  */
-export function getModelRouting(type: DirectiveType): { model: 'opus' | 'sonnet'; temperature: number } {
+export function getModelRouting(type: DirectiveType): { model: 'opus'; temperature: number } {
   return MODEL_ROUTING[type];
 }

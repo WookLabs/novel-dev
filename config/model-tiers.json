@@ -8,7 +8,7 @@
     },
     "MEDIUM": {
       "model": "opus",
-      "description": "Compatibility route for balanced tasks; uses Opus instead of legacy Sonnet routing"
+      "description": "Compatibility route for balanced tasks; uses Opus instead of legacy balanced routing"
     },
     "LOW": {
       "model": "haiku",

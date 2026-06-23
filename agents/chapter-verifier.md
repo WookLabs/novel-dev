@@ -286,8 +286,8 @@ Recommendation: REVISE chapter and re-verify before proceeding.
 
 **Calls:**
 - `critic` agent (opus model, quality evaluation)
-- `beta-reader` agent (sonnet model, engagement analysis)
-- `genre-validator` agent (sonnet model, genre compliance)
+- `beta-reader` agent (opus model, engagement analysis)
+- `genre-validator` agent (opus model, genre compliance)
 
 **Output Used By:**
 - `novelist` to determine if revision needed

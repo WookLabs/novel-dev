@@ -137,7 +137,7 @@ function resolveCharacterModel(role) {
     case 'antagonist':
       return 'opus';      // 주요 캐릭터 — 높은 표현력 필요
     case 'supporting':
-      return 'opus';      // 조연 — Sonnet 고정 대신 Opus 사용
+      return 'opus';      // 조연 — legacy balanced route 대신 Opus 사용
     case 'minor':
     case 'cameo':
     default:

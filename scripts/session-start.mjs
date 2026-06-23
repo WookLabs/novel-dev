@@ -150,10 +150,10 @@ async function main() {
 | 작업 | 에이전트 | 모델 |
 |------|---------|------|
 | 본문 집필 | novelist | opus |
-| 퇴고/교정 | editor | sonnet |
+| 퇴고/교정 | editor | opus |
 | 품질 평가 | critic | opus |
 | 플롯 설계 | plot-architect | opus |
-| 세계관 관리 | lore-keeper | sonnet |
+| 세계관 관리 | lore-keeper | opus |
 | 맞춤법 검사 | proofreader | haiku |
 | 회차 요약 | summarizer | haiku |
 | 품질 분석 | quality-oracle | opus |

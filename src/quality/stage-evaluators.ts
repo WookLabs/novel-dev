@@ -64,7 +64,7 @@ import {
  * - Beat completion: Are story beats hitting their targets?
  * - Transition presence: Are scene transitions smooth?
  *
- * Model: sonnet, Temperature: 0.5, Threshold: 70
+ * Model: opus, Temperature: 0.5, Threshold: 70
  */
 export const DraftStageEvaluator: StageEvaluator = {
   name: 'draft',
@@ -647,7 +647,7 @@ export const StyleStageEvaluator: StageEvaluator = {
  * - Honorific consistency
  * - Punctuation
  *
- * Model: sonnet, Temperature: 0.2, Threshold: 95
+ * Model: opus, Temperature: 0.2, Threshold: 95
  */
 export const FinalStageEvaluator: StageEvaluator = {
   name: 'final',

@@ -33,7 +33,7 @@
 
 ## Purpose
 
-Contains prompt definitions for the specialized agents used in the novel writing workflow. After consolidation, the plugin has **22 functional agents**. Each agent is defined in a Markdown file with frontmatter specifying the agent name, description, Claude model tier (opus/sonnet/haiku), color, permissionMode, and a comprehensive prompt that defines their role, constraints, guidelines, and output format.
+Contains prompt definitions for the specialized agents used in the novel writing workflow. After consolidation, the plugin has **22 functional agents**. Each agent is defined in a Markdown file with frontmatter specifying the agent name, description, Claude model tier (opus/haiku), color, permissionMode, and a comprehensive prompt that defines their role, constraints, guidelines, and output format.
 
 Agents are invoked via the Task tool by commands and orchestration workflows. They operate with specific domain expertise while maintaining consistency with the overall project structure.
 
@@ -67,7 +67,7 @@ The following agents were merged and their stub files removed:
 ### Model Selection Rationale
 
 - **Opus (novelist, critic, plot-architect, quality-oracle, prose-surgeon, narrator, character-designer, chapter-merger)**: Complex creative tasks requiring deep reasoning, narrative understanding, and quality judgment
-- **Sonnet (editor, lore-keeper, beta-reader, genre-validator, chapter-verifier, consistency-verifier, engagement-optimizer, character-voice-analyzer, style-curator, team-orchestrator, arc-designer, extras)**: Balanced tasks needing both creativity and analytical skills, fast validation workflows
+- **Opus compatibility route (editor, lore-keeper, beta-reader, genre-validator, chapter-verifier, consistency-verifier, engagement-optimizer, character-voice-analyzer, style-curator, team-orchestrator, arc-designer, extras)**: Former balanced-tier tasks now route through Opus to avoid legacy model incompatibility
 - **Haiku (proofreader, summarizer)**: Fast, focused tasks with clear criteria and limited scope
 
 ### Agent Interaction Patterns
@@ -323,7 +323,7 @@ Failed validators provide:
 
 **Model Availability:**
 - Agents are hardcoded to specific Claude models
-- Requires Claude API access with opus/sonnet/haiku model tiers
+- Requires Claude API access with opus/haiku model tiers
 - Model selection cannot be overridden (intentional design for quality consistency)
 
 ## Extending Agents
