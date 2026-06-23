@@ -1,4 +1,4 @@
-<!-- Parent: ../AGENTS.md -->
+<!-- Parent: ../docs/repository-guide.md -->
 <!-- Generated: 2026-02-17 -->
 
 # teams

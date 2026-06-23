@@ -1,4 +1,4 @@
-<!-- Parent: ../AGENTS.md -->
+<!-- Parent: repository-guide.md -->
 <!-- Generated: 2026-01-29 -->
 <!-- Updated: v8.0 - novel-autopilot removed, structural AI patterns added -->
 

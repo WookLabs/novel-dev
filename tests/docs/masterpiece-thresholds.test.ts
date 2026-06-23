@@ -98,7 +98,7 @@ describe('masterpiece operating thresholds', () => {
   });
 
   it('keeps agent-facing chapter verifier guidance at 95 in root and write-all docs', () => {
-    const rootAgents = readText('AGENTS.md');
+    const rootAgents = readText('docs/repository-guide.md');
     const writeAllGuide = readText('skills/08-write-all/references/detailed-guide.md');
 
     expect(rootAgents).toContain('Quality gate at 95/100 points');

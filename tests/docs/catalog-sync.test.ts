@@ -23,8 +23,8 @@ describe('documentation catalogs', () => {
     .filter((name) => name.endsWith('.team.json'))
     .sort()
 
-  it('root AGENTS.md should advertise current catalog counts', () => {
-    const doc = readText('AGENTS.md')
+  it('docs/repository-guide.md should advertise current catalog counts', () => {
+    const doc = readText('docs/repository-guide.md')
 
     expect(doc).toContain(
       `featuring ${agentNames.length} specialized agents and ${skillNames.length} skills`,

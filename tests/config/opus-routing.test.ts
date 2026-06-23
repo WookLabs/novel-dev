@@ -46,7 +46,7 @@ describe('opus routing compatibility', () => {
     const files = [
       ...['agents', 'skills', 'src', 'config', 'scripts'].flatMap(dir => listFiles(join(ROOT, dir))),
       join(ROOT, 'README.md'),
-      join(ROOT, 'AGENTS.md'),
+      join(ROOT, 'docs', 'repository-guide.md'),
       join(ROOT, 'package.json'),
     ].filter(file => /\.(md|ts|mjs|json)$/.test(file));
 
