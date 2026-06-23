@@ -340,10 +340,11 @@ const engagementRecord = recordEngagementEvaluation({
 
 **권장 실행 명령:**
 ```spec
-Bash("node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {N} --version {chapterVersion} --quality-score {qualityScore} --threshold {threshold} --json")
+Bash("node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {N} --version {chapterVersion} --quality-score {qualityScore} --json")
 ```
 
 이 CLI는 내부적으로 `recordEngagementFromProject` → `analyzeChapter` 기반 `proseCraft` 원고 문장 품질 평가 → `evaluateChapterGate` → `applyChapterGateState` 순서로 실행하여 `meta/quality-trend.json`과 `meta/ralph-state.json`을 함께 갱신합니다.
+대작 모드의 기본 완료 기준은 95점입니다. 특별한 회귀 테스트가 아니라면 `--threshold`를 생략해 CLI 기본값 95를 사용하세요.
 `proseCraft.passed == false`이면 외부 품질 점수와 engagement가 통과해도 회차 완료로 처리하지 않습니다.
 
 ```spec
@@ -352,7 +353,7 @@ const gateDecision = evaluateChapterGate({
   attemptNumber: retryCount + 1,
   maxRetries: 3,
   lastScore: qualityScore,
-  threshold: N === 1 ? 90 : 85,
+  threshold: 95,
   engagement: {
     passed: engagement.passed,
     score: engagement.score,

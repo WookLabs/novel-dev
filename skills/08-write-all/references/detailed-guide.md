@@ -68,8 +68,7 @@ The system uses three independent validators for each chapter:
 **Total**: 100 points
 
 **Threshold**:
-- Regular chapters: ≥85 points
-- Chapter 1: ≥90 points (higher bar for reader retention)
+- All chapters: ≥95 points
 
 **Output Format**:
 ```json
@@ -277,9 +276,9 @@ Options:
     → Opens chapter in editor
     → Resume when ready
 
-(B) Relax quality threshold
-    → Lower critic threshold to 70
-    → Continue with current version
+(B) Pause for structural rework
+    → Keep the 95 quality threshold
+    → Revise plot/scene causes before retrying
 
 (C) Skip chapter with placeholder
     → Marks chapter as "needs revision"
@@ -354,7 +353,7 @@ All progress saved to `meta/ralph-state.json`:
   "can_resume": true,
   "last_checkpoint": "2026-01-21T10:30:00Z",
   "started_at": "2026-01-21T09:00:00Z",
-  "quality_threshold": 85,
+  "quality_threshold": 95,
   "validators": ["critic", "beta-reader", "genre-validator"],
   "circuit_breaker": {
     "failure_count": 2,
@@ -741,7 +740,7 @@ v6.0.0부터 성인 콘텐츠는 2-Pass 파이프라인으로 처리합니다:
 3. summarizer로 요약 생성 (Claude haiku)
 4. ralph-state.json 상태 업데이트
 5. Multi-Validator 품질 게이트 (Claude가 수행)
-   - critic >= 85점
+   - validator consensus >= 95점
    - beta-reader >= 80점
    - genre-validator >= 95점
 6. 미달 시 editor(Claude)로 퇴고 -> 재검증
@@ -769,7 +768,7 @@ try {
 
   // Fallback: Use legacy scoring
   const fallbackScore = await legacyEvaluate(chapter);
-  return { score: fallbackScore, passed: fallbackScore >= 85 };
+  return { score: fallbackScore, passed: fallbackScore >= 95 };
 }
 ```
 

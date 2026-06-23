@@ -205,7 +205,7 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 - **Repeated Engagement Directives**: `engagement.recurringEngagementDirectives`를 반복 실패 패턴으로 승격
 - **Structural Engagement Escalation**: `recurringEngagementDirectives`가 3회 이상 반복되면 단순 재시도 대신 **구조적 재검토**로 `USER_INTERVENTION` 처리하고, `plot/plot-strategy.json`과 `chapters/chapter_XXX.json`을 함께 수정
 - **Unified Gate State**: `evaluateChapterGate`와 `applyChapterGateDecision`으로 통과/재시도/사용자 개입을 `meta/ralph-state.json`에 기록
-- **Quality Threshold**: 85점 (일반) / 90점 (1화)
+- **Quality Threshold**: 95점 (전체 회차 기본 완료 기준)
 - **Circuit Breaker**: 동일 실패 3회 시 사용자 개입
 
 ### Quality Gates
@@ -350,7 +350,7 @@ for act in acts:
         engagement = evaluateEngagementContract(design, plot, chapter.reader_experience, manuscript="chapters/chapter_XXX.md")
         engagementRecord = recordEngagementEvaluation(projectPath, projectId, chapter, engagement)
         Bash("node dist/cli/record-engagement.js --project {projectPath} --chapter {chapter} --version {chapterVersion} --json")
-        Bash("node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {chapter} --version {chapterVersion} --quality-score {validatorConsensusScore} --threshold {threshold} --json")
+        Bash("node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {chapter} --version {chapterVersion} --quality-score {validatorConsensusScore} --json")
 
         if engagementRecord.regression.alertLevel in ["warning", "critical"]:
             diagnostic.add("독자 몰입 추세 회귀", engagementRecord.regression.alertMessage)
@@ -699,7 +699,7 @@ for act in acts:
             attemptNumber: retry_count + 1,
             maxRetries: 3,
             lastScore: validator_consensus_score(results),
-            threshold: chapter == 1 ? 90 : 85,
+            threshold: 95,
             engagement: {
                 passed: engagement.passed,
                 score: engagement.score,
@@ -724,7 +724,7 @@ for act in acts:
             diagnostic = generate_diagnostic(results, gateDecision.blockingReasons)
             /act-review {chapter} with diagnostic
             results = parallel_validate(...)
-            Bash("node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {chapter} --version {chapterVersion} --quality-score {validatorConsensusScore} --threshold {threshold} --json")
+            Bash("node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {chapter} --version {chapterVersion} --quality-score {validatorConsensusScore} --json")
             gateDecision = evaluateChapterGate(...)
 
             if gateDecision.status == "PASS":
@@ -781,7 +781,7 @@ if failed_chapters is empty and last_gate.status == "PASS" and all chapters are 
   "can_resume": true,
   "last_checkpoint": "2026-01-21T10:30:00Z",
   "started_at": "2026-01-21T09:00:00Z",
-  "quality_threshold": 85,
+  "quality_threshold": 95,
   "validators": ["critic", "beta-reader", "genre-validator"],
   "circuit_breaker": {
     "failure_count": 0,
@@ -928,13 +928,13 @@ if (engagement.recurringEngagementDirectives.length > 0) {
 }
 
 // 4. 통합 게이트 판정 및 상태 반영
-// Production path: node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {chapter} --version {chapterVersion} --quality-score {validatorConsensusScore} --threshold {threshold} --json
+// Production path: node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {chapter} --version {chapterVersion} --quality-score {validatorConsensusScore} --json
 const gateDecision = evaluateChapterGate({
   chapterNumber: chapter,
   attemptNumber: retryCount + 1,
   maxRetries: 3,
   lastScore: validatorConsensusScore([criticResult, betaResult, genreResult]),
-  threshold: chapter === 1 ? 90 : 85,
+  threshold: 95,
   engagement: {
     passed: engagement.passed,
     score: engagement.score,

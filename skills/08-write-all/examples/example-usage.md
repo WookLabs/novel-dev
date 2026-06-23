@@ -18,7 +18,7 @@ Style gate: PASS (reviews/style-gate-report.json)
 
 [RALPH LOOP ACTIVATED]
 Target: 50 chapters (3 acts)
-Quality threshold: 85 (Masterpiece Mode)
+Quality threshold: 95 (Masterpiece Mode)
 Validators: critic, beta-reader, genre-validator
 
 Starting from Chapter 1...
@@ -33,8 +33,8 @@ Writing Chapter 1...
 ✓ Written: 5,124 characters
 
 Multi-validator evaluation...
-├─ critic: 92/100 ✓ (threshold: 95)
-├─ beta-reader: 85/100 ✓ (threshold: 80)
+├─ critic: 96/100 ✓ (threshold: 95)
+├─ beta-reader: 88/100 ✓ (threshold: 80)
 └─ genre-validator: 96/100 ✓ (threshold: 95)
 
 All validators passed!
@@ -46,9 +46,9 @@ Writing Chapter 2...
 ✓ Written: 5,456 characters
 
 Multi-validator evaluation...
-├─ critic: 88/100 ✓ (threshold: 85)
-├─ beta-reader: 82/100 ✓ (threshold: 80)
-└─ genre-validator: 93/100 ✓ (threshold: 95)
+├─ critic: 95/100 ✓ (threshold: 95)
+├─ beta-reader: 86/100 ✓ (threshold: 80)
+└─ genre-validator: 96/100 ✓ (threshold: 95)
 
 All validators passed!
 <promise>CHAPTER_2_DONE</promise>
@@ -156,7 +156,7 @@ Restarting from Chapter 1...
 
 ### Chapter 1 High Standards
 
-Chapter 1 uses elevated thresholds (90/80/95):
+Chapter 1 uses the same 95-point completion threshold, with extra attention to reader retention:
 
 ```
 [Chapter 1/50] ━━━━━━━━━━━━━━━━━━━━━━ 2%
@@ -170,7 +170,7 @@ Multi-validator evaluation...
 └─ genre-validator: 96/100 ✓ (threshold: 95)
 
 Chapter 1 validation FAILED
-Reason: Critic score below Chapter 1 threshold (90)
+Reason: Critic score below chapter completion threshold (95)
 
 Generating diagnostic...
 
@@ -189,7 +189,7 @@ Calling editor with diagnostic...
 ✓ Revised: 5,089 characters
 
 Re-validating...
-├─ critic: 92/100 ✓ (threshold: 95)
+├─ critic: 95/100 ✓ (threshold: 95)
 ├─ beta-reader: 87/100 ✓ (threshold: 80)
 └─ genre-validator: 97/100 ✓ (threshold: 95)
 
@@ -199,7 +199,7 @@ All validators passed!
 
 ### Standard Chapter Quality Gate
 
-Regular chapters use 85/75/90 thresholds:
+Regular chapters use the same 95-point completion threshold:
 
 ```
 [Chapter 5/50] ━━━━━━━━━━━━━━━━━━━━━━ 10%
@@ -210,7 +210,7 @@ Switching to Grok API...
 ✓ Written: 5,678 characters
 
 Multi-validator evaluation...
-├─ critic: 72/100 ✗ (threshold: 85)
+├─ critic: 72/100 ✗ (threshold: 95)
 ├─ beta-reader: 68/100 ✗ (threshold: 80)
 └─ genre-validator: 91/100 ✓ (threshold: 95)
 
@@ -296,7 +296,7 @@ Chapter 10 has failed validation 3 times with persistent issue:
 
 Progress so far:
 - Critic score improving slowly (78→79→80)
-- But still below threshold (85)
+- But still below threshold (95)
 - Same fundamental issue each time
 
 Options:
@@ -306,10 +306,10 @@ Options:
     → Ralph loop waits for your save
     → Resume with '/write-all --resume'
 
-(B) Relax quality threshold
-    → Lower critic threshold to 70 for this chapter
-    → Current version (80/100) would pass
-    → Warning: May affect overall novel quality
+(B) Structural rework
+    → Keep the 95 threshold
+    → Rebuild Scene 3 goal, obstacle, choice cost, and consequence
+    → Rerun the chapter gate after revision
 
 (C) Skip chapter with placeholder
     → Marks Chapter 10 as "needs revision"
@@ -360,9 +360,9 @@ Detecting changes since pause...
 ✓ chapter_010.md modified (manual edit detected)
 
 Re-validating Chapter 10...
-├─ critic: 88/100 ✓ (threshold: 85)
-├─ beta-reader: 81/100 ✓ (threshold: 80)
-└─ genre-validator: 94/100 ✓ (threshold: 95)
+├─ critic: 95/100 ✓ (threshold: 95)
+├─ beta-reader: 86/100 ✓ (threshold: 80)
+└─ genre-validator: 96/100 ✓ (threshold: 95)
 
 Manual edit successful!
 All validators passed!
@@ -372,27 +372,28 @@ All validators passed!
 Continuing to Chapter 11...
 ```
 
-### User Chooses Option B (Relax Threshold)
+### User Chooses Option B (Structural Rework)
 
 ```
-You chose: (B) Relax quality threshold
+You chose: (B) Structural rework
 
-Applying temporary threshold adjustment:
-- critic: 85 → 70 (for Chapter 10 only)
-- beta-reader: 80 (unchanged)
-- genre-validator: 95 (unchanged)
+Keeping threshold at 95.
+Rebuilding Scene 3 around the missing story engine:
+- visible goal
+- opposing obstacle
+- irreversible choice cost
+- changed consequence
 
-Re-evaluating with adjusted threshold...
-├─ critic: 80/100 ✓ (threshold: 70)
-├─ beta-reader: 78/100 ✓ (threshold: 80)
-└─ genre-validator: 93/100 ✓ (threshold: 95)
+Re-evaluating after structural rewrite...
+├─ critic: 95/100 ✓ (threshold: 95)
+├─ beta-reader: 86/100 ✓ (threshold: 80)
+└─ genre-validator: 96/100 ✓ (threshold: 95)
 
-Chapter 10 passed with relaxed threshold.
-⚠️ Quality note: Below standard threshold (80 vs 85)
+Chapter 10 passed at the standard 95 threshold.
 
 <promise>CHAPTER_10_DONE</promise>
 
-Reverting to standard thresholds for Chapter 11...
+Continuing with the standard 95 threshold for Chapter 11...
 ```
 
 ## Act Completion

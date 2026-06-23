@@ -188,6 +188,53 @@ describe('chapter gate CLI', () => {
     });
   });
 
+  it('uses a 95 default chapter gate threshold when none is supplied', async () => {
+    const workDir = await mkdtemp(join(tmpdir(), 'chapter-gate-cli-default-95-'));
+    tempDirs.push(workDir);
+
+    const projectDir = join(workDir, 'sample-project');
+    await cp(sampleProject, projectDir, { recursive: true });
+    await seedRalphState(projectDir);
+    const cliPath = await bundleCli(workDir);
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        cliPath,
+        '--project',
+        projectDir,
+        '--chapter',
+        '1',
+        '--version',
+        '1',
+        '--quality-score',
+        '94',
+        '--json',
+      ],
+      { encoding: 'utf8' }
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const output = JSON.parse(result.stdout);
+    expect(output.gate).toMatchObject({
+      status: 'RETRY',
+      passed: false,
+      shouldRetry: true,
+      score: 94,
+    });
+    expect(output.gate.blockingReasons).toEqual(
+      expect.arrayContaining([
+        '품질 점수 미달: 94/95',
+      ])
+    );
+
+    const state = await readJson(join(projectDir, 'meta', 'ralph-state.json'));
+    expect(state.completed_chapters).toEqual([]);
+    expect(state.failed_chapters).toEqual([1]);
+    expect(state.current_chapter).toBe(1);
+    expect(state.retry_count).toBe(1);
+  });
+
   it('blocks completion when existing reader panel calibration rejects the automated pass', async () => {
     const workDir = await mkdtemp(join(tmpdir(), 'chapter-gate-cli-reader-panel-fail-'));
     tempDirs.push(workDir);

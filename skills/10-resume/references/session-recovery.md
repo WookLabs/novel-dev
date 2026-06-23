@@ -32,7 +32,7 @@ write-all Ralph Loop 세션이 중단되었을 때 안전하게 복구하는 방
 |------|------|------|
 | `quality_score` | number | 현재 품질 점수 |
 | `last_quality_score` | number | 마지막 평가 품질 점수 |
-| `quality_threshold` | number | 품질 기준 (기본 85) |
+| `quality_threshold` | number | 품질 기준 (기본 95) |
 | `validators` | string[] | 사용 중인 검증자 목록 |
 | `last_validation` | object | 마지막 검증 결과 (각 validator 점수) |
 

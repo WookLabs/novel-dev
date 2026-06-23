@@ -317,7 +317,7 @@ export async function applyChapterGateFromProject(
       chapterNumber: args.chapterNumber,
       attemptNumber,
       maxRetries: args.maxRetries,
-      threshold: args.threshold ?? defaultThreshold(args.chapterNumber),
+      threshold: args.threshold ?? defaultThreshold(),
       lastScore: makeQualityScore(args.qualityScore),
       engagement: {
         passed: engagement.passed,
@@ -840,8 +840,8 @@ function assertAttemptMatchesState(
   }
 }
 
-function defaultThreshold(chapterNumber: number): number {
-  return chapterNumber === 1 ? 90 : 85;
+function defaultThreshold(): number {
+  return 95;
 }
 
 function padChapterNumber(chapterNumber: number): string {
