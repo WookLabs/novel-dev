@@ -124,11 +124,6 @@ const ALLOWED_AGENTS = new Set([
   'arc-designer.md',
 ]);
 
-// Files to ignore (not agents)
-const IGNORE_FILES = new Set([
-  'AGENTS.md',        // Documentation file
-]);
-
 let hasErrors = false;
 
 function error(msg) {
@@ -148,7 +143,7 @@ if (!existsSync(agentsDir)) {
 }
 
 const agentFiles = readdirSync(agentsDir)
-  .filter(f => f.endsWith('.md') && !IGNORE_FILES.has(f));
+  .filter(f => f.endsWith('.md'));
 
 console.log(`Found ${agentFiles.length} agent files\n`);
 

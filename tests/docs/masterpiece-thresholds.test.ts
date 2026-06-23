@@ -149,7 +149,7 @@ describe('masterpiece operating thresholds', () => {
   });
 
   it('keeps core chapter loop skill docs from offering sub-95 gates or legacy relaxation', () => {
-    const agentGuide = readText('agents/AGENTS.md');
+    const agentGuide = readText('docs/agent-system.md');
     const writeAllSkill = readText('skills/08-write-all/SKILL.md');
     const verifyChapterSkill = readText('skills/verify-chapter/SKILL.md');
     const verifyDesignSkill = readText('skills/verify-design/SKILL.md');

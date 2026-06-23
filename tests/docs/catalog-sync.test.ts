@@ -42,8 +42,8 @@ describe('documentation catalogs', () => {
     expect(doc).toContain(`## 에이전트 (${agentNames.length}개)`)
   })
 
-  it('agents/AGENTS.md should list every agent file', () => {
-    const doc = readText('agents/AGENTS.md')
+  it('docs/agent-system.md should list every agent file', () => {
+    const doc = readText('docs/agent-system.md')
 
     expect(doc).toContain(`**${agentNames.length} functional agents**`)
     for (const agentName of agentNames) {
