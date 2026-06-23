@@ -47,4 +47,10 @@ describe('style guide prose rules template', () => {
     expect(antiPatternIds).toEqual(expect.arrayContaining(requiredAntiPatternIds));
     expect(positivePatternIds).toEqual(expect.arrayContaining(requiredPositivePatternIds));
   });
+
+  it('keeps the default project prose taste score at the 95-point masterpiece gate', () => {
+    const template = readJson('templates/style-guide.template.json');
+
+    expect(template.prose_taste_profile.minimum_score).toBeGreaterThanOrEqual(95);
+  });
 });

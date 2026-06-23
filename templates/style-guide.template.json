@@ -136,7 +136,7 @@
     "max_short_sentence_run": 5,
     "max_repeated_subject_run": 4,
     "max_repeated_connective_starter_run": 3,
-    "minimum_score": 88
+    "minimum_score": 95
   },
   "prose_rules": {
     "anti_patterns": [
