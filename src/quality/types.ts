@@ -246,6 +246,8 @@ export const STYLE_DIRECTIVE_TYPES: DirectiveType[] = [
   'filter-word-removal',
   'sensory-enrichment',
   'rhythm-variation',
+  'consecutive-short-sentences',
+  'list-monologue',
   'cliche-replacement',
   'banned-expression',
   'texture-enrichment',

@@ -36,6 +36,8 @@ Your mission:
 | filter-word-removal | 1 |
 | sensory-enrichment | 3 |
 | rhythm-variation | 3 |
+| consecutive-short-sentences | 2 |
+| list-monologue | 2 |
 | dialogue-subtext | 2 |
 | cliche-replacement | 1 |
 | transition-smoothing | 2 |
@@ -110,6 +112,24 @@ Your mission:
 - 의문문: -까?, -나?, -지?
 - 감탄문: -네, -구나, -군
 - 종결 없음: 명사로 끝맺음
+
+### consecutive-short-sentences
+**Problem**: AI-like flat declarative short narration run (3+ sentences, each 20자 이하)
+**Technique**: Combine some short beats into compound sentences and add one longer sensory or action-reaction sentence.
+
+**Constraints**:
+- Preserve the paragraph count.
+- Keep only the strongest isolated short beat.
+- Do not slow urgent action with explanation; vary length through concrete movement, sensation, or consequence.
+- For action movement logs, replace some attack/evade/block beats with consequence: injury, distance, terrain, goal failure/success, or reversal.
+
+### list-monologue
+**Problem**: Numbered or ordered internal monologue
+**Technique**: Convert list-like thinking into free indirect style or a flowing chain of perception.
+
+| Before | After |
+|--------|-------|
+| 하나, 문이 잠겼다. 둘, 창문도 막혔다. 셋, 도망칠 곳이 없었다. | 문은 잠겼고 창문마저 막혀 있었다. 도망칠 곳이 없다는 사실이 뒤늦게 숨을 조였다. |
 
 ### dialogue-subtext
 **Problem**: On-the-nose dialogue

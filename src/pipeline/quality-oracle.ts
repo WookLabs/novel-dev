@@ -97,6 +97,16 @@ export const MIN_SENSES_PER_500_CHARS = 3;
 export const MAX_CONSECUTIVE_SAME_ENDINGS = 5;
 
 /**
+ * Maximum consecutive short narration sentences before flagging AI-like cadence.
+ */
+export const MAX_CONSECUTIVE_SHORT_SENTENCES = 3;
+
+/**
+ * Narration sentence length treated as too short when repeated.
+ */
+export const MAX_SHORT_SENTENCE_CHARS = 20;
+
+/**
  * Sentence ending patterns in Korean
  * Note: No 'g' flag - we test each sentence independently
  */
@@ -109,6 +119,60 @@ export const SENTENCE_ENDING_PATTERNS = [
   { pattern: /나\?$/, name: '-나?' },
   { pattern: /까\?$/, name: '-까?' },
 ];
+
+interface SentencePosition {
+  text: string;
+  start: number;
+  end: number;
+}
+
+function getDialogueRanges(content: string): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  const quotePattern = /"[^"]*"|“[^”]*”|「[^」]*」|『[^』]*』/gu;
+  let match: RegExpExecArray | null;
+
+  while ((match = quotePattern.exec(content)) !== null) {
+    ranges.push({ start: match.index, end: match.index + match[0].length });
+  }
+
+  return ranges;
+}
+
+function isInRanges(position: number, ranges: Array<{ start: number; end: number }>): boolean {
+  return ranges.some(range => position >= range.start && position <= range.end);
+}
+
+function splitSentencesWithPositions(content: string): SentencePosition[] {
+  const results: SentencePosition[] = [];
+  const sentencePattern = /[^.!?。]+[.!?。]+/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = sentencePattern.exec(content)) !== null) {
+    const raw = match[0];
+    const leadingWhitespace = raw.match(/^\s*/)?.[0].length ?? 0;
+    const trailingWhitespace = raw.match(/\s*$/)?.[0].length ?? 0;
+    const text = raw.trim();
+
+    if (text.length > 0) {
+      results.push({
+        text,
+        start: match.index + leadingWhitespace,
+        end: match.index + raw.length - trailingWhitespace,
+      });
+    }
+  }
+
+  if (results.length === 0 && content.trim().length > 0) {
+    const start = content.search(/\S/);
+    results.push({
+      text: content.trim(),
+      start: start === -1 ? 0 : start,
+      end: content.length,
+    });
+  }
+
+  return results;
+}
 
 // ============================================================================
 // Dry Transition / Functional Narration Patterns
@@ -262,24 +326,13 @@ export function countFilterWords(content: string): Array<{
   inDialogue: boolean;
 }> {
   const results: Array<{ word: string; position: number; inDialogue: boolean }> = [];
-
-  // Simple dialogue detection: text within quotes
-  const dialogueRanges: Array<{ start: number; end: number }> = [];
-  const quotePattern = /["""]([^"""]*)["""]/g;
-  let match;
-  while ((match = quotePattern.exec(content)) !== null) {
-    dialogueRanges.push({ start: match.index, end: match.index + match[0].length });
-  }
-
-  const isInDialogue = (pos: number): boolean => {
-    return dialogueRanges.some(range => pos >= range.start && pos <= range.end);
-  };
+  const dialogueRanges = getDialogueRanges(content);
 
   for (const filterWord of FILTER_WORDS) {
     let searchPos = 0;
     let idx: number;
     while ((idx = content.indexOf(filterWord, searchPos)) !== -1) {
-      const inDialogue = isInDialogue(idx);
+      const inDialogue = isInRanges(idx, dialogueRanges);
       results.push({
         word: filterWord,
         position: idx,
@@ -404,17 +457,7 @@ export function findRhythmIssues(content: string): Array<{
     endPosition: number;
   }> = [];
 
-  // Split into sentences
-  const sentences = content.split(/(?<=[.!?。])\s*/);
-  const sentencePositions: Array<{ text: string; start: number }> = [];
-  let currentPos = 0;
-
-  for (const sentence of sentences) {
-    if (sentence.trim()) {
-      sentencePositions.push({ text: sentence, start: currentPos });
-      currentPos += sentence.length + 1; // +1 for separator
-    }
-  }
+  const sentencePositions = splitSentencesWithPositions(content);
 
   // Detect ending patterns for each sentence
   const getEnding = (text: string): string | null => {
@@ -464,6 +507,76 @@ export function findRhythmIssues(content: string): Array<{
   }
 
   return issues;
+}
+
+/**
+ * Find AI-like runs of short narration sentences.
+ *
+ * Repeated short narration beats can flatten rhythm into mechanical AI cadence.
+ */
+export function findShortSentenceRuns(content: string): Array<{
+  count: number;
+  startPosition: number;
+  endPosition: number;
+  sentences: string[];
+}> {
+  const issues: Array<{
+    count: number;
+    startPosition: number;
+    endPosition: number;
+    sentences: string[];
+  }> = [];
+  const dialogueRanges = getDialogueRanges(content);
+  const sentences = splitSentencesWithPositions(content);
+
+  const isFlatDeclarativeShortNarration = (sentence: SentencePosition): boolean => {
+    if (isInRanges(sentence.start, dialogueRanges)) {
+      return false;
+    }
+
+    const trimmed = sentence.text.trim();
+    if (/^["“「『]/.test(trimmed)) {
+      return false;
+    }
+
+    const length = trimmed.replace(/\s+/g, '').length;
+    return length > 0 && length <= MAX_SHORT_SENTENCE_CHARS && /다\.$/.test(trimmed);
+  };
+
+  let currentRun: SentencePosition[] = [];
+
+  const flushRun = (): void => {
+    if (currentRun.length >= MAX_CONSECUTIVE_SHORT_SENTENCES) {
+      issues.push({
+        count: currentRun.length,
+        startPosition: currentRun[0].start,
+        endPosition: currentRun[currentRun.length - 1].end,
+        sentences: currentRun.map(sentence => sentence.text),
+      });
+    }
+    currentRun = [];
+  };
+
+  for (const sentence of sentences) {
+    if (isFlatDeclarativeShortNarration(sentence)) {
+      currentRun.push(sentence);
+    } else {
+      flushRun();
+    }
+  }
+
+  flushRun();
+  return issues;
+}
+
+function isActionChoreographyRun(sentences: string[]): boolean {
+  const actionActorPattern = /(검|칼|창|총|방패|주먹|발차기|상대|괴물|적|추격자|마법|활|도끼)/u;
+  const actionVerbPattern = /(휘둘렀|베었|찔렀|때렸|날렸|쐈|막았|피했|굴렀|돌진했|물러섰|걷어찼|붙잡|밀쳤|던졌)/u;
+  const actionLikeCount = sentences.filter(sentence =>
+    actionActorPattern.test(sentence) || actionVerbPattern.test(sentence)
+  ).length;
+
+  return actionLikeCount >= Math.min(sentences.length, MAX_CONSECUTIVE_SHORT_SENTENCES);
 }
 
 // ============================================================================
@@ -724,9 +837,14 @@ export function analyzeChapter(
 
   // 3. Rhythm analysis
   const rhythmIssues = findRhythmIssues(content);
-  const rhythmProblems: string[] = rhythmIssues.map(
-    issue => `${issue.count}회 연속 "${issue.pattern}" 종결`
+  const shortSentenceRuns = findShortSentenceRuns(content);
+  const shortSentenceProblems: string[] = shortSentenceRuns.map(
+    issue => `${issue.count}문장 연속 ${MAX_SHORT_SENTENCE_CHARS}자 이하 평서형 단문`
   );
+  const rhythmProblems: string[] = [
+    ...rhythmIssues.map(issue => `${issue.count}회 연속 "${issue.pattern}" 종결`),
+    ...shortSentenceProblems,
+  ];
 
   // Create rhythm directives (up to 1)
   for (const issue of rhythmIssues.slice(0, 1)) {
@@ -749,6 +867,34 @@ export function analyzeChapter(
       currentText.slice(0, 500),
       `문장 종결 패턴을 다양화하세요. 의문문, 감탄문, 다양한 종결어미를 사용하세요.`,
       3
+    ));
+  }
+
+  for (const issue of shortSentenceRuns.slice(0, 1)) {
+    if (directives.length >= MAX_DIRECTIVES_PER_PASS) break;
+
+    const startPara = findParagraphForPosition(paragraphs, issue.startPosition);
+    const endPara = findParagraphForPosition(paragraphs, issue.endPosition);
+    const targetParas = paragraphs.slice(startPara, endPara + 1);
+    const currentText = targetParas.map(p => p.text).join('\n\n');
+    const actionChoreographyRun = isActionChoreographyRun(issue.sentences);
+
+    directives.push(createDirective(
+      'consecutive-short-sentences',
+      4,
+      {
+        sceneNumber: Math.min(Math.ceil((startPara + 1) / Math.max(1, paragraphs.length / sceneCount)), sceneCount),
+        paragraphStart: startPara,
+        paragraphEnd: Math.min(endPara, startPara + 1),
+      },
+      actionChoreographyRun
+        ? `${issue.count}개의 짧은 액션 동작 로그형 내레이션 문장이 연속됨`
+        : `${issue.count}개의 짧은 내레이션 문장이 연속됨`,
+      currentText.slice(0, 500),
+      actionChoreographyRun
+        ? '액션 동작 일부를 부상, 거리 변화, 목표 실패/확보, 전세 변화가 드러나는 문장으로 묶고, 한두 개의 단문만 타격점에 남기세요.'
+        : '짧은 문장 일부를 복문으로 결합하고, 긴 호흡의 감각 묘사나 행동-반응 연결문을 섞어 리듬을 변주하세요.',
+      2
     ));
   }
 
@@ -920,7 +1066,10 @@ export function analyzeChapter(
   }
 
   // 6. Calculate scores
-  const proseScore = Math.max(0, 100 - (filterWords.length * 10) - (rhythmIssues.length * 15));
+  const proseScore = Math.max(
+    0,
+    100 - (filterWords.length * 10) - (rhythmIssues.length * 15) - (shortSentenceRuns.length * 15)
+  );
   const proseIssues = [...filterWordIssues, ...rhythmProblems];
   const characterVoiceScore = 100;
   const transitionIssues = [
@@ -950,7 +1099,7 @@ export function analyzeChapter(
       threshold: MAX_FILTER_WORDS_FOR_PASS,
     },
     rhythmVariation: {
-      score: Math.max(0, 100 - rhythmIssues.length * 20),
+      score: Math.max(0, 100 - (rhythmIssues.length * 20) - (shortSentenceRuns.length * 20)),
       repetitionInstances: rhythmProblems,
     },
     characterVoice: {
@@ -1013,6 +1162,7 @@ export function analyzeChapter(
     avgScore >= MASTERPIECE_PASS_SCORE &&
     filterWords.length <= MAX_FILTER_WORDS_FOR_PASS &&
     rhythmIssues.length === 0 &&
+    shortSentenceRuns.length === 0 &&
     sensory.adequate &&
     transitionIssues.length === 0 &&
     honorificPasses &&
@@ -1049,10 +1199,10 @@ function generateReaderExperience(assessment: QualityAssessment, verdict: 'PASS'
     weaknesses.push('필터 워드가 남아 감정 전달이 약해집니다');
   }
 
-  if (assessment.rhythmVariation.score >= 80) {
+  if (assessment.rhythmVariation.repetitionInstances.length === 0 && assessment.rhythmVariation.score >= 80) {
     strengths.push('문장 리듬이 다양하여 읽는 맛이 있습니다');
-  } else if (assessment.rhythmVariation.score < 60) {
-    weaknesses.push('문장 종결이 단조로워 읽는 흐름이 끊깁니다');
+  } else if (assessment.rhythmVariation.repetitionInstances.length > 0 || assessment.rhythmVariation.score < 60) {
+    weaknesses.push('문장 리듬이 규칙적으로 반복되어 읽는 흐름이 단조롭습니다');
   }
 
   if (verdict === 'PASS') {

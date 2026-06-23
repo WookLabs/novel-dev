@@ -61,6 +61,8 @@ describe('Prose Surgeon Constants', () => {
       'transition-smoothing',
       'voice-consistency',
       'proofreading',
+      'consecutive-short-sentences',
+      'list-monologue',
     ];
 
     for (const type of directiveTypes) {
@@ -82,6 +84,8 @@ describe('Prose Surgeon Constants', () => {
       'transition-smoothing',
       'voice-consistency',
       'proofreading',
+      'consecutive-short-sentences',
+      'list-monologue',
     ];
 
     for (const type of directiveTypes) {

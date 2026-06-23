@@ -7,6 +7,8 @@ import {
   MASTERPIECE_PASS_SCORE,
   MIN_SENSES_PER_500_CHARS,
   MAX_CONSECUTIVE_SAME_ENDINGS,
+  MAX_CONSECUTIVE_SHORT_SENTENCES,
+  MAX_SHORT_SENTENCE_CHARS,
   // Functions
   resetDirectiveCounter,
   generateDirectiveId,
@@ -15,6 +17,7 @@ import {
   countUniqueSenses,
   assessSensoryGrounding,
   findRhythmIssues,
+  findShortSentenceRuns,
   getParagraphs,
   findParagraphForPosition,
   createDirective,
@@ -56,6 +59,8 @@ describe('Quality Oracle Constants', () => {
     expect(MASTERPIECE_PASS_SCORE).toBe(95);
     expect(MIN_SENSES_PER_500_CHARS).toBe(3);
     expect(MAX_CONSECUTIVE_SAME_ENDINGS).toBe(5);
+    expect(MAX_CONSECUTIVE_SHORT_SENTENCES).toBe(3);
+    expect(MAX_SHORT_SENTENCE_CHARS).toBe(20);
   });
 });
 
@@ -280,6 +285,35 @@ describe('findRhythmIssues', () => {
   });
 });
 
+describe('findShortSentenceRuns', () => {
+  it('should detect three consecutive short narration sentences', () => {
+    const issues = findShortSentenceRuns('문이 열렸다. 숨이 멎었다. 발이 굳었다.');
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0].count).toBe(3);
+  });
+
+  it('should ignore short dialogue sentences', () => {
+    const issues = findShortSentenceRuns('"문이 열렸다. 숨이 멎었다. 발이 굳었다."');
+
+    expect(issues).toHaveLength(0);
+  });
+
+  it('should stop a short sentence run at a longer sentence', () => {
+    const issues = findShortSentenceRuns(
+      '문이 열렸다. 숨이 멎었다. 복도 끝에서 젖은 냄새와 금속성 종소리가 한꺼번에 밀려왔다. 발이 굳었다.'
+    );
+
+    expect(issues).toHaveLength(0);
+  });
+
+  it('should allow varied short sensory sentences', () => {
+    const issues = findShortSentenceRuns('빛이 쏟아졌다. 소리가 들렸나? 차갑네. 향긋하지. 달다!');
+
+    expect(issues).toHaveLength(0);
+  });
+});
+
 // ============================================================================
 // Paragraph Utilities Tests
 // ============================================================================
@@ -451,6 +485,27 @@ describe('analyzeChapter', () => {
     expect(result.assessment.proseQuality.score).toBeLessThan(MASTERPIECE_PASS_SCORE);
     expect(result.verdict).toBe('REVISE');
     expect(result.directives.map(directive => directive.type)).toContain('filter-word-removal');
+  });
+
+  it('should reject AI-like runs of short narration sentences even when sensory grounding is adequate', () => {
+    const content = '빛이 꺼졌다. ' +
+      '문이 열렸다. ' +
+      '숨이 멎었다. ' +
+      '금속성 종소리가 복도 끝에서 굴러왔는가? ' +
+      '차가운 먼지가 혀끝에 붙었네. ' +
+      '젖은 냄새가 코끝을 찔렀지!';
+
+    const result = analyzeChapter(content, 1, {
+      assessKoreanTexture: false,
+      detectBannedExpressions: false,
+    });
+
+    expect(result.assessment.sensoryGrounding.senseCount).toBeGreaterThanOrEqual(
+      result.assessment.sensoryGrounding.required
+    );
+    expect(result.verdict).toBe('REVISE');
+    expect(result.directives.map(directive => directive.type)).toContain('consecutive-short-sentences');
+    expect(result.assessment.rhythmVariation.repetitionInstances).toContain('3문장 연속 20자 이하 평서형 단문');
   });
 
   it('should return REVISE with directives for problematic content', () => {

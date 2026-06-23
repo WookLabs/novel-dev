@@ -35,6 +35,8 @@ export const MODEL_ROUTING: Record<DirectiveType, { model: 'opus' | 'sonnet'; te
   'transition-smoothing': { model: 'sonnet', temperature: 0.5 },
   'voice-consistency': { model: 'sonnet', temperature: 0.5 },
   'proofreading': { model: 'sonnet', temperature: 0.2 },
+  'consecutive-short-sentences': { model: 'opus', temperature: 0.6 },
+  'list-monologue': { model: 'opus', temperature: 0.6 },
   // Korean specialization (Phase 3)
   'honorific-violation': { model: 'sonnet', temperature: 0.3 },
   'banned-expression': { model: 'sonnet', temperature: 0.4 },
@@ -64,6 +66,8 @@ export const MAX_SCOPE_LIMITS: Record<DirectiveType, number> = {
   'transition-smoothing': 2,
   'voice-consistency': 2,
   'proofreading': 1,
+  'consecutive-short-sentences': 2,
+  'list-monologue': 2,
   // Korean specialization (Phase 3)
   'honorific-violation': 1,
   'banned-expression': 1,

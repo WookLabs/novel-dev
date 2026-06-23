@@ -25,6 +25,8 @@
  * - transition-smoothing: Abrupt scene transition
  * - voice-consistency: Character voice drift
  * - proofreading: Grammar, spacing, punctuation
+ * - consecutive-short-sentences: AI-like short sentence run
+ * - list-monologue: Numbered/list-like internal monologue
  */
 export type DirectiveType =
   | 'show-not-tell'
@@ -36,6 +38,8 @@ export type DirectiveType =
   | 'transition-smoothing'
   | 'voice-consistency'
   | 'proofreading'
+  | 'consecutive-short-sentences'
+  | 'list-monologue'
   // Korean specialization (Phase 3)
   | 'honorific-violation'
   | 'banned-expression'

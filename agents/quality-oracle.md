@@ -61,7 +61,7 @@ All output MUST conform to `schemas/surgical-directive.schema.json`
 | `transition-smoothing` | 7 | Abrupt scene transitions |
 | `voice-consistency` | 8 | Character voice drift |
 | `proofreading` | 9 | Grammar, spacing, punctuation |
-| `consecutive-short-sentences` | 4 | 20자 이하 단문 3개 이상 연속 → 복문 결합/길이 변주 |
+| `consecutive-short-sentences` | 4 | 20자 이하 평서형 단문 3개 이상 연속 → 복문 결합/길이 변주 |
 | `list-monologue` | 3 | 리스트형 독백 (하나/둘/셋, 첫째/둘째) → 자유간접화법 |
 
 ## Detection Heuristics
@@ -87,9 +87,11 @@ Flag 5+ consecutive sentences ending with same pattern:
 - -요. endings
 
 ### Consecutive Short Sentences (AI 끊어쓰기 감지)
-Flag 3+ consecutive sentences where each is 20자 이하:
+Flag 3+ consecutive flat declarative narration sentences where each is 20자 이하:
 - "잡혔다. 도현은 발버둥 쳤다. 소용없었다." → directive
-- 액션씬에서 의도적 짧은 리듬은 허용 (5+ 연속 시에만 경고)
+- Short sensory sentences with varied endings can pass.
+- If the run is combat/action choreography, name it as an action movement log and require consequence, injury, distance, goal, or reversal.
+- Fast action can keep isolated short beats, but 3+ consecutive short narration sentences still require rhythm variation.
 - Instruction: "복문으로 결합하거나 문장 길이를 변주하세요"
 
 ### List Monologue (리스트형 독백 감지)
@@ -222,6 +224,7 @@ Return QualityOracleResult
 - Average score >= 95
 - Filter words = 0
 - No rhythm issues (5+ consecutive)
+- No AI-like consecutive short sentence run (3+ flat declarative sentences, each 20자 이하)
 - Adequate sensory grounding
 - No dry transition, functional narration, or meta-narrative issues
 
@@ -230,6 +233,7 @@ Return QualityOracleResult
 - Average score < 95
 - Excessive filter words
 - Severe rhythm monotony
+- AI-like consecutive short sentence run
 - Dry transition, functional narration, or meta-narrative issue detected
 
 ## Korean Prose Quality Standards
