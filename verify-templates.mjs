@@ -16,7 +16,7 @@ const tests = [
   },
   {
     schema: 'schemas/hooks.schema.json',
-    template: 'templates/hook.template.json',
+    template: 'templates/hooks.template.json',
     name: 'Hooks'
   },
   {

@@ -2,29 +2,29 @@
   "mystery_hooks": [
     {
       "id": "hook_001",
-      "content": "",
-      "plant_chapter": null,
+      "content": "독자가 계속 추적할 미스터리 질문",
+      "plant_chapter": 1,
       "clues": [],
-      "reveal_chapter": null,
-      "reader_reaction": "",
-      "reveal": "",
+      "reveal_chapter": 5,
+      "reader_reaction": "왜 이런 일이 벌어졌는지 알고 싶다.",
+      "reveal": "미스터리 질문에 대한 해답",
       "status": "not_planted"
     }
   ],
   "chapter_end_hooks": [
     {
       "chapter": 1,
-      "hook": "",
+      "hook": "마지막 문장에서 다음 회차의 위협이 구체적으로 드러난다.",
       "hook_type": "cliffhanger",
-      "purpose": "",
+      "purpose": "다음 회차 클릭을 유도한다.",
       "tension_level": "medium"
     }
   ],
   "dramatic_questions": [
     {
-      "question": "",
+      "question": "주인공은 핵심 사건의 진실에 도달할 수 있는가?",
       "introduced_chapter": 1,
-      "answered_chapter": null,
+      "answered_chapter": 5,
       "importance": "primary"
     }
   ],
