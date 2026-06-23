@@ -451,6 +451,8 @@ for (const step of workflow.steps) {
 
 If `quality_gates.enabled`:
 
+Every quality-gated validator threshold defaults to 95. Do not lower thresholds for chapter 1, standard mode, recovery runs, or team-specific examples. A team definition may raise a threshold above 95, but any validator threshold below 95 is a `policy_violation` and blocks PASS before validator dispatch.
+
 ```spec
 const blockingContextEntries = context_manifest.filter(
   entry => entry.required && (entry.blocking || ['missing', 'stale', 'superseded'].includes(entry.status))
@@ -473,6 +475,29 @@ if (blockingContextEntries.length > 0) {
     supporting_trace_events: ['trace_context_manifest_check']
   });
   stopBeforeAgentDispatch();
+}
+
+const minimumMasterpieceThreshold = 95;
+for (const [agent, threshold] of Object.entries(quality_gates.thresholds)) {
+  if (threshold < minimumMasterpieceThreshold) {
+    appendTraceEvent({
+      event_type: 'block',
+      step_id: 'quality_gate_policy_check',
+      step_name: 'quality_gate_policy_check',
+      agent: 'orchestrator',
+      input_refs: [`quality_gates.thresholds.${agent}`],
+      output_refs: ['failure_attribution', 'recovery_plan'],
+      issue_codes: ['sub-95-quality-threshold'],
+      status: 'blocked'
+    });
+    setFailureAttribution({
+      responsible_agent: 'orchestrator',
+      decisive_step: 'quality_gate_policy_check',
+      failure_mode: 'policy_violation',
+      supporting_trace_events: ['trace_quality_gate_policy_check']
+    });
+    stopBeforeAgentDispatch();
+  }
 }
 
 const gateResults = {};
@@ -793,7 +818,9 @@ Required `recovery_plan` fields:
   ],
   "issue_codes": ["manuscript-long-hook-thread-not-advanced"],
   "success_criteria": [
-    "critic score >= 85",
+    "critic score >= 95",
+    "beta-reader score >= 95",
+    "genre-validator score >= 95",
     "manuscript-long-hook-thread-not-advanced issue absent",
     "quality_gate.overall_pass === true"
   ],
@@ -814,18 +841,18 @@ Recovery plan rules:
 - `verification_commands` must include the narrowest command or team run that proves the recovery worked.
 - Include `rollback_refs` when an editor/novelist/prose-surgeon step will mutate files.
 
-### Step 5-1: Chapter 1 Enhanced Thresholds
+### Step 5-1: Chapter 1 Threshold Policy
 
-1화(`chapter === 1`)인 경우, 일반 thresholds 대신 강화된 기준을 적용합니다:
+1화(`chapter === 1`)는 기준을 낮추지 않습니다. 첫 회차는 독자 이탈을 결정하므로 모든 validator가 95점 이상이어야 하며, 팀 정의의 `chapter_1_overrides`도 95 미만 값을 가질 수 없습니다.
 
 | Agent | 일반 기준 | 1화 기준 | 근거 |
 |-------|----------|---------|------|
-| critic | 85 | 90 | 첫인상이 독자 유지를 결정 |
-| beta-reader | 75 | 80 | 첫 챕터의 몰입도가 더 중요 |
-| genre-validator | 90 | 95 | 장르 기대치 충족이 필수적 |
-| consistency-verifier | 80 | 85 | 세계관/설정 기반 확립 |
+| critic | 95 | 95 | 첫인상이 독자 유지를 결정 |
+| beta-reader | 95 | 95 | 첫 챕터의 몰입도와 다음 화 클릭 욕구가 필수 |
+| genre-validator | 95 | 95 | 장르 기대치 충족이 필수 |
+| consistency-verifier | 95 | 95 | 세계관/설정 기반 확립 |
 
-자동 감지: `context.chapter === 1`이면 팀 정의의 thresholds를 위 테이블로 오버라이드합니다. 팀 정의에 `chapter_1_overrides`가 명시되어 있으면 해당 값을 우선 사용합니다.
+자동 감지: `context.chapter === 1`이면 팀 정의의 thresholds와 `chapter_1_overrides`를 모두 검사하고, 95 미만 값이 있으면 `sub-95-quality-threshold` 정책 위반으로 차단합니다. 1화 전용 override는 기준을 높일 때만 허용합니다.
 
 ### Step 6: Generate Report
 
@@ -843,9 +870,9 @@ Produce a structured report combining all agent results:
 |                                                   |
 |  Agent          | Score | Verdict                 |
 |  ---------------|-------|-------------------------|
-|  critic         |  87   | PASS                    |
-|  beta-reader    |  82   | PASS                    |
-|  genre-validator|  91   | PASS                    |
+|  critic         |  96   | PASS                    |
+|  beta-reader    |  95   | PASS                    |
+|  genre-validator|  97   | PASS                    |
 |                                                   |
 |  종합 판정: {overall_verdict}                      |
 |  종합 점수: {composite_score}/100                  |

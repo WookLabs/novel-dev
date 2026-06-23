@@ -228,6 +228,24 @@ describe('masterpiece operating thresholds', () => {
     expect(failures).toEqual([]);
   });
 
+  it('keeps team-orchestrator guidance from teaching sub-95 validator gates', () => {
+    const doc = readText('agents/team-orchestrator.md');
+
+    expect(doc).toContain('Every quality-gated validator threshold defaults to 95');
+    expect(doc).toContain('"critic score >= 95"');
+    expect(doc).toContain('"beta-reader score >= 95"');
+    expect(doc).toContain('"genre-validator score >= 95"');
+
+    expect(doc).not.toMatch(/\|\s*critic\s*\|\s*85\s*\|\s*90\s*\|/);
+    expect(doc).not.toMatch(/\|\s*beta-reader\s*\|\s*75\s*\|\s*80\s*\|/);
+    expect(doc).not.toMatch(/\|\s*genre-validator\s*\|\s*90\s*\|\s*95\s*\|/);
+    expect(doc).not.toMatch(/\|\s*consistency-verifier\s*\|\s*80\s*\|\s*85\s*\|/);
+    expect(doc).not.toContain('"critic score >= 85"');
+    expect(doc).not.toContain('|  critic         |  87   | PASS');
+    expect(doc).not.toContain('|  beta-reader    |  82   | PASS');
+    expect(doc).not.toContain('|  genre-validator|  91   | PASS');
+  });
+
   it('keeps team schema examples from teaching sub-95 quality gates', () => {
     const teamSchema = readText('schemas/team.schema.json');
     const teamStateSchema = readText('schemas/team-state.schema.json');
