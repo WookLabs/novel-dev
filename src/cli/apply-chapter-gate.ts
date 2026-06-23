@@ -194,6 +194,7 @@ interface StyleGuideWithTasteProfile {
     max_topic_marker_starter_run?: number;
     min_sentence_length_variation_coefficient?: number;
     max_uniform_sentence_length_run?: number;
+    max_uniform_paragraph_beat_run?: number;
     max_same_ending_run?: number;
     max_dominant_sentence_ending_share?: number;
     max_dominant_dialogue_ending_share?: number;
@@ -3267,6 +3268,7 @@ async function readProseTasteProfile(
       minSentenceLengthVariationCoefficient:
         profile.min_sentence_length_variation_coefficient,
       maxUniformSentenceLengthRun: profile.max_uniform_sentence_length_run,
+      maxUniformParagraphBeatRun: profile.max_uniform_paragraph_beat_run,
       maxSameEndingRun: profile.max_same_ending_run,
       maxDominantSentenceEndingShare: profile.max_dominant_sentence_ending_share,
       maxDominantDialogueEndingShare: profile.max_dominant_dialogue_ending_share,

@@ -17,6 +17,7 @@ describe('style guide prose rules template', () => {
     'consecutive-short-sentences',
     'repeated-subject-rhythm',
     'uniform-sentence-length-cadence',
+    'uniform-paragraph-beat-cadence',
     'immersive-rhythm-flatline',
     'dominant-ending-cadence-lock',
     'functional-ai-report',
@@ -65,11 +66,13 @@ describe('style guide prose rules template', () => {
 
     for (const doc of writingDocs) {
       expect(doc).toContain('uniform-sentence-length-cadence');
+      expect(doc).toContain('uniform-paragraph-beat-cadence');
       expect(doc).toContain('same-ending-run');
       expect(doc).toContain('dominant-ending-cadence-lock');
       expect(doc).toContain('dialogue-ending-cadence-lock');
       expect(doc).toContain('dialogue-starter-cadence-lock');
       expect(doc).toContain('max_uniform_sentence_length_run');
+      expect(doc).toContain('max_uniform_paragraph_beat_run');
       expect(doc).toContain('max_same_ending_run');
       expect(doc).toContain('max_dominant_sentence_ending_share');
       expect(doc).toContain('max_dominant_dialogue_ending_share');
@@ -83,7 +86,9 @@ describe('style guide prose rules template', () => {
 
     for (const doc of [qualityOracle, proseSurgeon]) {
       expect(doc).toContain('uniform-sentence-length-cadence');
+      expect(doc).toContain('uniform-paragraph-beat-cadence');
       expect(doc).toContain('비슷한 길이');
+      expect(doc).toContain('같은 문장 수');
       expect(doc).toContain('짧은 결정문');
       expect(doc).toContain('선택/결과');
     }

@@ -26,6 +26,7 @@ export type ProseTasteIssueCode =
   | 'immersive-rhythm-flatline'
   | 'monotone-short-sentence-run'
   | 'uniform-sentence-length-cadence'
+  | 'uniform-paragraph-beat-cadence'
   | 'same-ending-run'
   | 'dominant-ending-cadence-lock'
   | 'dialogue-ending-cadence-lock'
@@ -193,6 +194,7 @@ export interface ProseTasteProfile {
   maxTopicMarkerStarterRun?: number;
   minSentenceLengthVariationCoefficient?: number;
   maxUniformSentenceLengthRun?: number;
+  maxUniformParagraphBeatRun?: number;
   maxSameEndingRun?: number;
   maxDominantSentenceEndingShare?: number;
   maxDominantDialogueEndingShare?: number;
@@ -328,6 +330,7 @@ export interface ProseTasteMetrics {
   longestTopicMarkerStarterRun: number;
   sentenceLengthVariationCoefficient: number;
   longestUniformSentenceLengthRun: number;
+  longestUniformParagraphBeatRun: number;
   viewpointAnchorDensityPer1000: number;
   immersiveRhythmAnchorDensityPer1000: number;
   longestImmersiveRhythmFlatlineRun: number;
@@ -474,6 +477,7 @@ interface ModeThresholds {
   maxTopicMarkerStarterRun: number;
   minSentenceLengthVariationCoefficient: number;
   maxUniformSentenceLengthRun: number;
+  maxUniformParagraphBeatRun: number;
   maxSameEndingRun: number;
   maxDominantSentenceEndingShare: number;
   maxDominantDialogueEndingShare: number;
@@ -590,6 +594,7 @@ const MODE_THRESHOLDS: Record<ProseTasteMode, ModeThresholds> = {
     maxTopicMarkerStarterRun: 4,
     minSentenceLengthVariationCoefficient: 0.28,
     maxUniformSentenceLengthRun: 5,
+    maxUniformParagraphBeatRun: 3,
     maxSameEndingRun: 4,
     maxDominantSentenceEndingShare: 0.68,
     maxDominantDialogueEndingShare: 0.84,
@@ -702,6 +707,7 @@ const MODE_THRESHOLDS: Record<ProseTasteMode, ModeThresholds> = {
     maxTopicMarkerStarterRun: 4,
     minSentenceLengthVariationCoefficient: 0.24,
     maxUniformSentenceLengthRun: 6,
+    maxUniformParagraphBeatRun: 3,
     maxSameEndingRun: 4,
     maxDominantSentenceEndingShare: 0.72,
     maxDominantDialogueEndingShare: 0.82,
@@ -814,6 +820,7 @@ const MODE_THRESHOLDS: Record<ProseTasteMode, ModeThresholds> = {
     maxTopicMarkerStarterRun: 5,
     minSentenceLengthVariationCoefficient: 0.2,
     maxUniformSentenceLengthRun: 7,
+    maxUniformParagraphBeatRun: 4,
     maxSameEndingRun: 4,
     maxDominantSentenceEndingShare: 0.78,
     maxDominantDialogueEndingShare: 0.86,
@@ -926,6 +933,7 @@ const MODE_THRESHOLDS: Record<ProseTasteMode, ModeThresholds> = {
     maxTopicMarkerStarterRun: 5,
     minSentenceLengthVariationCoefficient: 0.2,
     maxUniformSentenceLengthRun: 6,
+    maxUniformParagraphBeatRun: 4,
     maxSameEndingRun: 4,
     maxDominantSentenceEndingShare: 0.82,
     maxDominantDialogueEndingShare: 0.88,
@@ -1295,6 +1303,7 @@ export function evaluateProseTaste(
   addImmersiveRhythmFlatlineIssue(content, metrics, thresholds, issues);
   addShortSentenceRunIssue(content, metrics, thresholds, issues);
   addUniformSentenceLengthCadenceIssue(content, metrics, thresholds, issues);
+  addUniformParagraphBeatCadenceIssue(content, metrics, thresholds, issues);
   addSameEndingIssue(content, metrics, thresholds, issues);
   addDominantSentenceEndingIssue(content, metrics, thresholds, issues);
   addDominantDialogueEndingIssue(content, metrics, thresholds, issues);
@@ -1555,6 +1564,7 @@ export function analyzeProseTasteMetrics(content: string): ProseTasteMetrics {
     sentenceLengthVariationCoefficient:
       calculateSentenceLengthVariationCoefficient(narrationSentenceLengths),
     longestUniformSentenceLengthRun: findLongestUniformSentenceLengthRun(content),
+    longestUniformParagraphBeatRun: findLongestUniformParagraphBeatRun(content),
     viewpointAnchorDensityPer1000: round1(viewpointAnchorCount / scale),
     immersiveRhythmAnchorDensityPer1000: round1(immersiveRhythmAnchorCount / scale),
     longestImmersiveRhythmFlatlineRun: findLongestImmersiveRhythmFlatlineRun(content),
@@ -1785,6 +1795,8 @@ function getThresholds(profile: ProseTasteProfile, mode: ProseTasteMode): ModeTh
       base.minSentenceLengthVariationCoefficient,
     maxUniformSentenceLengthRun:
       profile.maxUniformSentenceLengthRun ?? base.maxUniformSentenceLengthRun,
+    maxUniformParagraphBeatRun:
+      profile.maxUniformParagraphBeatRun ?? base.maxUniformParagraphBeatRun,
     maxSameEndingRun: profile.maxSameEndingRun ?? base.maxSameEndingRun,
     maxDominantSentenceEndingShare:
       profile.maxDominantSentenceEndingShare ?? base.maxDominantSentenceEndingShare,
@@ -4181,6 +4193,34 @@ function addUniformSentenceLengthCadenceIssue(
     suggestion:
       '핵심 행동/대사 전후에는 짧은 결정문을 두고, 정보·감각·상대 반응은 긴 문장에 묶어 문단 내부 길이 대비를 만드세요.',
     penalty: Math.min(22, 10 + overflow * 3 + Math.ceil(variationGap * 20)),
+  });
+}
+
+function addUniformParagraphBeatCadenceIssue(
+  content: string,
+  metrics: ProseTasteMetrics,
+  thresholds: ModeThresholds,
+  issues: ProseTasteIssue[]
+): void {
+  if (metrics.longestUniformParagraphBeatRun <= thresholds.maxUniformParagraphBeatRun) {
+    return;
+  }
+
+  const overflow =
+    metrics.longestUniformParagraphBeatRun - thresholds.maxUniformParagraphBeatRun;
+  issues.push({
+    code: 'uniform-paragraph-beat-cadence',
+    severity: overflow >= 2 ? 'high' : 'medium',
+    message:
+      `같은 문장 수와 비슷한 문단 호흡이 ${metrics.longestUniformParagraphBeatRun}문단 이어져 ` +
+      '문단 단위 박자가 기계적으로 반복됩니다.',
+    evidence: findUniformParagraphBeatEvidence(
+      content,
+      thresholds.maxUniformParagraphBeatRun + 1
+    ),
+    suggestion:
+      '문단마다 문장 수와 기능 순서를 바꾸세요. 한 문단은 짧은 결정문으로 끊고, 다음 문단은 원인-행동-결과를 묶으며, 반복되는 앵커 문장 일부를 선택 비용이나 새 위협으로 바꾸세요.',
+    penalty: Math.min(20, 9 + overflow * 4),
   });
 }
 
@@ -7766,6 +7806,110 @@ function findUniformSentenceLengthEvidence(content: string, minRun: number): str
   return sentences.filter(isMeasurableRhythmSentence).slice(0, minRun).join(' ');
 }
 
+function findLongestUniformParagraphBeatRun(content: string): number {
+  return findUniformParagraphBeatRuns(content).reduce(
+    (longest, run) => Math.max(longest, run.paragraphs.length),
+    0
+  );
+}
+
+function findUniformParagraphBeatEvidence(content: string, minRun: number): string {
+  const run = findUniformParagraphBeatRuns(content).find(
+    item => item.paragraphs.length >= minRun
+  );
+  if (run) return run.paragraphs.slice(0, minRun).join('\n\n');
+
+  return splitParagraphs(content).slice(0, minRun).join('\n\n');
+}
+
+function findUniformParagraphBeatRuns(
+  content: string
+): Array<{ signature: string; paragraphs: string[] }> {
+  const runs: Array<{ signature: string; paragraphs: string[] }> = [];
+  let currentSignature = '';
+  let currentParagraphs: string[] = [];
+
+  for (const paragraph of splitParagraphs(content)) {
+    const signature = classifyParagraphBeatSignature(paragraph);
+    if (!signature) {
+      if (currentParagraphs.length > 0) {
+        runs.push({ signature: currentSignature, paragraphs: currentParagraphs });
+      }
+      currentSignature = '';
+      currentParagraphs = [];
+      continue;
+    }
+
+    if (signature === currentSignature) {
+      currentParagraphs.push(paragraph);
+    } else {
+      if (currentParagraphs.length > 0) {
+        runs.push({ signature: currentSignature, paragraphs: currentParagraphs });
+      }
+      currentSignature = signature;
+      currentParagraphs = [paragraph];
+    }
+  }
+
+  if (currentParagraphs.length > 0) {
+    runs.push({ signature: currentSignature, paragraphs: currentParagraphs });
+  }
+
+  return runs;
+}
+
+function classifyParagraphBeatSignature(paragraph: string): string {
+  if (/["“”'‘’「」『』]/u.test(paragraph)) return '';
+
+  const sentences = splitSentences(paragraph).filter(isParagraphBeatCadenceSentence);
+  if (sentences.length < 2 || sentences.length > 4) return '';
+
+  const lengthShape = sentences
+    .map(sentence => classifyParagraphBeatLength(countTextUnits(sentence)))
+    .join('-');
+  const functionShape = sentences
+    .map(classifyParagraphBeatFunction)
+    .join('-');
+
+  return `${sentences.length}:${lengthShape}:${functionShape}`;
+}
+
+function isParagraphBeatCadenceSentence(sentence: string): boolean {
+  const trimmed = sentence.trim();
+  if (!trimmed || /["“”'‘’「」『』]/u.test(trimmed)) return false;
+  if (!/[.!?]$/u.test(trimmed)) return false;
+
+  return countTextUnits(trimmed) >= 10;
+}
+
+function classifyParagraphBeatLength(length: number): string {
+  if (length < 18) return 'short';
+  if (length < 42) return 'mid';
+  return 'long';
+}
+
+function classifyParagraphBeatFunction(sentence: string): string {
+  if (IMMERSIVE_RHYTHM_PRESSURE_TURN_PATTERN.test(sentence)) return 'scene';
+  if (SENSORY_STORY_TURN_PATTERN.test(sentence) || CAUSAL_TURN_PATTERN.test(sentence)) {
+    return 'scene';
+  }
+  if (isImmersiveRhythmAnchorSentence(sentence) || DIALOGUE_GROUNDING_BEAT_PATTERN.test(sentence)) {
+    return 'scene';
+  }
+  if (STATUS_QUO_ACTION_PATTERN.test(sentence) || PROP_FIDGET_BEAT_PATTERN.test(sentence)) {
+    return 'scene';
+  }
+  if (
+    FLATLINE_EXPLANATORY_CLOSURE_PATTERN.test(sentence) ||
+    new RegExp(ABSTRACT_NOUN_PATTERN.source, 'u').test(sentence) ||
+    new RegExp(COGNITIVE_FILTER_PATTERN.source, 'u').test(sentence)
+  ) {
+    return 'explain';
+  }
+
+  return 'plain';
+}
+
 function areSentenceLengthsUniform(previousLength: number, currentLength: number): boolean {
   const tolerance = Math.max(3, Math.round(Math.min(previousLength, currentLength) * 0.12));
   return Math.abs(previousLength - currentLength) <= tolerance;
@@ -8221,6 +8365,7 @@ function hasTasteCalibration(profile: ProseTasteProfile): boolean {
       profile.maxTopicMarkerStarterRun !== undefined ||
       profile.minSentenceLengthVariationCoefficient !== undefined ||
       profile.maxUniformSentenceLengthRun !== undefined ||
+      profile.maxUniformParagraphBeatRun !== undefined ||
       profile.maxSameEndingRun !== undefined ||
       profile.maxDominantSentenceEndingShare !== undefined ||
       profile.maxDominantDialogueEndingShare !== undefined ||

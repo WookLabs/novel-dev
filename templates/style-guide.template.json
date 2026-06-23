@@ -126,6 +126,7 @@
     "max_topic_marker_starter_run": 4,
     "min_sentence_length_variation_coefficient": 0.24,
     "max_uniform_sentence_length_run": 6,
+    "max_uniform_paragraph_beat_run": 3,
     "max_same_ending_run": 4,
     "max_dominant_sentence_ending_share": 0.72,
     "max_dominant_dialogue_ending_share": 0.82,
@@ -162,6 +163,12 @@
         "id": "uniform-sentence-length-cadence",
         "description": "비슷한 길이와 구조의 문장이 계속 이어져 산문 리듬이 평평해짐",
         "detection_hint": "문장 길이 변동계수가 낮고 동일 구조의 단문/중문이 연속될 때 경고",
+        "severity": "warning"
+      },
+      {
+        "id": "uniform-paragraph-beat-cadence",
+        "description": "문장 길이를 조금 바꿔도 같은 문장 수와 같은 장면 기능 순서의 문단이 반복되어 AI식 문단 박자가 생김",
+        "detection_hint": "같은 문장 수의 문단이 앵커-설명-조용한 행동처럼 비슷한 beat 순서로 4문단 이상 이어질 때 경고",
         "severity": "warning"
       },
       {

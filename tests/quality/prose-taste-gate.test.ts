@@ -61,6 +61,24 @@ const ANCHOR_RICH_RHYTHM_MAP_COLLAPSE_PROSE = `
 서연은 휴대폰 화면을 아래로 뒤집었다.
 `.trim();
 
+const UNIFORM_PARAGRAPH_BEAT_CADENCE_PROSE = `
+서연은 젖은 복도 끝에서 봉투의 가장자리를 손바닥에 눌렀다.
+민준의 이름은 기록 맨 아래에서 한 번 더 어긋나 있었다.
+그녀는 전화를 끊고 문 앞에 섰다.
+
+민준은 낡은 사무실 책상 위에 녹음기를 조용히 밀어 놓았다.
+빨간 불빛은 파일철 옆에서 같은 박자로 깜박이고 있었다.
+그는 대답하지 않고 의자를 뒤로 밀었다.
+
+서연은 경찰서 계단참에서 사진 뒷면의 번호를 다시 맞춰 보았다.
+번호 하나가 사건 기록의 시간과 다르게 남아 있었다.
+그녀는 손목시계를 확인하고 숨을 삼켰다.
+
+민준은 창문 아래 흩어진 영수증을 한 장씩 뒤집어 놓았다.
+검은 잉크 자국은 주소의 마지막 글자를 가리고 있었다.
+그는 봉투를 접고 불 꺼진 복도를 보았다.
+`.trim();
+
 const HEDGED_PERCEPTION_PROSE = `
 서연은 문 앞에 선 것 같았다. 안쪽의 침묵은 어쩐지 대답처럼 느껴졌다. 손잡이는 묘하게 차가운 듯했다.
 
@@ -2385,6 +2403,29 @@ describe('evaluateProseTaste', () => {
     expect(result.issues.map(issue => issue.code)).not.toContain(
       'uniform-sentence-length-cadence'
     );
+  });
+
+  it('fails prose whose paragraphs repeat the same beat shape even when sentences vary', () => {
+    const result = evaluateProseTaste(UNIFORM_PARAGRAPH_BEAT_CADENCE_PROSE, {
+      profile: {
+        minSentenceLengthVariationCoefficient: 0,
+        maxUniformSentenceLengthRun: 20,
+        maxTopicMarkerStarterDensityPer1000: 100,
+        maxTopicMarkerStarterRun: 20,
+        maxStatusQuoActionDensityPer1000: 100,
+        maxStatusQuoActionRun: 20,
+        maxPropFidgetBeatDensityPer1000: 100,
+        maxPropFidgetBeatRun: 20,
+        maxGazeChoreographyDensityPer1000: 100,
+        maxGazeChoreographyRun: 20,
+        maxImmersiveRhythmFlatlineRun: 20,
+      },
+    });
+    const codes = result.issues.map(issue => issue.code);
+
+    expect(result.passed).toBe(false);
+    expect(result.metrics.longestUniformParagraphBeatRun).toBeGreaterThan(3);
+    expect(codes).toContain('uniform-paragraph-beat-cadence');
   });
 
   it('fails prose whose explanatory paragraph loses immersive rhythm anchors', () => {

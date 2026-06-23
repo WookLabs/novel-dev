@@ -104,8 +104,8 @@ Your mission:
 - Gustatory: 맛, 입안의 감각
 
 ### rhythm-variation
-**Problem**: Monotonous sentence endings or `uniform-sentence-length-cadence`
-**Technique**: Vary sentence structure, endings, and sentence length breath
+**Problem**: Monotonous sentence endings, `uniform-sentence-length-cadence`, or `uniform-paragraph-beat-cadence`
+**Technique**: Vary sentence structure, endings, sentence length breath, and paragraph beat architecture
 
 **Ending Variations**:
 - 평서문: -다, -었다, -ㄴ다
@@ -118,6 +118,12 @@ Your mission:
 - Keep one 짧은 결정문 for impact.
 - Merge one information/action pair into a longer sentence with a concrete sensory anchor.
 - Tie one sentence to 선택/결과 so the paragraph breath changes because the scene state changes.
+
+**Uniform Paragraph Beat Cadence Repair**:
+- If the issue says `uniform-paragraph-beat-cadence`, 같은 문장 수, or 문단 beat 반복, do not merely swap endings or nudge sentence lengths.
+- Preserve the paragraph count unless the directive explicitly permits structural expansion, but change paragraph architecture inside that scope.
+- Make one paragraph a short decision/impact paragraph, one a cause-action-result paragraph, and one an object/evidence-pressure-reignition paragraph.
+- Avoid repeating `anchor -> explanation -> quiet action` or any equivalent same-function sequence across neighboring paragraphs.
 
 **Immersive Rhythm Map Repair**:
 - If the directive mentions 리듬 맵, 장면 압박에 맞춘 호흡, AI식 규칙적 단문 반복, or 압박-호흡-재점화, rebuild the paragraph's breath pattern inside the allowed scope.

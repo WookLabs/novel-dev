@@ -55,7 +55,7 @@ All output MUST conform to `schemas/surgical-directive.schema.json`
 | `show-not-tell` | 1 | Emotional telling -> physical showing |
 | `filter-word-removal` | 2 | Remove 느꼈다, 보였다, 생각했다 등 |
 | `sensory-enrichment` | 4 | Add missing senses (2+ per 500 chars) |
-| `rhythm-variation` | 5 | Fix 5+ consecutive same endings or uniform sentence length cadence |
+| `rhythm-variation` | 5 | Fix 5+ consecutive same endings, uniform sentence length cadence, or uniform paragraph beat cadence |
 | `dialogue-subtext` | 3 | On-the-nose dialogue -> subtext |
 | `cliche-replacement` | 6 | Replace stock Korean AI phrases |
 | `transition-smoothing` | 7 | Abrupt scene transitions |
@@ -93,10 +93,16 @@ Flag `uniform-sentence-length-cadence` when 5+ mid-length narration sentences ke
 - Use existing directive type `rhythm-variation`; do not create a new directive type.
 - Instruction: "비슷한 길이의 문장 일부를 짧은 결정문, 감각 앵커가 붙은 중문, 선택/결과를 묶은 긴 문장으로 재배열해 문단 내부 호흡 대비를 만드세요"
 
+### Uniform Paragraph Beat Cadence
+Flag `uniform-paragraph-beat-cadence` when 4+ neighboring paragraphs keep 같은 문장 수 and similar beat/function order even if sentence lengths, endings, and surface words vary:
+- This reads like an AI-generated chapter rhythm: every paragraph performs the same breath at the same scale.
+- Use existing directive type `rhythm-variation`; do not create a new directive type.
+- Instruction: "어미나 문장 길이만 바꾸지 말고 한 문단은 짧은 선택/충격, 한 문단은 원인-행동-결과, 한 문단은 물증-압박-재점화 구조로 재배열해 문단 설계 자체를 바꾸세요"
+
 ### Immersive Rhythm Map
 Before PASS, check whether the passage has a 리듬 맵 rather than only "no obvious defects":
 - The prose should show 장면 압박에 맞춘 호흡: pressure beats use short decision/action/result sentences, breath beats lower intensity through sensory/object/POV anchors, and reignition beats pull the next sentence with a new question, threat, or choice cost.
-- Flag AI식 규칙적 단문 반복 when sentences keep the same length, same declarative ending, or same subject-action beat without pressure change.
+- Flag AI식 규칙적 단문 반복 when sentences keep the same length, same declarative ending, same paragraph sentence count, or same subject-action beat without pressure change.
 - Use `rhythm-variation` and require 문장 길이 변주 that creates 압박-호흡-재점화, not random sentence splitting or decorative commas.
 - If a technically clean paragraph still reads flat because every sentence takes the same breath, emit a directive even when filter words and sensory density pass.
 
@@ -247,6 +253,7 @@ Return QualityOracleResult
 - No AI-like consecutive short sentence run (3+ flat declarative sentences, each 20자 이하)
 - No repeated subject starter run (5+ same subject starts)
 - No `uniform-sentence-length-cadence` run (5+ 비슷한 길이 mid-length narration sentences)
+- No `uniform-paragraph-beat-cadence` run (4+ same sentence count/similar paragraph beat paragraphs)
 - Adequate sensory grounding
 - No dry transition, functional narration, or meta-narrative issues
 
@@ -258,6 +265,7 @@ Return QualityOracleResult
 - AI-like consecutive short sentence run
 - Repeated subject starter rhythm
 - `uniform-sentence-length-cadence` makes the paragraph read mechanically regular
+- `uniform-paragraph-beat-cadence` makes neighboring paragraphs repeat the same breath at paragraph scale
 - Dry transition, functional narration, or meta-narrative issue detected
 
 ## Korean Prose Quality Standards

@@ -344,6 +344,8 @@ interface RawProseTasteProfile {
   minSentenceLengthVariationCoefficient?: number;
   max_uniform_sentence_length_run?: number;
   maxUniformSentenceLengthRun?: number;
+  max_uniform_paragraph_beat_run?: number;
+  maxUniformParagraphBeatRun?: number;
   max_same_ending_run?: number;
   maxSameEndingRun?: number;
   max_dominant_sentence_ending_share?: number;
@@ -1518,6 +1520,10 @@ function normalizeProfile(raw: RawProseTasteProfile | undefined): ProseTasteProf
     profile.maxUniformSentenceLengthRun =
       raw.max_uniform_sentence_length_run ?? raw.maxUniformSentenceLengthRun;
   }
+  if ((raw.max_uniform_paragraph_beat_run ?? raw.maxUniformParagraphBeatRun) !== undefined) {
+    profile.maxUniformParagraphBeatRun =
+      raw.max_uniform_paragraph_beat_run ?? raw.maxUniformParagraphBeatRun;
+  }
   if ((raw.max_same_ending_run ?? raw.maxSameEndingRun) !== undefined) {
     profile.maxSameEndingRun = raw.max_same_ending_run ?? raw.maxSameEndingRun;
   }
@@ -1958,6 +1964,9 @@ function mergeProfiles(
     }
     if (profile.maxUniformSentenceLengthRun !== undefined) {
       merged.maxUniformSentenceLengthRun = profile.maxUniformSentenceLengthRun;
+    }
+    if (profile.maxUniformParagraphBeatRun !== undefined) {
+      merged.maxUniformParagraphBeatRun = profile.maxUniformParagraphBeatRun;
     }
     if (profile.maxSameEndingRun !== undefined) {
       merged.maxSameEndingRun = profile.maxSameEndingRun;

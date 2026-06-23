@@ -128,6 +128,7 @@ Task(subagent_type="novel-dev:novelist", model="opus", prompt="
 - `prose_taste_profile.max_short_sentence_run` 기준을 넘는 연속 단문 끊어쓰기를 피하세요. 짧은 문장은 타격점에만 남기고, 원인/대조/결과가 이어지는 문장은 중문이나 복문으로 묶어 문장 리듬을 변주합니다.
 - `monotone-short-sentence-run`이 나오면 짧은 서술문이 기계적으로 끊어진 AI 문체로 판정됩니다.
 - `prose_taste_profile.min_sentence_length_variation_coefficient`와 `max_uniform_sentence_length_run` 기준을 지키세요. 비슷한 길이의 중간 서술문이 줄줄이 이어지면 `uniform-sentence-length-cadence`로 판정되므로 짧은 타격문, 감각 앵커가 붙은 중문, 선택/결과를 묶은 긴 문장을 장면 박자에 맞게 섞습니다.
+- `prose_taste_profile.max_uniform_paragraph_beat_run` 기준을 지키세요. 문장 길이와 종결을 바꿔도 같은 문장 수, 같은 문단 기능 순서가 반복되면 `uniform-paragraph-beat-cadence`로 판정됩니다. 한 문단은 짧은 결정문/충격으로, 다음 문단은 원인-행동-결과를 묶는 긴 호흡으로, 다음 문단은 물증/압박/재점화 순서로 바꿔 같은 문장 수와 같은 beat를 피합니다.
 - `prose_taste_profile.max_same_ending_run`과 `max_dominant_sentence_ending_share` 기준을 지키세요. `same-ending-run` 또는 `dominant-ending-cadence-lock`이 나오면 -했다/-였다/-다 종결이 보고서처럼 반복된 것이므로 종결 일부를 행동 비트, 대사 반응, 감각 잔향, 원인-결과 연결문으로 바꿉니다.
 - `prose_taste_profile.max_dominant_dialogue_ending_share`와 `max_dominant_dialogue_starter_share` 기준을 지키세요. `dialogue-ending-cadence-lock` 또는 `dialogue-starter-cadence-lock`이 나오면 인물 대사의 말끝/첫머리가 같은 공식으로 잠긴 것이므로 캐릭터별 말끝, 생략, 반문, 조건 제시, 회피, 침묵 비트를 분리합니다.
 - `prose_taste_profile.min_immersive_rhythm_anchor_density_per_1000` 또는 `max_immersive_rhythm_flatline_run` 기준을 어기면 `immersive-rhythm-flatline`으로 판정됩니다. 설명/판단 문장을 늘이는 대신 물증, 손동작, 대사 반응, 선택 비용, 감각 앵커를 두세 문장마다 넣어 문단이 장면 안에서 숨 쉬게 씁니다.
@@ -417,8 +418,8 @@ if (proseCraft.passed === false) {
 - `PASS`: `current_chapter`를 N + 1로 이동하고 `completed_chapters`에 N 추가
 - `RETRY`: N을 `failed_chapters`에 남기고 `retry_count` 증가
 - `USER_INTERVENTION`: `ralph_active=false`, `requires_user_intervention=true`로 일시정지
-- `proseCraft` 실패: 필터워드, 감각 grounding, 감각 장식 연쇄(`sensory-wallpaper-run`), 문장 리듬, 장면 앵커 없이 설명/판단문이 이어지는 `immersive-rhythm-flatline`, 연속 단문 끊어쓰기(`monotone-short-sentence-run`), 완충 인식 표현 과밀(`hedged-perception-haze`), 감정 라벨 연쇄(`emotion-label-carousel`), 추상·상징어 누적(`symbolic-abstraction-stack`), 장면 밖 해결 요약(`offscreen-resolution-summary`), 기계적 확인·동의 대사 연쇄(`rote-dialogue-response-chain`), 중립 대사 태그 연쇄(`mechanical-dialogue-tag-chain`), 지시어 연쇄(`ambiguous-reference-chain`), 금지/AI체 표현 등 원고 문장 품질을 `Prose Craft Revision Directives` 기준으로 수정
-- 리듬 맵: 최종 원고는 장면 압박에 맞춘 호흡을 가져야 합니다. 같은 길이와 같은 종결의 AI식 규칙적 단문 반복을 피하고, 문장 길이 변주를 통해 압박-호흡-재점화가 읽히게 쓰세요. 압박 구간은 짧은 결정문과 행동 결과를 붙이고, 호흡 구간은 감각/물증/POV 앵커로 숨을 낮춘 뒤, 재점화 구간은 새 질문·위협·선택 비용으로 다음 문장을 당겨야 합니다.
+- `proseCraft` 실패: 필터워드, 감각 grounding, 감각 장식 연쇄(`sensory-wallpaper-run`), 문장 리듬, 같은 문단 구조 반복(`uniform-paragraph-beat-cadence`), 장면 앵커 없이 설명/판단문이 이어지는 `immersive-rhythm-flatline`, 연속 단문 끊어쓰기(`monotone-short-sentence-run`), 완충 인식 표현 과밀(`hedged-perception-haze`), 감정 라벨 연쇄(`emotion-label-carousel`), 추상·상징어 누적(`symbolic-abstraction-stack`), 장면 밖 해결 요약(`offscreen-resolution-summary`), 기계적 확인·동의 대사 연쇄(`rote-dialogue-response-chain`), 중립 대사 태그 연쇄(`mechanical-dialogue-tag-chain`), 지시어 연쇄(`ambiguous-reference-chain`), 금지/AI체 표현 등 원고 문장 품질을 `Prose Craft Revision Directives` 기준으로 수정
+- 리듬 맵: 최종 원고는 장면 압박에 맞춘 호흡을 가져야 합니다. 같은 길이, 같은 종결, 같은 문장 수의 문단 beat가 반복되는 AI식 규칙적 단문 반복이나 문단 반복을 피하고, 문장 길이 변주와 문단 기능 순서 변주를 통해 압박-호흡-재점화가 읽히게 쓰세요. 압박 구간은 짧은 결정문과 행동 결과를 붙이고, 호흡 구간은 감각/물증/POV 앵커로 숨을 낮춘 뒤, 재점화 구간은 새 질문·위협·선택 비용으로 다음 문장을 당겨야 합니다.
 - 반복 독자 몰입 실패가 3회 이상이면 `retry_count`가 남아 있어도 `USER_INTERVENTION`입니다. 이때 `gateDecision.retryPrompt`의 **구조적 재검토** 지시를 우선 적용합니다.
 
 **3-4. 품질 검토 (선택)**

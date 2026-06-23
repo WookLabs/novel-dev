@@ -100,6 +100,7 @@
     "max_topic_marker_starter_run": 4,
     "min_sentence_length_variation_coefficient": 0.24,
     "max_uniform_sentence_length_run": 6,
+    "max_uniform_paragraph_beat_run": 3,
     "max_same_ending_run": 4,
     "max_dominant_sentence_ending_share": 0.72,
     "max_dominant_dialogue_ending_share": 0.82,

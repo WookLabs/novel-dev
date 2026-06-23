@@ -832,6 +832,12 @@
           "maximum": 20,
           "description": "비슷한 길이의 중간 이상 서술문이 연속될 수 있는 최대 문장 수"
         },
+        "max_uniform_paragraph_beat_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "같은 문장 수와 비슷한 기능 순서를 가진 문단 beat가 연속될 수 있는 최대 문단 수"
+        },
         "max_same_ending_run": {
           "type": "integer",
           "minimum": 1,

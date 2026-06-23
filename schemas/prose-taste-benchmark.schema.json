@@ -875,6 +875,11 @@
           "minimum": 1,
           "maximum": 20
         },
+        "max_uniform_paragraph_beat_run": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
         "max_same_ending_run": {
           "type": "integer",
           "minimum": 1,
