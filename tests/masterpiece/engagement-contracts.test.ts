@@ -176,7 +176,13 @@ describe('masterpiece engagement contracts', () => {
 
     expect(betaReader).toContain('Masterpiece High-Point Assessment');
     expect(betaReader).toContain('결함 없음과 대작 고점은 다르다');
-    expect(betaReader).toContain('engagement_score >= 90');
+    expect(betaReader).toContain('95+ Masterpiece Pass Rule');
+    expect(betaReader).toContain('engagement_score >= 95');
+    expect(betaReader).toContain('all 5 high-point axes >= 9');
+    expect(betaReader).toContain('cap `engagement_score` at 94');
+    expect(betaReader).toContain('90-94 can be strong, but it is still below the 95-point beta-reader gate');
+    expect(betaReader).not.toContain('`engagement_score >= 90` requires');
+    expect(betaReader).not.toContain('cap `engagement_score` at 89');
     expect(betaReader).toContain('score_cap_reason');
 
     expect(qualityOracle).toContain('Masterpiece High-Point Pass');

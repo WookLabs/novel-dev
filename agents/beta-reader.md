@@ -233,17 +233,17 @@ These are the questions that keep readers turning pages.
 
 Based on overall engagement score:
 
-- **COMPELLING** (90-100): Impossible to put down, readers will binge
-- **ENGAGING** (80-89): Strong reader pull, will continue eagerly
-- **READABLE** (70-79): Readers will continue but may not prioritize
-- **MODERATE** (60-69): Readers may continue if already invested
+- **COMPELLING** (95-100): Impossible to put down, readers will binge and recommend
+- **ENGAGING** (85-94): Strong reader pull, but still below the masterpiece pass bar
+- **READABLE** (75-84): Readers will continue but may not prioritize
+- **MODERATE** (60-74): Readers may continue if already invested
 - **WEAK** (0-59): High risk of readers abandoning
 
 ---
 
 ## Masterpiece High-Point Assessment
 
-결함 없음과 대작 고점은 다르다. 문장이 매끄럽고 이탈 위험이 낮아도, 독자가 기억하고 추천하고 다음 화를 누를 고점이 없으면 90점 이상을 주지 않는다.
+결함 없음과 대작 고점은 다르다. 문장이 매끄럽고 이탈 위험이 낮아도, 독자가 기억하고 추천하고 다음 화를 누를 고점이 없으면 95점 통과를 주지 않는다.
 
 Score these 5 axes from 0-10:
 
@@ -253,9 +253,11 @@ Score these 5 axes from 0-10:
 4. **genre_specific_delight**: 장르 독자가 기대한 쾌감 경로가 실제 장면으로 충족되는가?
 5. **next_click_compulsion**: 고점 이후 더 알고 싶은 질문이나 관계/위험/보상 예고가 남는가?
 
-**90+ Score Cap Rule**:
-- `engagement_score >= 90` requires at least 4 of 5 high-point axes >= 8 and no axis < 7.
-- If this condition is not met, cap `engagement_score` at 89 and write the exact reason in `high_point_assessment.score_cap_reason`.
+**95+ Masterpiece Pass Rule**:
+- `engagement_score >= 95` requires all 5 high-point axes >= 9.
+- The 95-point pass also requires at least one concrete recommend/re-read level high point: hook strength 9-10, emotional beat intensity 9-10, or a reader question that names a future cost/reward the reader urgently wants resolved.
+- If this condition is not met, cap `engagement_score` at 94 and write the exact reason in `high_point_assessment.score_cap_reason`.
+- 90-94 can be strong, but it is still below the 95-point beta-reader gate.
 - A high score must be supported by concrete locations in hooks, emotional beats, reader questions, or drop-off-risk absence. Do not award "COMPELLING" from general positive impression alone.
 
 ---
@@ -353,7 +355,7 @@ Total: /100
 
 ### Step 4: Score Masterpiece High Points
 - Evaluate `high_point_assessment`
-- Apply the 90+ score cap rule before final verdict
+- Apply the 95+ masterpiece pass rule before final verdict
 - Explain missing high-point evidence as reader-facing dissatisfaction, not craft jargon
 
 ### Step 5: Identify Specific Issues
@@ -389,7 +391,7 @@ Return JSON matching engagement.schema.json:
     "payoff_delight": 7,
     "genre_specific_delight": 8,
     "next_click_compulsion": 9,
-    "score_cap_reason": "고점 장면 이미지는 선명하지만 보상 쾌감과 서사 상태 변화가 아직 90점대 확신에는 약함"
+    "score_cap_reason": "고점 장면 이미지는 선명하지만 보상 쾌감과 서사 상태 변화가 아직 95점 통과에는 약함"
   },
   "drop_off_risk": [
     {
