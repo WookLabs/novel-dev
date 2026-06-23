@@ -127,6 +127,9 @@ Task(subagent_type="novel-dev:novelist", model="opus", prompt="
 문체 주의:
 - `prose_taste_profile.max_short_sentence_run` 기준을 넘는 연속 단문 끊어쓰기를 피하세요. 짧은 문장은 타격점에만 남기고, 원인/대조/결과가 이어지는 문장은 중문이나 복문으로 묶어 문장 리듬을 변주합니다.
 - `monotone-short-sentence-run`이 나오면 짧은 서술문이 기계적으로 끊어진 AI 문체로 판정됩니다.
+- `prose_taste_profile.min_sentence_length_variation_coefficient`와 `max_uniform_sentence_length_run` 기준을 지키세요. 비슷한 길이의 중간 서술문이 줄줄이 이어지면 `uniform-sentence-length-cadence`로 판정되므로 짧은 타격문, 감각 앵커가 붙은 중문, 선택/결과를 묶은 긴 문장을 장면 박자에 맞게 섞습니다.
+- `prose_taste_profile.max_same_ending_run`과 `max_dominant_sentence_ending_share` 기준을 지키세요. `same-ending-run` 또는 `dominant-ending-cadence-lock`이 나오면 -했다/-였다/-다 종결이 보고서처럼 반복된 것이므로 종결 일부를 행동 비트, 대사 반응, 감각 잔향, 원인-결과 연결문으로 바꿉니다.
+- `prose_taste_profile.max_dominant_dialogue_ending_share`와 `max_dominant_dialogue_starter_share` 기준을 지키세요. `dialogue-ending-cadence-lock` 또는 `dialogue-starter-cadence-lock`이 나오면 인물 대사의 말끝/첫머리가 같은 공식으로 잠긴 것이므로 캐릭터별 말끝, 생략, 반문, 조건 제시, 회피, 침묵 비트를 분리합니다.
 - `prose_taste_profile.min_immersive_rhythm_anchor_density_per_1000` 또는 `max_immersive_rhythm_flatline_run` 기준을 어기면 `immersive-rhythm-flatline`으로 판정됩니다. 설명/판단 문장을 늘이는 대신 물증, 손동작, 대사 반응, 선택 비용, 감각 앵커를 두세 문장마다 넣어 문단이 장면 안에서 숨 쉬게 씁니다.
 - `prose_taste_profile.max_hedged_perception_density_per_1000` 기준을 넘는 듯했다/것 같았다/느껴졌다/어쩐지/묘하게/희미하게 같은 완충 표현 반복을 피하세요. `hedged-perception-haze`가 나오면 인물이 실제로 본 것, 한 선택, 틀린 판단의 결과를 문장에 직접 세워 다시 씁니다.
 - `prose_taste_profile.max_sensory_wallpaper_run` 기준을 넘는 차가운 빛, 비릿한 냄새, 축축한 바람, 희미한 그림자식 감각 묘사 연쇄를 피하세요. `sensory-wallpaper-run`이 나오면 감각 묘사 일부를 새 단서 확인, 인물의 선택, 위험 변화, 관계 반응, 즉각적 결과로 바꿔 감각이 장면 상태를 움직이게 씁니다.

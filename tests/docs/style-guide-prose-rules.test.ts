@@ -8,6 +8,10 @@ function readJson(path: string): Record<string, any> {
   return JSON.parse(readFileSync(join(repoRoot, path), 'utf8'));
 }
 
+function readText(path: string): string {
+  return readFileSync(join(repoRoot, path), 'utf8');
+}
+
 describe('style guide prose rules template', () => {
   const requiredAntiPatternIds = [
     'consecutive-short-sentences',
@@ -52,5 +56,24 @@ describe('style guide prose rules template', () => {
     const template = readJson('templates/style-guide.template.json');
 
     expect(template.prose_taste_profile.minimum_score).toBeGreaterThanOrEqual(95);
+  });
+
+  it('teaches core writing loops to avoid uniform rhythm and ending cadence locks', () => {
+    const writingDocs = ['skills/06-write/SKILL.md', 'skills/08-write-all/SKILL.md'].map(
+      readText
+    );
+
+    for (const doc of writingDocs) {
+      expect(doc).toContain('uniform-sentence-length-cadence');
+      expect(doc).toContain('same-ending-run');
+      expect(doc).toContain('dominant-ending-cadence-lock');
+      expect(doc).toContain('dialogue-ending-cadence-lock');
+      expect(doc).toContain('dialogue-starter-cadence-lock');
+      expect(doc).toContain('max_uniform_sentence_length_run');
+      expect(doc).toContain('max_same_ending_run');
+      expect(doc).toContain('max_dominant_sentence_ending_share');
+      expect(doc).toContain('max_dominant_dialogue_ending_share');
+      expect(doc).toContain('max_dominant_dialogue_starter_share');
+    }
   });
 });
