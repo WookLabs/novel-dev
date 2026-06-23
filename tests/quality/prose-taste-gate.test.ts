@@ -219,6 +219,15 @@ CCTV 시간을 정리했다.
 모든 기록은 조사 목록에 추가됐다.
 `.trim();
 
+const OBJECT_ACTION_LOG_CADENCE_PROSE = `
+봉투 안쪽의 숫자를 손바닥 위에 옮겨 적었다.
+접힌 사진 뒷면의 얼룩을 휴대폰 불빛 아래에서 다시 확인했다.
+통화 기록 맨 아래 빈칸을 노트 첫 줄에 그대로 베껴 놓았다.
+컵 옆에 놓인 녹음기의 시간을 신고 기록과 천천히 맞춰 보았다.
+복도 끝 카메라 번호를 지도 가장자리에 작게 표시해 두었다.
+탁자 아래 떨어진 열쇠를 주머니에 넣고 문 앞까지 걸어갔다.
+`.trim();
+
 const GROUNDED_PROCEDURAL_DEDUCTION_PROSE = `
 서연은 통화 기록을 확인하다가 21시 14분만 비어 있는 것을 봤다.
 사진 뒷면의 번호를 로그와 맞춰 보자 민준의 알리바이가 7분 무너졌다.
@@ -1794,6 +1803,19 @@ describe('evaluateProseTaste', () => {
     expect(result.issues.map(issue => issue.code)).not.toContain(
       'procedural-checklist-cadence'
     );
+  });
+
+  it('fails object-action log cadence that hides AI-like procedural rhythm behind omitted subjects', () => {
+    const result = evaluateProseTaste(OBJECT_ACTION_LOG_CADENCE_PROSE, {
+      threshold: 95,
+    });
+    const codes = result.issues.map(issue => issue.code);
+
+    expect(result.passed).toBe(false);
+    expect(result.score).toBeLessThan(95);
+    expect(result.metrics.proceduralChecklistDensityPer1000).toBeGreaterThan(5);
+    expect(result.metrics.longestProceduralChecklistRun).toBeGreaterThan(3);
+    expect(codes).toContain('procedural-checklist-cadence');
   });
 
   it('allows projects to loosen procedural checklist limits for deliberately documentary forms', () => {
