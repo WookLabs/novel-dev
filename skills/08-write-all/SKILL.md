@@ -79,7 +79,7 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 - **Revelation Consequence Carryover Gate**: revelation consequence carryover / 폭로 결과 이월은 전 회차 폭로가 다음 회차의 계획 변경, 새 압박, 용의자 지도, 관계 판단, 다음 질문으로 이어지는지 확인합니다. 전 회차 `chapter_reward`, `must_click_ending`, `context.next_plot`의 폭로가 다음 회차 previous_summary/current_plot/reader_experience/opening scene에 현재 행동 변화로 보이지 않으면 `revelation-consequence-carryover-not-staged`, 원고 초반에서 빠지면 `manuscript-revelation-consequence-carryover-not-evidenced`
 - **Mystery Hypothesis Carryover Gate**: mystery hypothesis carryover / 추리 가설 이월은 직전 단서가 다음 회차의 가설 수정, 용의자 순위 재정렬, 용의자 제외/승격, 다음 검증 행동으로 이어지는지 확인합니다. 직전 단서가 previous_summary/current_plot/reader_experience/opening scene에 추론 상태 변화로 보이지 않으면 `mystery-hypothesis-carryover-not-staged`, 원고 초반에서 빠지면 `manuscript-mystery-hypothesis-carryover-not-evidenced`
 - **Scene Causal Escalation Gate**: scene causal escalation은 장면 간 인과를 확인합니다. 이전 scene 결과가 `직후`, `그 결과`, `이어` 같은 인과 연결로 다음 scene 압박, 행동, 결과를 밀지 못하면 `scene-causal-escalation-not-staged`
-- **Scene Active Opposition Gate**: scene active opposition / 능동 반대세력은 scene conflict/beat의 장면 압박 뒤에 적대적 의지와 의도적 방해, 조작, 협박, 표적화를 요구합니다. 날씨/정전/잠긴 문 같은 비의지적 장애물뿐이면 `scene-active-opposition-not-staged`, 원고에서 빠지면 `manuscript-active-opposition-not-evidenced`
+- **Scene Active Opposition Gate**: scene active opposition / 능동 반대세력은 scene conflict/beat의 장면 압박 뒤에 적대적 의지와 의도적 방해, 조작, 협박, 표적화를 요구합니다. 날씨/정전/잠긴 문 같은 비의지적 장애물뿐이면 `scene-active-opposition-not-staged`, 원고에서 빠지면 `manuscript-active-opposition-not-evidenced`, 익명 주체만 있으면 `manuscript-active-opposition-actor-too-vague`
 - **Manuscript Temporal Pressure Gate**: temporal pressure / 시간 압박은 제한 시간, 카운트다운, 남은 n분, 기한, 사망 시각 같은 ticking-clock 표식이 실제 행동과 선택지를 좁히는지 확인합니다. 시간 압박을 말하지만 주인공 대응과 늦어짐/놓침/닫힌 선택지/사라진 증거/줄어든 기한 같은 결과가 같은 장면 흐름에 없으면 `manuscript-temporal-pressure-not-evidenced`
 - **Scene Goal-Tactic Turn Gate**: scene goal-tactic turn / 장면 목표-전술 전환은 핵심 scene conflict/beat가 주인공의 구체 목표, 목표를 막는 힘, 전술 또는 전술 전환, 바뀐 결과를 함께 갖는지 확인합니다. 사건 결과는 있지만 주인공 목표와 방법 변화가 비어 있으면 `scene-goal-tactic-turn-not-staged`
 - **Spatial Blocking Gate**: spatial blocking은 액션/위기 장면의 공간 블로킹을 확인합니다. 장소 기준점, 동선, 차단물, 거리 압박이 원고에 보이지 않으면 `manuscript-spatial-blocking-not-evidenced`
@@ -125,7 +125,7 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 - **Manuscript Stakes Clarity Gate**: 원고에서 돌이킬 수 없는 행동 전에 구체 손실 대상과 닥친 위협/비용이 보이는 stakes clarity가 없으면 `manuscript-stakes-not-evidenced`
 - **Manuscript Stakes Subject Specificity Gate**: stakes subject specificity / 스테이크 대상 개인화는 `피해자`, `표적`, `대상`, `수신자`, `사람` 같은 일반 명사가 독자가 걱정할 대상이 되도록 이름, 관계, 역할, 소지품, 목소리, 메시지, 신분증, 사진, 사건/파일 번호 같은 구체 흔적을 첫 압박 창에 붙이는 기준입니다. 없으면 `manuscript-stakes-subject-not-personalized`
 - **Manuscript Reader Desire Gate**: reader desire intensity / 독자 욕망은 사건을 확인하는 기능 비트가 아니라 독자가 바라는 결과를 만드는 기준입니다. 원고에서 구체 손실 대상, 주인공 의도(구함/보호/되찾음/증명), 실패 비용, 차단된 선택지가 같은 회차 흐름에 보이지 않으면 `manuscript-reader-desire-not-evidenced`
-- **Manuscript Active Opposition Gate**: 원고에서 장면 압박 뒤에 active opposition이 없고, 적대적 의지의 의도적 방해/조작/협박/표적화가 보이지 않으면 `manuscript-active-opposition-not-evidenced`
+- **Manuscript Active Opposition Gate**: 원고에서 장면 압박 뒤에 active opposition이 없고, 적대적 의지의 의도적 방해/조작/협박/표적화가 보이지 않으면 `manuscript-active-opposition-not-evidenced`. 방해 행동이 있어도 `누군가`, `익명의`, `알 수 없는`, `그들` 같은 익명 주체뿐이고 이름/역할/적대 시스템이 없으면 `manuscript-active-opposition-actor-too-vague`
 - **Manuscript Antagonist Strategy Gate**: 원고 본문 manuscript에서 antagonist strategy가 이름/별칭이 있는 반대세력의 함정, 조작, 표적화, countermove로 장면화되지 않으면 `manuscript-antagonist-strategy-not-evidenced`
 - **Manuscript Antagonist Countermove Carryover Gate**: antagonist countermove carryover / 반대세력 대응 이월은 전 회차 주인공 행동 때문에 반대세력이 원고 초반에서 반격, 전술 변경, 표적 재설정, 증거 삭제, 접근 권한 회수로 현재 압박을 바꾸는지 확인합니다. 같은 함정만 반복하면 `antagonist-countermove-carryover-not-staged` 또는 `manuscript-antagonist-countermove-carryover-not-evidenced`
 - **Manuscript Character Development Gate**: `narrative_elements.character_development`의 인물 변화를 선택, 인정, 사과, 공개, 대가, 관계 행동, 달라진 행동으로 원고 본문 manuscript에 실행하지 않으면 `manuscript-character-development-not-evidenced`
@@ -569,6 +569,9 @@ for act in acts:
 
         if any(issue.code == "manuscript-active-opposition-not-evidenced" for issue in engagement.issues):
             diagnostic.add("active opposition 누락", "chapters/chapter_XXX.md manuscript에서 장면 압박을 적대적 의지의 의도적 방해, 조작, 협박, 표적화로 실제 장면화합니다.")
+
+        if any(issue.code == "manuscript-active-opposition-actor-too-vague" for issue in engagement.issues):
+            diagnostic.add("active opposition 주체 모호", "chapters/chapter_XXX.md manuscript에서 방해 주체를 익명으로 두지 말고 이름 있는 반대세력, 구체 역할, 적대 시스템과 전술로 연결합니다.")
 
         if any(issue.code == "scene-active-opposition-not-staged" for issue in engagement.issues):
             diagnostic.add("능동 반대세력 누락", "scene active opposition을 보강합니다. scene conflict/beat의 장면 압박을 날씨/정전/잠긴 문 같은 비의지적 장애물로만 두지 말고, 적대적 의지의 의도적 방해, 조작, 협박, 표적화로 설계합니다.")

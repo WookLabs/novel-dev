@@ -87,6 +87,7 @@ export type EngagementIssueCode =
   | 'manuscript-stakes-not-evidenced'
   | 'manuscript-stakes-subject-not-personalized'
   | 'manuscript-active-opposition-not-evidenced'
+  | 'manuscript-active-opposition-actor-too-vague'
   | 'manuscript-pressure-not-evidenced'
   | 'manuscript-temporal-pressure-not-evidenced'
   | 'manuscript-tactical-adaptation-not-evidenced'
@@ -2131,6 +2132,7 @@ function directiveCategoryRank(code: EngagementIssueCode): number {
     code === 'manuscript-stakes-not-evidenced' ||
     code === 'manuscript-stakes-subject-not-personalized' ||
     code === 'manuscript-active-opposition-not-evidenced' ||
+    code === 'manuscript-active-opposition-actor-too-vague' ||
     code === 'manuscript-pressure-not-evidenced' ||
     code === 'manuscript-temporal-pressure-not-evidenced' ||
     code === 'manuscript-tactical-adaptation-not-evidenced' ||
@@ -2587,6 +2589,11 @@ function directiveTemplate(
       return {
         target: 'manuscript',
         action: 'Rewrite manuscript prose so active opposition is visible on page: an antagonist, hostile system, or opposing human will deliberately blocks, manipulates, threatens, or targets the protagonist around the scene pressure.',
+      };
+    case 'manuscript-active-opposition-actor-too-vague':
+      return {
+        target: 'manuscript',
+        action: 'Rewrite manuscript prose so the active opposition is attached to a named opposing actor, concrete opposing role, or hostile system with a readable tactic, not only an anonymous someone blocking the scene.',
       };
     case 'manuscript-pressure-not-evidenced':
       return {
@@ -3768,6 +3775,17 @@ function evaluateManuscriptEvidence(
       message: 'The manuscript pressure does not show an active opposing will behind the obstacle or threat.',
       expected:
         'active opposition: an antagonist, hostile system, or opposing human will deliberately blocks, manipulates, threatens, or targets the protagonist around the scene pressure.',
+      actual: activeOpposition.actual,
+    });
+  } else if (activeOpposition.concreteActorWindows < 1) {
+    manuscriptMomentum -= 60;
+    issues.push({
+      code: 'manuscript-active-opposition-actor-too-vague',
+      severity: 'critical',
+      message:
+        'The manuscript stages an active block or threat, but the opposing actor remains too anonymous to create a readable contest of wills.',
+      expected:
+        'active opposition identity: at least one pressure window should attach the blocking action to a named opposing actor, concrete opposing role, or hostile system with a readable tactic.',
       actual: activeOpposition.actual,
     });
   }
@@ -5094,7 +5112,7 @@ function extractSceneNoveltySettingModes(evidence: string): Set<string> {
 
 function extractSceneNoveltyOppositionModes(evidence: string): Set<string> {
   const modes = new Set<string>();
-  if (/(누군가|범인|가해자|내부자|박도현|적대|반대\s*세력).{0,40}(숨기|잠그|꺼뜨리|조작|표적|몰아넣|유인|협박|감시|차단|삭제|빼앗)/u.test(evidence)) {
+  if (/(누군가|범인|가해자|내부자|박도현|개발자|관리자|조작자|감시자|예고\s*앱|앱이|시스템|적대|반대\s*세력).{0,40}(숨기|잠그|꺼뜨리|조작|표적|몰아넣|유인|협박|감시|차단|삭제|빼앗)/u.test(evidence)) {
     modes.add('hidden-countermove');
   }
   if (/(함정|유인|미끼|역공|카운터무브|countermove|표적.{0,12}바뀌|수신자.{0,12}바뀌)/u.test(evidence)) {
@@ -7488,6 +7506,7 @@ interface ManuscriptTacticalAdaptationAssessment {
 interface ManuscriptActiveOppositionAssessment {
   passed: boolean;
   actual: string;
+  concreteActorWindows: number;
 }
 
 interface ManuscriptStakesClarityAssessment {
@@ -7614,6 +7633,10 @@ function assessManuscriptStakesSubjectSpecificity(
 
 const ACTIVE_OPPOSITION_ACTOR_PATTERN =
   /(범인|살인자|가해자|협박범|추적자|감시자|조작자|개발자|관리자|내부자|경찰\s*내부|조직|상대|누군가|익명의|알\s*수\s*없는|그들|예고\s*앱|앱이|시스템이)/u;
+const CONCRETE_ACTIVE_OPPOSITION_ACTOR_PATTERN =
+  /(범인|살인자|가해자|협박범|추적자|감시자|조작자|개발자|관리자|내부자|경찰\s*내부|조직|상대|예고\s*앱|앱이|시스템이)/u;
+const VAGUE_ACTIVE_OPPOSITION_ACTOR_PATTERN =
+  /(누군가|익명의|알\s*수\s*없는|그들)/u;
 const ACTIVE_OPPOSITION_INTENT_PATTERN =
   /(막|가로막|차단|잠그|잠갔|끄|꺼뜨|꺼트|조작|삭제|지웠|숨기|빼앗|유인|협박|위협|쫓|추격|공격|붙잡|밀쳐|속이|거짓|함정|표적|노렸|겨눴|감시|기록을\s*바꿨|알림을\s*보냈|이름을\s*올렸)/u;
 const ACTIVE_OPPOSITION_PRESSURE_PATTERN =
@@ -7627,11 +7650,14 @@ function assessManuscriptActiveOpposition(
     return {
       passed: false,
       actual: 'evaluable windows=0, active opposition windows=0',
+      concreteActorWindows: 0,
     };
   }
 
   const evaluableSentenceCount = Math.max(1, sentences.length - 2);
   let actorWindows = 0;
+  let concreteActorWindows = 0;
+  let vagueOnlyActorWindows = 0;
   let intentWindows = 0;
   let pressureWindows = 0;
   let activeOppositionWindows = 0;
@@ -7639,6 +7665,8 @@ function assessManuscriptActiveOpposition(
   for (let index = 0; index < evaluableSentenceCount; index++) {
     const window = sentences.slice(index, Math.min(sentences.length, index + 2)).join(' ');
     const hasActor = ACTIVE_OPPOSITION_ACTOR_PATTERN.test(window);
+    const hasConcreteActor = CONCRETE_ACTIVE_OPPOSITION_ACTOR_PATTERN.test(window);
+    const hasVagueActor = VAGUE_ACTIVE_OPPOSITION_ACTOR_PATTERN.test(window);
     const hasIntent = ACTIVE_OPPOSITION_INTENT_PATTERN.test(window);
     const hasPressure = ACTIVE_OPPOSITION_PRESSURE_PATTERN.test(window);
 
@@ -7647,12 +7675,18 @@ function assessManuscriptActiveOpposition(
     if (hasPressure) pressureWindows += 1;
     if (hasActor && hasIntent && hasPressure) {
       activeOppositionWindows += 1;
+      if (hasConcreteActor) concreteActorWindows += 1;
+      if (hasVagueActor && !hasConcreteActor) vagueOnlyActorWindows += 1;
     }
   }
 
   return {
     passed: activeOppositionWindows >= 1,
-    actual: `evaluable windows=${evaluableSentenceCount}, active opposition windows=${activeOppositionWindows}, actor windows=${actorWindows}, intent/action windows=${intentWindows}, pressure-context windows=${pressureWindows}`,
+    actual:
+      `evaluable windows=${evaluableSentenceCount}, active opposition windows=${activeOppositionWindows}, ` +
+      `actor windows=${actorWindows}, concrete active opposition windows=${concreteActorWindows}, vague-only active opposition windows=${vagueOnlyActorWindows}, ` +
+      `intent/action windows=${intentWindows}, pressure-context windows=${pressureWindows}`,
+    concreteActorWindows,
   };
 }
 
