@@ -438,6 +438,7 @@ const FUN_SPEC_FIELDS: Array<{
 ];
 
 const FUN_SPEC_ALIGNMENT_THRESHOLD = 0.55;
+export const MASTERPIECE_ENGAGEMENT_PASS_SCORE = 95;
 
 /**
  * Evaluate whether a chapter preserves the reader promise and per-chapter fun spec.
@@ -1063,7 +1064,9 @@ export function evaluateEngagementContract(input: EngagementContractInput): Enga
   );
 
   return {
-    passed: score >= 85 && !issues.some(issue => issue.severity === 'critical'),
+    passed:
+      score >= MASTERPIECE_ENGAGEMENT_PASS_SCORE &&
+      !issues.some(issue => issue.severity === 'critical'),
     score,
     breakdown: {
       promiseAlignment,

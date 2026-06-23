@@ -143,6 +143,27 @@ describe('evaluateEngagementContract', () => {
     expect(result.revisionDirectives).toEqual([]);
   });
 
+  it('fails below the 95 point masterpiece engagement bar even without critical issues', () => {
+    const result = evaluateEngagementContract({
+      design,
+      plot,
+      chapter: {
+        ...alignedChapter,
+        reader_experience: {
+          ...alignedChapter.reader_experience,
+          cliffhanger_strength: 6,
+        },
+      },
+    });
+
+    expect(result.score).toBeLessThan(95);
+    expect(result.issues.map(issue => issue.code)).toEqual(
+      expect.arrayContaining(['weak-cliffhanger'])
+    );
+    expect(result.issues.some(issue => issue.severity === 'critical')).toBe(false);
+    expect(result.passed).toBe(false);
+  });
+
   it('fails when plot arc beat is not staged in chapter metadata', () => {
     const arcBeat =
       '주인공이 폐쇄 서버실에서 관리자 서명과 개발자 실명 로그를 발견한다.';
