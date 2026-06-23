@@ -4,6 +4,7 @@ import {
   FILTER_WORDS,
   SENSORY_CATEGORIES,
   MAX_DIRECTIVES_PER_PASS,
+  MASTERPIECE_PASS_SCORE,
   MIN_SENSES_PER_500_CHARS,
   MAX_CONSECUTIVE_SAME_ENDINGS,
   // Functions
@@ -52,6 +53,7 @@ describe('Quality Oracle Constants', () => {
 
   it('should have correct limits', () => {
     expect(MAX_DIRECTIVES_PER_PASS).toBe(5);
+    expect(MASTERPIECE_PASS_SCORE).toBe(95);
     expect(MIN_SENSES_PER_500_CHARS).toBe(3);
     expect(MAX_CONSECUTIVE_SAME_ENDINGS).toBe(5);
   });
@@ -430,6 +432,25 @@ describe('analyzeChapter', () => {
 
     expect(result.verdict).toBe('PASS');
     expect(result.directives.length).toBe(0);
+  });
+
+  it('should reject otherwise polished prose when any filter word remains', () => {
+    const content = '창문 아래 흰빛이 바닥을 잘랐다. ' +
+      '금속성 종소리가 복도 끝에서 굴러왔는가? ' +
+      '차가운 난간이 손바닥을 밀어냈지. ' +
+      '젖은 먼지 냄새가 코끝을 찔렀네. ' +
+      '그녀는 불안을 느꼈다. ' +
+      '혀끝에는 오래된 쇳맛이 남았다!';
+
+    const result = analyzeChapter(content, 1, {
+      assessKoreanTexture: false,
+      detectBannedExpressions: false,
+    });
+
+    expect(result.assessment.filterWordDensity.count).toBe(1);
+    expect(result.assessment.proseQuality.score).toBeLessThan(MASTERPIECE_PASS_SCORE);
+    expect(result.verdict).toBe('REVISE');
+    expect(result.directives.map(directive => directive.type)).toContain('filter-word-removal');
   });
 
   it('should return REVISE with directives for problematic content', () => {

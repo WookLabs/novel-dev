@@ -77,6 +77,16 @@ export const SENSORY_CATEGORIES = {
 export const MAX_DIRECTIVES_PER_PASS = 5;
 
 /**
+ * Minimum internal prose score required before a chapter can pass the loop.
+ */
+export const MASTERPIECE_PASS_SCORE = 95;
+
+/**
+ * A 95-point prose pass requires zero filter words outside dialogue.
+ */
+export const MAX_FILTER_WORDS_FOR_PASS = 0;
+
+/**
  * Minimum senses required per 500 characters
  */
 export const MIN_SENSES_PER_500_CHARS = 3;
@@ -593,7 +603,7 @@ export function analyzeChapter(
 
   // 1. Filter word analysis
   const filterWords = getFilterWordsOutsideDialogue(content);
-  const filterWordDensity = (filterWords.length / content.length) * 1000;
+  const filterWordDensity = content.length > 0 ? (filterWords.length / content.length) * 1000 : 0;
   const filterWordIssues: string[] = [];
 
   for (const fw of filterWords.slice(0, 3)) { // Limit to first 3 for issues list
@@ -910,13 +920,23 @@ export function analyzeChapter(
   }
 
   // 6. Calculate scores
-  const proseScore = Math.max(0, 100 - (filterWords.length * 5) - (rhythmIssues.length * 10));
+  const proseScore = Math.max(0, 100 - (filterWords.length * 10) - (rhythmIssues.length * 15));
   const proseIssues = [...filterWordIssues, ...rhythmProblems];
+  const characterVoiceScore = 100;
+  const transitionIssues = [
+    ...dryTransitions.map(dt => `건조한 전환 "${dt.matched}"`),
+    ...functionalNarrations.map(fn => `기능적 서술 "${fn.matched}"`),
+    ...metaNarratives.map(mn => `메타 내러티브 "${mn.matched}"`),
+  ];
+  const transitionScore = Math.max(
+    0,
+    100 - (dryTransitions.length * 20) - (functionalNarrations.length * 25) - (metaNarratives.length * 40)
+  );
 
   const assessment: QualityAssessment = {
     proseQuality: {
       score: proseScore,
-      verdict: proseScore >= 70 ? '양호' : '개선 필요',
+      verdict: proseScore >= MASTERPIECE_PASS_SCORE ? '대작 기준 충족' : '개선 필요',
       issues: proseIssues,
     },
     sensoryGrounding: {
@@ -927,19 +947,19 @@ export function analyzeChapter(
     filterWordDensity: {
       count: filterWords.length,
       perThousand: Math.round(filterWordDensity * 100) / 100,
-      threshold: 3.0, // Max 3 per 1000 chars
+      threshold: MAX_FILTER_WORDS_FOR_PASS,
     },
     rhythmVariation: {
       score: Math.max(0, 100 - rhythmIssues.length * 20),
       repetitionInstances: rhythmProblems,
     },
     characterVoice: {
-      score: 80, // Placeholder - requires character profile analysis
+      score: characterVoiceScore,
       driftInstances: [],
     },
     transitionQuality: {
-      score: 80, // Placeholder - requires scene boundary analysis
-      issues: [],
+      score: transitionScore,
+      issues: transitionIssues,
     },
     // Include honorific consistency only if matrix was provided
     ...(options?.honorificMatrix && {
@@ -990,10 +1010,11 @@ export function analyzeChapter(
   const bannedExpressionPasses = bannedCounts.critical === 0 && bannedCounts.high <= 2;
 
   const verdict: 'PASS' | 'REVISE' = (
-    avgScore >= 70 &&
-    filterWords.length <= 5 &&
+    avgScore >= MASTERPIECE_PASS_SCORE &&
+    filterWords.length <= MAX_FILTER_WORDS_FOR_PASS &&
     rhythmIssues.length === 0 &&
     sensory.adequate &&
+    transitionIssues.length === 0 &&
     honorificPasses &&
     bannedExpressionPasses
   ) ? 'PASS' : 'REVISE';
@@ -1022,10 +1043,10 @@ function generateReaderExperience(assessment: QualityAssessment, verdict: 'PASS'
     weaknesses.push('감각적 묘사가 부족하여 장면이 평면적으로 느껴집니다');
   }
 
-  if (assessment.filterWordDensity.perThousand <= 2) {
+  if (assessment.filterWordDensity.count === 0) {
     strengths.push('직접적인 문체로 독자에게 강렬하게 전달됩니다');
-  } else if (assessment.filterWordDensity.perThousand > 4) {
-    weaknesses.push('필터 워드가 많아 감정 전달이 약해집니다');
+  } else {
+    weaknesses.push('필터 워드가 남아 감정 전달이 약해집니다');
   }
 
   if (assessment.rhythmVariation.score >= 80) {

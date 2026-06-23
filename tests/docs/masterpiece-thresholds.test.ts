@@ -81,6 +81,22 @@ describe('masterpiece operating thresholds', () => {
     expect(doc).not.toContain('≥85 = Pass');
   });
 
+  it('keeps quality-oracle pass criteria aligned with the 95 point prose bar', () => {
+    const agentDoc = readText('agents/quality-oracle.md');
+    const pipelineCode = readText('src/pipeline/quality-oracle.ts');
+
+    expect(agentDoc).toContain('- Average score >= 95');
+    expect(agentDoc).toContain('- Filter words = 0');
+    expect(agentDoc).not.toContain('- Average score >= 70');
+    expect(agentDoc).not.toContain('- Filter words <= 5');
+    expect(agentDoc).not.toContain('- Average score < 70');
+
+    expect(pipelineCode).toContain('MASTERPIECE_PASS_SCORE = 95');
+    expect(pipelineCode).not.toContain('avgScore >= 70');
+    expect(pipelineCode).not.toContain('filterWords.length <= 5');
+    expect(pipelineCode).not.toContain('Placeholder - requires');
+  });
+
   it('keeps agent-facing chapter verifier guidance at 95 in root and write-all docs', () => {
     const rootAgents = readText('AGENTS.md');
     const writeAllGuide = readText('skills/08-write-all/references/detailed-guide.md');

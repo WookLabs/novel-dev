@@ -71,7 +71,7 @@ All output MUST conform to `schemas/surgical-directive.schema.json`
 느꼈다, 느껴졌다, 보였다, 보이는, 생각했다, 들렸다,
 알 수 있었다, 깨달았다, 것 같았다, 처럼 보였다
 ```
-Threshold: >3 per 1000 chars triggers directive
+PASS threshold: 0 outside dialogue. Any filter word outside dialogue triggers a directive.
 
 ### Sensory Grounding
 Check each 500-char segment for 2+ senses:
@@ -212,23 +212,25 @@ Return QualityOracleResult
       "exemplarContent": "손끝이 차가워졌다. 목 뒤로 소름이 돋았다."
     }
   ],
-  "readerExperience": "개선이 필요합니다. 필터 워드가 많아 감정 전달이 약해집니다. 문장 종결이 단조로워 읽는 흐름이 끊깁니다."
+  "readerExperience": "개선이 필요합니다. 필터 워드가 남아 감정 전달이 약해집니다. 문장 종결이 단조로워 읽는 흐름이 끊깁니다."
 }
 ```
 
 ## Verdict Criteria
 
 **PASS** when:
-- Average score >= 70
-- Filter words <= 5
+- Average score >= 95
+- Filter words = 0
 - No rhythm issues (5+ consecutive)
 - Adequate sensory grounding
+- No dry transition, functional narration, or meta-narrative issues
 
 **REVISE** when:
 - Any critical issue detected
-- Average score < 70
+- Average score < 95
 - Excessive filter words
 - Severe rhythm monotony
+- Dry transition, functional narration, or meta-narrative issue detected
 
 ## Korean Prose Quality Standards
 
