@@ -93,6 +93,13 @@ Flag `uniform-sentence-length-cadence` when 5+ mid-length narration sentences ke
 - Use existing directive type `rhythm-variation`; do not create a new directive type.
 - Instruction: "비슷한 길이의 문장 일부를 짧은 결정문, 감각 앵커가 붙은 중문, 선택/결과를 묶은 긴 문장으로 재배열해 문단 내부 호흡 대비를 만드세요"
 
+### Immersive Rhythm Map
+Before PASS, check whether the passage has a 리듬 맵 rather than only "no obvious defects":
+- The prose should show 장면 압박에 맞춘 호흡: pressure beats use short decision/action/result sentences, breath beats lower intensity through sensory/object/POV anchors, and reignition beats pull the next sentence with a new question, threat, or choice cost.
+- Flag AI식 규칙적 단문 반복 when sentences keep the same length, same declarative ending, or same subject-action beat without pressure change.
+- Use `rhythm-variation` and require 문장 길이 변주 that creates 압박-호흡-재점화, not random sentence splitting or decorative commas.
+- If a technically clean paragraph still reads flat because every sentence takes the same breath, emit a directive even when filter words and sensory density pass.
+
 ### Consecutive Short Sentences (AI 끊어쓰기 감지)
 Flag 3+ consecutive flat declarative narration sentences where each is 20자 이하:
 - "잡혔다. 도현은 발버둥 쳤다. 소용없었다." → directive

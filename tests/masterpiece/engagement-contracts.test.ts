@@ -508,6 +508,28 @@ describe('masterpiece engagement contracts', () => {
     expect(actReviewSkill).toContain('독자 몰입');
   });
 
+  it('writing, verification, and 2-pass agents should require an immersive rhythm map', () => {
+    const writeSkill = readText('skills/06-write/SKILL.md');
+    const writeAllSkill = readText('skills/08-write-all/SKILL.md');
+    const verifyChapterSkill = readText('skills/verify-chapter/SKILL.md');
+    const qualityOracle = readText('agents/quality-oracle.md');
+    const proseSurgeon = readText('agents/prose-surgeon.md');
+
+    for (const doc of [
+      writeSkill,
+      writeAllSkill,
+      verifyChapterSkill,
+      qualityOracle,
+      proseSurgeon,
+    ]) {
+      expect(doc).toContain('리듬 맵');
+      expect(doc).toContain('문장 길이 변주');
+      expect(doc).toContain('압박-호흡-재점화');
+      expect(doc).toContain('AI식 규칙적 단문 반복');
+      expect(doc).toContain('장면 압박에 맞춘 호흡');
+    }
+  });
+
   it('writing and verification workflows should escalate 3x recurring engagement failures structurally', () => {
     const writeSkill = readText('skills/06-write/SKILL.md');
     const writeAllSkill = readText('skills/08-write-all/SKILL.md');

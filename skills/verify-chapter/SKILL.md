@@ -189,6 +189,7 @@ Bash("node dist/cli/apply-chapter-gate.js --project {projectPath} --chapter {N} 
 - `chapters/chapter_XXX.md` 원고 본문 manuscript가 `tension_reset_plan`을 장면화하지 않고 위기, 경보, 추격, 폭로를 계속 고조만 시키면 `manuscript-tension-reset-not-evidenced`를 critical로 표시합니다. 고강도 비트 뒤 짧은 호흡, 감각 정적, 단서 해석, 감정 리셋을 둔 다음 새 질문/새 위협으로 재점화해야 합니다.
 - `chapters/chapter_XXX.md` 원고 본문 manuscript가 high-tension peak event를 사건명이나 긴장감 설명으로만 처리하고 같은 1~3문장 안에 구체 위험/장애물, 주인공 행동/강제 선택, 되돌릴 수 없는 결과/폭로/새 질문을 묶지 않으면 `manuscript-tension-peak-not-evidenced`를 critical로 표시합니다.
 - `chapters/chapter_XXX.md` 원고 본문 manuscript가 high-tension 회차의 tension wave / 긴장 파형을 만들지 못해 초반 압박, 중반 악화, 말미 고점, 열린 질문이 순서대로 보이지 않으면 `manuscript-tension-wave-not-evidenced`를 critical로 표시합니다.
+- 리듬 맵 검증: `chapters/chapter_XXX.md` 원고 본문 manuscript가 장면 압박에 맞춘 호흡 없이 같은 길이와 같은 종결의 AI식 규칙적 단문 반복으로 이어지면 문체/몰입 실패로 봅니다. 문장 길이 변주가 압박-호흡-재점화를 만들어야 하며, 압박 구간은 행동/결과, 호흡 구간은 감각/물증/POV 앵커, 재점화 구간은 새 질문/위협/선택 비용을 보여야 합니다.
 - `chapters/chapter_XXX.md` 원고 본문 manuscript가 `chapters/chapter_XXX.json`의 `scene.conflict` 장면 갈등과 `scene.beat` 장면 전환을 실제 원고 실행으로 보여주지 않으면 `manuscript-scene-intent-not-evidenced`를 critical로 표시합니다.
 - `chapters/chapter_XXX.md` 원고 본문 manuscript에 각 scene의 증거가 있더라도 장면 순서가 `chapters/chapter_XXX.json`의 scene 번호 순서와 다르게 실행되면 `manuscript-scene-order-not-evidenced`를 critical로 표시합니다.
 - `chapters/chapter_XXX.md` 원고 본문 manuscript가 scene conflict/beat 키워드를 포함해도 같은 장면 창 안에서 before 압박과 after 결과가 이어져 독자 지식, 위험, 관계 상태, 닫힌 선택지, 세계 규칙, 다음 행동 중 하나를 바꾸지 않으면 `manuscript-scene-state-delta-not-evidenced`를 critical로 표시합니다.

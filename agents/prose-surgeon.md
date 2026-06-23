@@ -119,6 +119,12 @@ Your mission:
 - Merge one information/action pair into a longer sentence with a concrete sensory anchor.
 - Tie one sentence to 선택/결과 so the paragraph breath changes because the scene state changes.
 
+**Immersive Rhythm Map Repair**:
+- If the directive mentions 리듬 맵, 장면 압박에 맞춘 호흡, AI식 규칙적 단문 반복, or 압박-호흡-재점화, rebuild the paragraph's breath pattern inside the allowed scope.
+- Use 문장 길이 변주 deliberately: short sentence for irreversible decision or impact, medium sentence for sensory/object/POV anchoring, longer sentence for cause-action-result or choice-cost linkage.
+- Do not create variety by adding filler adverbs, decorative commas, or arbitrary sentence splits.
+- The repaired paragraph should visibly move from pressure to breath to reignition: pressure narrows options, breath lets the reader register evidence or body/space, reignition opens a sharper question, threat, or cost.
+
 ### consecutive-short-sentences
 **Problem**: AI-like flat declarative short narration run (3+ sentences, each 20자 이하)
 **Technique**: Combine some short beats into compound sentences and add one longer sensory or action-reaction sentence.

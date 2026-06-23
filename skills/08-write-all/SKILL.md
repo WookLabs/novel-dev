@@ -109,6 +109,7 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 - **Manuscript Tension Reset Gate**: 원고 본문 manuscript가 `tension_reset_plan`을 장면화하지 않고 위기, 경보, 추격, 폭로를 계속 고조만 시키면 `manuscript-tension-reset-not-evidenced`. 고강도 비트 뒤 짧은 호흡, 감각 정적, 단서 해석, 감정 리셋을 둔 뒤 새 질문/새 위협으로 재점화해야 함
 - **Manuscript Tension Peak Gate**: 원고 본문 manuscript가 high-tension peak event를 "긴장감이 최고조" 같은 요약으로만 처리하고 같은 1~3문장 안에 구체 위험/장애물, 주인공 행동 또는 강제 선택, 되돌릴 수 없는 결과/폭로/새 질문을 묶지 않으면 `manuscript-tension-peak-not-evidenced`
 - **Manuscript Tension Wave Gate**: 원고 본문 manuscript가 high-tension 회차의 tension wave / 긴장 파형을 만들지 못해 초반 압박, 중반 악화, 말미 고점, 열린 질문이 순서대로 보이지 않으면 `manuscript-tension-wave-not-evidenced`
+- **Immersive Rhythm Map Gate**: 원고 본문 manuscript는 리듬 맵을 가져야 합니다. 장면 압박에 맞춘 호흡 없이 같은 길이와 같은 종결의 AI식 규칙적 단문 반복으로 흐르면 재시도합니다. 문장 길이 변주로 압박-호흡-재점화를 분리하고, 압박 구간은 행동/결과, 호흡 구간은 감각/물증/POV 앵커, 재점화 구간은 새 질문/위협/선택 비용을 이어야 합니다.
 - **Manuscript Ending Hook Gate**: `must_click_ending`을 원고 중간에 언급만 하고 마지막 구간의 새 사건, 폭로, 위협, 미해결 질문으로 장면화하지 않으면 `manuscript-ending-hook-not-staged`
 - **Manuscript Open Loop Gate**: `must_click_ending`을 마지막 구간에 배치하더라도 같은 회차 말미에서 해결, 종결, 범인 확정, 설명 완료, 안도 같은 폐쇄 신호로 열린 루프를 닫으면 `manuscript-ending-hook-closed`
 - **Manuscript Ending Question Specificity Gate**: 원고 마지막 열린 질문이 "이 사건의 진실은 무엇인가?"처럼 넓고 로고+사건 번호, 다음 수신자+사진, 이름+좌표, 규칙+대가 같은 구체 앵커를 최소 두 개 보존하지 못하면 `manuscript-ending-hook-question-too-broad`

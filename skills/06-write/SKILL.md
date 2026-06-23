@@ -418,6 +418,7 @@ if (proseCraft.passed === false) {
 - `RETRY`: N을 `failed_chapters`에 남기고 `retry_count` 증가
 - `USER_INTERVENTION`: `ralph_active=false`, `requires_user_intervention=true`로 일시정지
 - `proseCraft` 실패: 필터워드, 감각 grounding, 감각 장식 연쇄(`sensory-wallpaper-run`), 문장 리듬, 장면 앵커 없이 설명/판단문이 이어지는 `immersive-rhythm-flatline`, 연속 단문 끊어쓰기(`monotone-short-sentence-run`), 완충 인식 표현 과밀(`hedged-perception-haze`), 감정 라벨 연쇄(`emotion-label-carousel`), 추상·상징어 누적(`symbolic-abstraction-stack`), 장면 밖 해결 요약(`offscreen-resolution-summary`), 기계적 확인·동의 대사 연쇄(`rote-dialogue-response-chain`), 중립 대사 태그 연쇄(`mechanical-dialogue-tag-chain`), 지시어 연쇄(`ambiguous-reference-chain`), 금지/AI체 표현 등 원고 문장 품질을 `Prose Craft Revision Directives` 기준으로 수정
+- 리듬 맵: 최종 원고는 장면 압박에 맞춘 호흡을 가져야 합니다. 같은 길이와 같은 종결의 AI식 규칙적 단문 반복을 피하고, 문장 길이 변주를 통해 압박-호흡-재점화가 읽히게 쓰세요. 압박 구간은 짧은 결정문과 행동 결과를 붙이고, 호흡 구간은 감각/물증/POV 앵커로 숨을 낮춘 뒤, 재점화 구간은 새 질문·위협·선택 비용으로 다음 문장을 당겨야 합니다.
 - 반복 독자 몰입 실패가 3회 이상이면 `retry_count`가 남아 있어도 `USER_INTERVENTION`입니다. 이때 `gateDecision.retryPrompt`의 **구조적 재검토** 지시를 우선 적용합니다.
 
 **3-4. 품질 검토 (선택)**
