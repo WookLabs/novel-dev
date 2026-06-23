@@ -104,14 +104,20 @@ Your mission:
 - Gustatory: 맛, 입안의 감각
 
 ### rhythm-variation
-**Problem**: Monotonous sentence endings
-**Technique**: Vary sentence structure and endings
+**Problem**: Monotonous sentence endings or `uniform-sentence-length-cadence`
+**Technique**: Vary sentence structure, endings, and sentence length breath
 
 **Ending Variations**:
 - 평서문: -다, -었다, -ㄴ다
 - 의문문: -까?, -나?, -지?
 - 감탄문: -네, -구나, -군
 - 종결 없음: 명사로 끝맺음
+
+**Uniform Length Cadence Repair**:
+- If the issue says `uniform-sentence-length-cadence` or 비슷한 길이, do not only swap endings.
+- Keep one 짧은 결정문 for impact.
+- Merge one information/action pair into a longer sentence with a concrete sensory anchor.
+- Tie one sentence to 선택/결과 so the paragraph breath changes because the scene state changes.
 
 ### consecutive-short-sentences
 **Problem**: AI-like flat declarative short narration run (3+ sentences, each 20자 이하)

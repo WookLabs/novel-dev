@@ -563,6 +563,28 @@ describe('analyzeChapter', () => {
     expect(result.assessment.rhythmVariation.repetitionInstances).toContain('같은 주어 "서연" 5문장 연속 시작');
   });
 
+  it('should reject uniform mid-length sentence cadence even when endings and sensory grounding vary', () => {
+    const content = '창문 아래 흰빛이 서연의 젖은 손등을 가만히 훑었다. ' +
+      '복도 끝 금속성 소리가 낮은 벽면을 차례로 두드렸나? ' +
+      '차가운 난간의 습기가 손바닥의 오래된 상처를 깨웠네. ' +
+      '젖은 먼지 냄새가 혀끝의 쓴맛과 함께 천천히 밀려왔지. ' +
+      '문틈의 검은 색이 발목 아래 그림자를 길게 끌어당겼다!';
+
+    const result = analyzeChapter(content, 1, {
+      assessKoreanTexture: false,
+      detectBannedExpressions: false,
+    });
+
+    expect(result.assessment.sensoryGrounding.senseCount).toBeGreaterThanOrEqual(
+      result.assessment.sensoryGrounding.required
+    );
+    expect(result.verdict).toBe('REVISE');
+    expect(result.directives.map(directive => directive.type)).toContain('rhythm-variation');
+    expect(result.assessment.rhythmVariation.repetitionInstances.join('\n')).toContain(
+      '비슷한 문장 길이'
+    );
+  });
+
   it('should return REVISE with directives for problematic content', () => {
     // Bad prose: filter words and no sensory detail
     const content = '그녀는 슬픔을 느꼈다. 그것이 보였다. 그는 생각했다. '.repeat(10);

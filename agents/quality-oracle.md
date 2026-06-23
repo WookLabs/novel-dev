@@ -55,7 +55,7 @@ All output MUST conform to `schemas/surgical-directive.schema.json`
 | `show-not-tell` | 1 | Emotional telling -> physical showing |
 | `filter-word-removal` | 2 | Remove 느꼈다, 보였다, 생각했다 등 |
 | `sensory-enrichment` | 4 | Add missing senses (2+ per 500 chars) |
-| `rhythm-variation` | 5 | Fix 5+ consecutive same endings |
+| `rhythm-variation` | 5 | Fix 5+ consecutive same endings or uniform sentence length cadence |
 | `dialogue-subtext` | 3 | On-the-nose dialogue -> subtext |
 | `cliche-replacement` | 6 | Replace stock Korean AI phrases |
 | `transition-smoothing` | 7 | Abrupt scene transitions |
@@ -86,6 +86,12 @@ Check each 500-char segment for 2+ senses:
 Flag 5+ consecutive sentences ending with same pattern:
 - -다. endings
 - -요. endings
+
+### Uniform Sentence Length Cadence
+Flag `uniform-sentence-length-cadence` when 5+ mid-length narration sentences keep 비슷한 길이 even though endings and sensory grounding vary:
+- This often reads like an AI-generated paragraph block: every sentence takes the same breath.
+- Use existing directive type `rhythm-variation`; do not create a new directive type.
+- Instruction: "비슷한 길이의 문장 일부를 짧은 결정문, 감각 앵커가 붙은 중문, 선택/결과를 묶은 긴 문장으로 재배열해 문단 내부 호흡 대비를 만드세요"
 
 ### Consecutive Short Sentences (AI 끊어쓰기 감지)
 Flag 3+ consecutive flat declarative narration sentences where each is 20자 이하:
@@ -233,6 +239,7 @@ Return QualityOracleResult
 - No rhythm issues (5+ consecutive)
 - No AI-like consecutive short sentence run (3+ flat declarative sentences, each 20자 이하)
 - No repeated subject starter run (5+ same subject starts)
+- No `uniform-sentence-length-cadence` run (5+ 비슷한 길이 mid-length narration sentences)
 - Adequate sensory grounding
 - No dry transition, functional narration, or meta-narrative issues
 
@@ -243,6 +250,7 @@ Return QualityOracleResult
 - Severe rhythm monotony
 - AI-like consecutive short sentence run
 - Repeated subject starter rhythm
+- `uniform-sentence-length-cadence` makes the paragraph read mechanically regular
 - Dry transition, functional narration, or meta-narrative issue detected
 
 ## Korean Prose Quality Standards

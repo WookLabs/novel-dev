@@ -112,6 +112,16 @@ export const MAX_SHORT_SENTENCE_CHARS = 20;
 export const MAX_REPEATED_SUBJECT_STARTS = 5;
 
 /**
+ * Minimum variation coefficient for mid-length narration sentence rhythm.
+ */
+export const MIN_SENTENCE_LENGTH_VARIATION_COEFFICIENT = 0.24;
+
+/**
+ * Maximum uniform mid-length sentence run before flagging AI-like cadence.
+ */
+export const MAX_UNIFORM_SENTENCE_LENGTH_RUN = 5;
+
+/**
  * Sentence ending patterns in Korean
  * Note: No 'g' flag - we test each sentence independently
  */
@@ -665,6 +675,89 @@ export function findRepeatedSubjectRuns(content: string): Array<{
   return issues;
 }
 
+/**
+ * Find runs where mid-length narration sentences keep nearly identical length.
+ *
+ * This catches the AI-like "same size block, same breath" cadence that can pass
+ * ending-variety checks while still feeling mechanically regular.
+ */
+export function findUniformSentenceLengthRuns(content: string): Array<{
+  count: number;
+  startPosition: number;
+  endPosition: number;
+  variationCoefficient: number;
+  sentenceLengths: number[];
+  sentences: string[];
+}> {
+  const issues: Array<{
+    count: number;
+    startPosition: number;
+    endPosition: number;
+    variationCoefficient: number;
+    sentenceLengths: number[];
+    sentences: string[];
+  }> = [];
+  const dialogueRanges = getDialogueRanges(content);
+  const sentences = splitSentencesWithPositions(content);
+
+  const sentenceLength = (sentence: SentencePosition): number =>
+    sentence.text.replace(/\s+/g, '').length;
+
+  const variationCoefficient = (lengths: number[]): number => {
+    const mean = lengths.reduce((sum, length) => sum + length, 0) / lengths.length;
+    if (mean === 0) return 0;
+    const variance =
+      lengths.reduce((sum, length) => sum + Math.pow(length - mean, 2), 0) / lengths.length;
+    return Math.sqrt(variance) / mean;
+  };
+
+  const isMidLengthNarration = (sentence: SentencePosition): boolean => {
+    if (isInRanges(sentence.start, dialogueRanges)) {
+      return false;
+    }
+
+    const trimmed = sentence.text.trim();
+    if (/^["“「『]/.test(trimmed)) {
+      return false;
+    }
+
+    return sentenceLength(sentence) > MAX_SHORT_SENTENCE_CHARS;
+  };
+
+  let currentRun: SentencePosition[] = [];
+
+  const flushRun = (): void => {
+    if (currentRun.length >= MAX_UNIFORM_SENTENCE_LENGTH_RUN) {
+      const lengths = currentRun.map(sentenceLength);
+      const coefficient = variationCoefficient(lengths);
+
+      if (coefficient < MIN_SENTENCE_LENGTH_VARIATION_COEFFICIENT) {
+        issues.push({
+          count: currentRun.length,
+          startPosition: currentRun[0].start,
+          endPosition: currentRun[currentRun.length - 1].end,
+          variationCoefficient: Math.round(coefficient * 100) / 100,
+          sentenceLengths: lengths,
+          sentences: currentRun.map(sentence => sentence.text),
+        });
+      }
+    }
+
+    currentRun = [];
+  };
+
+  for (const sentence of sentences) {
+    if (isMidLengthNarration(sentence)) {
+      currentRun.push(sentence);
+    } else {
+      flushRun();
+    }
+  }
+
+  flushRun();
+  return issues;
+}
+
 // ============================================================================
 // Paragraph Utilities
 // ============================================================================
@@ -925,16 +1018,21 @@ export function analyzeChapter(
   const rhythmIssues = findRhythmIssues(content);
   const shortSentenceRuns = findShortSentenceRuns(content);
   const repeatedSubjectRuns = findRepeatedSubjectRuns(content);
+  const uniformSentenceLengthRuns = findUniformSentenceLengthRuns(content);
   const shortSentenceProblems: string[] = shortSentenceRuns.map(
     issue => `${issue.count}문장 연속 ${MAX_SHORT_SENTENCE_CHARS}자 이하 평서형 단문`
   );
   const repeatedSubjectProblems: string[] = repeatedSubjectRuns.map(
     issue => `같은 주어 "${issue.subject}" ${issue.count}문장 연속 시작`
   );
+  const uniformSentenceLengthProblems: string[] = uniformSentenceLengthRuns.map(
+    issue => `비슷한 문장 길이 ${issue.count}문장 연속 (변동 계수 ${issue.variationCoefficient})`
+  );
   const rhythmProblems: string[] = [
     ...rhythmIssues.map(issue => `${issue.count}회 연속 "${issue.pattern}" 종결`),
     ...shortSentenceProblems,
     ...repeatedSubjectProblems,
+    ...uniformSentenceLengthProblems,
   ];
 
   // Create rhythm directives (up to 1)
@@ -957,6 +1055,29 @@ export function analyzeChapter(
       `${issue.count}개의 문장이 연속으로 "${issue.pattern}"로 끝남`,
       currentText.slice(0, 500),
       `문장 종결 패턴을 다양화하세요. 의문문, 감탄문, 다양한 종결어미를 사용하세요.`,
+      3
+    ));
+  }
+
+  for (const issue of uniformSentenceLengthRuns.slice(0, 1)) {
+    if (directives.length >= MAX_DIRECTIVES_PER_PASS) break;
+
+    const startPara = findParagraphForPosition(paragraphs, issue.startPosition);
+    const endPara = findParagraphForPosition(paragraphs, issue.endPosition);
+    const targetParas = paragraphs.slice(startPara, endPara + 1);
+    const currentText = targetParas.map(p => p.text).join('\n\n');
+
+    directives.push(createDirective(
+      'rhythm-variation',
+      4,
+      {
+        sceneNumber: Math.min(Math.ceil((startPara + 1) / Math.max(1, paragraphs.length / sceneCount)), sceneCount),
+        paragraphStart: startPara,
+        paragraphEnd: Math.min(endPara, startPara + 2),
+      },
+      `${issue.count}개의 중간 길이 서술문이 비슷한 문장 길이로 이어짐`,
+      currentText.slice(0, 500),
+      '비슷한 길이의 문장 일부를 짧은 결정문, 감각 앵커가 붙은 중문, 선택/결과를 묶은 긴 문장으로 재배열해 문단 내부 호흡 대비를 만드세요.',
       3
     ));
   }
@@ -1186,7 +1307,8 @@ export function analyzeChapter(
       (filterWords.length * 10) -
       (rhythmIssues.length * 15) -
       (shortSentenceRuns.length * 15) -
-      (repeatedSubjectRuns.length * 15)
+      (repeatedSubjectRuns.length * 15) -
+      (uniformSentenceLengthRuns.length * 15)
   );
   const proseIssues = [...filterWordIssues, ...rhythmProblems];
   const characterVoiceScore = 100;
@@ -1219,7 +1341,11 @@ export function analyzeChapter(
     rhythmVariation: {
       score: Math.max(
         0,
-        100 - (rhythmIssues.length * 20) - (shortSentenceRuns.length * 20) - (repeatedSubjectRuns.length * 20)
+        100 -
+          (rhythmIssues.length * 20) -
+          (shortSentenceRuns.length * 20) -
+          (repeatedSubjectRuns.length * 20) -
+          (uniformSentenceLengthRuns.length * 20)
       ),
       repetitionInstances: rhythmProblems,
     },
@@ -1285,6 +1411,7 @@ export function analyzeChapter(
     rhythmIssues.length === 0 &&
     shortSentenceRuns.length === 0 &&
     repeatedSubjectRuns.length === 0 &&
+    uniformSentenceLengthRuns.length === 0 &&
     sensory.adequate &&
     transitionIssues.length === 0 &&
     honorificPasses &&

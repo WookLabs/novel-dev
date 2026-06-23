@@ -76,4 +76,16 @@ describe('style guide prose rules template', () => {
       expect(doc).toContain('max_dominant_dialogue_starter_share');
     }
   });
+
+  it('teaches the 2-pass revision agents to repair uniform sentence length cadence', () => {
+    const qualityOracle = readText('agents/quality-oracle.md');
+    const proseSurgeon = readText('agents/prose-surgeon.md');
+
+    for (const doc of [qualityOracle, proseSurgeon]) {
+      expect(doc).toContain('uniform-sentence-length-cadence');
+      expect(doc).toContain('비슷한 길이');
+      expect(doc).toContain('짧은 결정문');
+      expect(doc).toContain('선택/결과');
+    }
+  });
 });
