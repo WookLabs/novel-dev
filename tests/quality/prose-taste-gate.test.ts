@@ -50,6 +50,17 @@ const GROUNDED_IMMERSIVE_RHYTHM_PROSE = `
 그 말 뒤에 문 잠금장치가 한 번 더 내려갔다.
 `.trim();
 
+const ANCHOR_RICH_RHYTHM_MAP_COLLAPSE_PROSE = `
+서연은 봉투를 책상 위에 올려놓았다.
+민준은 녹음기의 빨간 불을 껐다.
+복도 끝 불빛이 한 번 깜박였다.
+그녀는 사진 뒷면의 번호를 다시 보았다.
+컵 가장자리의 물기가 손끝에 묻었다.
+민준은 의자를 조금 뒤로 밀었다.
+창밖 빗소리가 유리 위를 지나갔다.
+서연은 휴대폰 화면을 아래로 뒤집었다.
+`.trim();
+
 const HEDGED_PERCEPTION_PROSE = `
 서연은 문 앞에 선 것 같았다. 안쪽의 침묵은 어쩐지 대답처럼 느껴졌다. 손잡이는 묘하게 차가운 듯했다.
 
@@ -2386,11 +2397,31 @@ describe('evaluateProseTaste', () => {
     expect(codes).toContain('immersive-rhythm-flatline');
   });
 
+  it('fails prose whose concrete beats collapse without pressure, breath, or reignition', () => {
+    const result = evaluateProseTaste(ANCHOR_RICH_RHYTHM_MAP_COLLAPSE_PROSE, {
+      profile: {
+        maxStatusQuoActionDensityPer1000: 100,
+        maxStatusQuoActionRun: 20,
+        maxProceduralChecklistDensityPer1000: 100,
+        maxProceduralChecklistRun: 20,
+        maxPropFidgetDensityPer1000: 100,
+        maxPropFidgetRun: 20,
+        minCausalTurnDensityPer1000: 0,
+      },
+    });
+    const codes = result.issues.map(issue => issue.code);
+
+    expect(result.passed).toBe(false);
+    expect(result.metrics.immersiveRhythmAnchorDensityPer1000).toBeGreaterThan(2.4);
+    expect(result.metrics.longestImmersiveRhythmFlatlineRun).toBeGreaterThan(5);
+    expect(codes).toContain('immersive-rhythm-flatline');
+  });
+
   it('allows scene-grounded rhythm when concrete anchors break explanatory cadence', () => {
     const result = evaluateProseTaste(GROUNDED_IMMERSIVE_RHYTHM_PROSE);
 
     expect(result.metrics.immersiveRhythmAnchorDensityPer1000).toBeGreaterThan(2.4);
-    expect(result.metrics.longestImmersiveRhythmFlatlineRun).toBe(0);
+    expect(result.metrics.longestImmersiveRhythmFlatlineRun).toBeLessThanOrEqual(1);
     expect(result.issues.map(issue => issue.code)).not.toContain(
       'immersive-rhythm-flatline'
     );

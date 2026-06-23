@@ -1164,6 +1164,12 @@ const VIEWPOINT_ANCHOR_PATTERN =
 const IMMERSIVE_RHYTHM_ANCHOR_PATTERN =
   /(?:봉투|사진|녹음기|휴대폰|화면|문자|전화|번호|주소|기록|파일|단서|증거|손잡이|문틈|컵|의자|계단|복도|피|상처|소리|냄새|빛|바람|발소리|잠금|열쇠|시계|카운트다운|기한|통제선|신고서|계약서|서명|말했|물었|대답했|속삭였|웃었|멈췄|돌아섰|다가섰|물러섰|확인했|바뀌었|사라졌|켜졌|꺼졌|줄어들|늦었|놓쳤|닫혔|막혔|선택했|거절했|포기했|찢었|숨겼|건넸|내밀었|잡았|놓았|밀었|당겼|꺼냈|닫았|열었)/u;
 
+const IMMERSIVE_RHYTHM_PRESSURE_TURN_PATTERN =
+  /(?:그래서|때문|탓에|바람에|그러자|하지만|그러나|대신|결국|마침내|그제야|왜|어떻게|무엇|뭘|누가|설마|하필|\?|위험|위협|협박|조건|대가|책임|선택|거절|포기|요구|경고|거짓말|고백|폭로|실패|성공|새\s*(?:질문|알림|위협|증거|단서|주소|이름|번호)|카운트다운|기한|늦었|놓쳤|막혔|닫혔|잠겼|잠금|잃었|빼앗|줄어들|사라졌|드러났|밝혀졌|바뀌었|꺼졌|켜졌|멎었|내려갔|일치|달랐)/u;
+
+const IMMERSIVE_RHYTHM_NEUTRAL_BEAT_PATTERN =
+  /(?:(?:봉투|사진|녹음기|휴대폰|화면|문자|전화|번호|주소|기록|파일|손잡이|문틈|컵|의자|계단|복도|유리|불빛|빗소리|발소리|냄새|바람|손끝|책상|탁자|창밖|창문|서랍|열쇠|가방)[^.!?\n]{0,52}(?:올려놓|내려놓|놓았|놓았다|껐|끄고|깜박|보았|봤|다시\s*보|묻|밀었|밀었다|당겼|지나갔|지나가|뒤집|접었|접|펼쳤|펼치|만졌|만지|잡았|잡|쥐었|쥐|돌렸|돌리|눌렀|누르|움직였|움직|흔들렸|흔들|기울었|기울|앉았|앉|섰|서\s*있|멈췄|멈추|기다렸)|(?:올려놓|내려놓|놓았|놓았다|껐|끄고|깜박|보았|봤|묻|밀었|밀었다|당겼|지나갔|지나가|뒤집|접었|접|펼쳤|펼치|만졌|만지|잡았|잡|쥐었|쥐|돌렸|돌리|눌렀|누르|움직였|움직|흔들렸|흔들|기울었|기울|앉았|앉|섰|서\s*있|멈췄|멈추|기다렸)[^.!?\n]{0,52}(?:봉투|사진|녹음기|휴대폰|화면|번호|컵|의자|복도|유리|불빛|빗소리|발소리|손끝|책상|창밖|서랍|열쇠))/u;
+
 const FLATLINE_EXPLANATORY_CLOSURE_PATTERN =
   /(?:것이었다|수\s*있었다|상태였다|상황이었다|문제였다|의미였다|결과였다|이유였다|때문이었다|필요했다|중요했다|분명했다|확실했다|알\s*수\s*있었다|느낄\s*수\s*있었다|생각했다|깨달았다|이해했다|정리했다|판단했다|보였다|드러났다|이어졌다|남아\s*있었다|존재했다|가능했다|불가능했다|달라졌다|깊어졌다|커졌다|작아졌다|멀어졌다|가까워졌다)/u;
 
@@ -4135,11 +4141,11 @@ function addImmersiveRhythmFlatlineIssue(
         ? 'high'
         : 'medium',
     message:
-      `설명/판단 중심 문장이 ${metrics.longestImmersiveRhythmFlatlineRun}문장 이어지고 ` +
+      `설명/판단 또는 변화 없는 구체 beat가 ${metrics.longestImmersiveRhythmFlatlineRun}문장 이어지고 ` +
       `문단 리듬이 평평합니다. 장면 앵커 밀도는 ${metrics.immersiveRhythmAnchorDensityPer1000}/1000자입니다.`,
     evidence: findImmersiveRhythmFlatlineEvidence(content, evidenceRunLength),
     suggestion:
-      '설명/판단 문장을 그대로 늘리지 말고, 두세 문장마다 물증, 손동작, 대사 반응, 선택 비용, 감각 앵커를 넣어 문단이 장면 안에서 숨 쉬게 하세요.',
+      '설명/판단 문장이나 사물 동작 로그를 그대로 늘리지 말고, 두세 문장마다 물증, 손동작, 대사 반응, 선택 비용, 새 질문/위협을 넣어 압박-호흡-재점화 리듬을 만드세요.',
     penalty: Math.min(20, 8 + Math.max(0, runOverflow) * 3 + Math.ceil(Math.max(0, anchorGap) * 2)),
   });
 }
@@ -7849,9 +7855,13 @@ function isImmersiveRhythmAnchorSentence(sentence: string): boolean {
 function isImmersiveRhythmFlatlineSentence(sentence: string): boolean {
   const trimmed = sentence.trim();
   if (!trimmed || !/[.!?]$/u.test(trimmed)) return false;
-  if (countTextUnits(trimmed) < 14) return false;
   if (/["“”'‘’「」『』]/u.test(trimmed)) return false;
-  if (isImmersiveRhythmAnchorSentence(trimmed)) return false;
+  const unitCount = countTextUnits(trimmed);
+  if (isImmersiveRhythmAnchorSentence(trimmed)) {
+    if (unitCount < 10) return false;
+    return isImmersiveRhythmNeutralBeatSentence(trimmed);
+  }
+  if (unitCount < 14) return false;
 
   return (
     FLATLINE_EXPLANATORY_CLOSURE_PATTERN.test(trimmed) ||
@@ -7859,6 +7869,19 @@ function isImmersiveRhythmFlatlineSentence(sentence: string): boolean {
     new RegExp(EVALUATIVE_MODIFIER_PATTERN.source, 'u').test(trimmed) ||
     new RegExp(HEDGED_PERCEPTION_PATTERN.source, 'u').test(trimmed) ||
     new RegExp(COGNITIVE_FILTER_PATTERN.source, 'u').test(trimmed)
+  );
+}
+
+function isImmersiveRhythmNeutralBeatSentence(sentence: string): boolean {
+  if (IMMERSIVE_RHYTHM_PRESSURE_TURN_PATTERN.test(sentence)) return false;
+
+  return (
+    IMMERSIVE_RHYTHM_NEUTRAL_BEAT_PATTERN.test(sentence) ||
+    STATUS_QUO_ACTION_PATTERN.test(sentence) ||
+    PROP_FIDGET_BEAT_PATTERN.test(sentence) ||
+    (DIALOGUE_GROUNDING_BEAT_PATTERN.test(sentence) &&
+      !SENSORY_STORY_TURN_PATTERN.test(sentence) &&
+      !CAUSAL_TURN_PATTERN.test(sentence))
   );
 }
 
