@@ -131,6 +131,19 @@ Your mission:
 |--------|-------|
 | 하나, 문이 잠겼다. 둘, 창문도 막혔다. 셋, 도망칠 곳이 없었다. | 문은 잠겼고 창문마저 막혀 있었다. 도망칠 곳이 없다는 사실이 뒤늦게 숨을 조였다. |
 
+### style-alignment
+**Problem**: Style profile mismatch such as repeated subject starter rhythm.
+**Technique**: Change sentence openings so action consequence, counteraction, place change, sensory detail, or object focus carries the paragraph.
+
+| Before | After |
+|--------|-------|
+| 서연은 창문을 봤다. 서연은 손을 뻗었다. 서연은 숨을 멈췄다. | 창문 아래 흰빛이 바닥을 갈랐다. 서연은 손을 뻗었고, 차가운 유리가 숨을 멎게 했다. |
+
+**Constraints**:
+- Do not merely replace the repeated subject with another repeated subject.
+- Preserve POV and named-character clarity.
+- Keep the revised paragraph within the directive scope.
+
 ### dialogue-subtext
 **Problem**: On-the-nose dialogue
 **Technique**: Add subtext through action, pause, contradiction

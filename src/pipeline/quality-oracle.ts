@@ -107,6 +107,11 @@ export const MAX_CONSECUTIVE_SHORT_SENTENCES = 3;
 export const MAX_SHORT_SENTENCE_CHARS = 20;
 
 /**
+ * Maximum repeated sentence starter subjects before flagging AI-like cadence.
+ */
+export const MAX_REPEATED_SUBJECT_STARTS = 5;
+
+/**
  * Sentence ending patterns in Korean
  * Note: No 'g' flag - we test each sentence independently
  */
@@ -579,6 +584,87 @@ function isActionChoreographyRun(sentences: string[]): boolean {
   return actionLikeCount >= Math.min(sentences.length, MAX_CONSECUTIVE_SHORT_SENTENCES);
 }
 
+/**
+ * Find repeated sentence starter subjects that lock paragraph rhythm.
+ */
+export function findRepeatedSubjectRuns(content: string): Array<{
+  subject: string;
+  count: number;
+  startPosition: number;
+  endPosition: number;
+  sentences: string[];
+}> {
+  const issues: Array<{
+    subject: string;
+    count: number;
+    startPosition: number;
+    endPosition: number;
+    sentences: string[];
+  }> = [];
+  const dialogueRanges = getDialogueRanges(content);
+  const sentences = splitSentencesWithPositions(content);
+
+  const extractSubject = (sentence: SentencePosition): string | null => {
+    if (isInRanges(sentence.start, dialogueRanges)) {
+      return null;
+    }
+
+    const trimmed = sentence.text.trim();
+    if (/^["“「『]/.test(trimmed)) {
+      return null;
+    }
+
+    const match = trimmed.match(/^["“”'‘’「」『』\s]*([가-힣]{1,6}|그녀|그들|우리|나|내|그)(?:은|는|이|가)\s/u);
+    const subject = match?.[1] ?? '';
+    if (!subject) {
+      return null;
+    }
+
+    if (/^(?:오늘|내일|어제|지금|방금|아까|그날|다음날|이튿날|밤|아침|저녁)$/u.test(subject)) {
+      return null;
+    }
+
+    return subject;
+  };
+
+  let currentSubject: string | null = null;
+  let currentRun: SentencePosition[] = [];
+
+  const flushRun = (): void => {
+    if (currentSubject && currentRun.length >= MAX_REPEATED_SUBJECT_STARTS) {
+      issues.push({
+        subject: currentSubject,
+        count: currentRun.length,
+        startPosition: currentRun[0].start,
+        endPosition: currentRun[currentRun.length - 1].end,
+        sentences: currentRun.map(sentence => sentence.text),
+      });
+    }
+
+    currentSubject = null;
+    currentRun = [];
+  };
+
+  for (const sentence of sentences) {
+    const subject = extractSubject(sentence);
+    if (!subject) {
+      flushRun();
+      continue;
+    }
+
+    if (subject === currentSubject) {
+      currentRun.push(sentence);
+    } else {
+      flushRun();
+      currentSubject = subject;
+      currentRun = [sentence];
+    }
+  }
+
+  flushRun();
+  return issues;
+}
+
 // ============================================================================
 // Paragraph Utilities
 // ============================================================================
@@ -838,12 +924,17 @@ export function analyzeChapter(
   // 3. Rhythm analysis
   const rhythmIssues = findRhythmIssues(content);
   const shortSentenceRuns = findShortSentenceRuns(content);
+  const repeatedSubjectRuns = findRepeatedSubjectRuns(content);
   const shortSentenceProblems: string[] = shortSentenceRuns.map(
     issue => `${issue.count}문장 연속 ${MAX_SHORT_SENTENCE_CHARS}자 이하 평서형 단문`
+  );
+  const repeatedSubjectProblems: string[] = repeatedSubjectRuns.map(
+    issue => `같은 주어 "${issue.subject}" ${issue.count}문장 연속 시작`
   );
   const rhythmProblems: string[] = [
     ...rhythmIssues.map(issue => `${issue.count}회 연속 "${issue.pattern}" 종결`),
     ...shortSentenceProblems,
+    ...repeatedSubjectProblems,
   ];
 
   // Create rhythm directives (up to 1)
@@ -894,6 +985,29 @@ export function analyzeChapter(
       actionChoreographyRun
         ? '액션 동작 일부를 부상, 거리 변화, 목표 실패/확보, 전세 변화가 드러나는 문장으로 묶고, 한두 개의 단문만 타격점에 남기세요.'
         : '짧은 문장 일부를 복문으로 결합하고, 긴 호흡의 감각 묘사나 행동-반응 연결문을 섞어 리듬을 변주하세요.',
+      2
+    ));
+  }
+
+  for (const issue of repeatedSubjectRuns.slice(0, 1)) {
+    if (directives.length >= MAX_DIRECTIVES_PER_PASS) break;
+
+    const startPara = findParagraphForPosition(paragraphs, issue.startPosition);
+    const endPara = findParagraphForPosition(paragraphs, issue.endPosition);
+    const targetParas = paragraphs.slice(startPara, endPara + 1);
+    const currentText = targetParas.map(p => p.text).join('\n\n');
+
+    directives.push(createDirective(
+      'style-alignment',
+      4,
+      {
+        sceneNumber: Math.min(Math.ceil((startPara + 1) / Math.max(1, paragraphs.length / sceneCount)), sceneCount),
+        paragraphStart: startPara,
+        paragraphEnd: Math.min(endPara, startPara + 1),
+      },
+      `같은 주어 "${issue.subject}"로 시작하는 문장이 ${issue.count}문장 연속됨`,
+      currentText.slice(0, 500),
+      '반복 주어 일부를 생략하고, 행동 결과·상대 반응·장소 변화·감각 앵커가 다음 문장을 이끌도록 문장 시작점을 바꾸세요.',
       2
     ));
   }
@@ -1068,7 +1182,11 @@ export function analyzeChapter(
   // 6. Calculate scores
   const proseScore = Math.max(
     0,
-    100 - (filterWords.length * 10) - (rhythmIssues.length * 15) - (shortSentenceRuns.length * 15)
+    100 -
+      (filterWords.length * 10) -
+      (rhythmIssues.length * 15) -
+      (shortSentenceRuns.length * 15) -
+      (repeatedSubjectRuns.length * 15)
   );
   const proseIssues = [...filterWordIssues, ...rhythmProblems];
   const characterVoiceScore = 100;
@@ -1099,7 +1217,10 @@ export function analyzeChapter(
       threshold: MAX_FILTER_WORDS_FOR_PASS,
     },
     rhythmVariation: {
-      score: Math.max(0, 100 - (rhythmIssues.length * 20) - (shortSentenceRuns.length * 20)),
+      score: Math.max(
+        0,
+        100 - (rhythmIssues.length * 20) - (shortSentenceRuns.length * 20) - (repeatedSubjectRuns.length * 20)
+      ),
       repetitionInstances: rhythmProblems,
     },
     characterVoice: {
@@ -1163,6 +1284,7 @@ export function analyzeChapter(
     filterWords.length <= MAX_FILTER_WORDS_FOR_PASS &&
     rhythmIssues.length === 0 &&
     shortSentenceRuns.length === 0 &&
+    repeatedSubjectRuns.length === 0 &&
     sensory.adequate &&
     transitionIssues.length === 0 &&
     honorificPasses &&

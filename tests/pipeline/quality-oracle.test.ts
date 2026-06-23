@@ -9,6 +9,7 @@ import {
   MAX_CONSECUTIVE_SAME_ENDINGS,
   MAX_CONSECUTIVE_SHORT_SENTENCES,
   MAX_SHORT_SENTENCE_CHARS,
+  MAX_REPEATED_SUBJECT_STARTS,
   // Functions
   resetDirectiveCounter,
   generateDirectiveId,
@@ -18,6 +19,7 @@ import {
   assessSensoryGrounding,
   findRhythmIssues,
   findShortSentenceRuns,
+  findRepeatedSubjectRuns,
   getParagraphs,
   findParagraphForPosition,
   createDirective,
@@ -61,6 +63,7 @@ describe('Quality Oracle Constants', () => {
     expect(MAX_CONSECUTIVE_SAME_ENDINGS).toBe(5);
     expect(MAX_CONSECUTIVE_SHORT_SENTENCES).toBe(3);
     expect(MAX_SHORT_SENTENCE_CHARS).toBe(20);
+    expect(MAX_REPEATED_SUBJECT_STARTS).toBe(5);
   });
 });
 
@@ -314,6 +317,38 @@ describe('findShortSentenceRuns', () => {
   });
 });
 
+describe('findRepeatedSubjectRuns', () => {
+  it('should detect repeated sentence starter subjects', () => {
+    const content = '서연은 창문 아래 흰빛을 붙잡았다. ' +
+      '서연은 금속성 종소리에 숨을 낮췄나? ' +
+      '서연은 차가운 난간의 습기를 손바닥에 묻혔네. ' +
+      '서연은 젖은 먼지 냄새를 삼키며 한 걸음 물러섰지. ' +
+      '서연은 혀끝의 쓴맛을 삼키고 문틈의 그림자를 노려봤다!';
+
+    const issues = findRepeatedSubjectRuns(content);
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0].subject).toBe('서연');
+    expect(issues[0].count).toBe(5);
+  });
+
+  it('should allow varied sentence starter subjects', () => {
+    const content = '서연은 창문 아래 흰빛을 붙잡았다. ' +
+      '복도 끝에서는 금속성 종소리가 굴러왔나? ' +
+      '차가운 난간의 습기가 손바닥에 묻었네. ' +
+      '젖은 먼지 냄새가 목 안쪽을 긁었지. ' +
+      '혀끝의 쓴맛 때문에 문틈의 그림자가 더 선명해졌다!';
+
+    expect(findRepeatedSubjectRuns(content)).toHaveLength(0);
+  });
+
+  it('should ignore repeated subjects inside dialogue', () => {
+    const content = '"서연은 간다. 서연은 돌아온다. 서연은 문을 연다. 서연은 빛을 본다. 서연은 멈춘다."';
+
+    expect(findRepeatedSubjectRuns(content)).toHaveLength(0);
+  });
+});
+
 // ============================================================================
 // Paragraph Utilities Tests
 // ============================================================================
@@ -506,6 +541,26 @@ describe('analyzeChapter', () => {
     expect(result.verdict).toBe('REVISE');
     expect(result.directives.map(directive => directive.type)).toContain('consecutive-short-sentences');
     expect(result.assessment.rhythmVariation.repetitionInstances).toContain('3문장 연속 20자 이하 평서형 단문');
+  });
+
+  it('should reject repeated subject starter rhythm even when endings and sensory grounding vary', () => {
+    const content = '서연은 창문 아래 흰빛이 바닥을 가르는 순간 손끝을 세웠다. ' +
+      '서연은 금속성 종소리가 복도 끝에서 굴러오자 숨을 낮췄나? ' +
+      '서연은 차가운 난간의 습기를 손바닥에 묻혔네. ' +
+      '서연은 젖은 먼지 냄새를 삼키며 한 걸음 물러섰지. ' +
+      '서연은 혀끝의 쓴맛을 삼키고 문틈의 그림자를 노려봤다!';
+
+    const result = analyzeChapter(content, 1, {
+      assessKoreanTexture: false,
+      detectBannedExpressions: false,
+    });
+
+    expect(result.assessment.sensoryGrounding.senseCount).toBeGreaterThanOrEqual(
+      result.assessment.sensoryGrounding.required
+    );
+    expect(result.verdict).toBe('REVISE');
+    expect(result.directives.map(directive => directive.type)).toContain('style-alignment');
+    expect(result.assessment.rhythmVariation.repetitionInstances).toContain('같은 주어 "서연" 5문장 연속 시작');
   });
 
   it('should return REVISE with directives for problematic content', () => {

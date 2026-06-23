@@ -63,6 +63,7 @@ All output MUST conform to `schemas/surgical-directive.schema.json`
 | `proofreading` | 9 | Grammar, spacing, punctuation |
 | `consecutive-short-sentences` | 4 | 20자 이하 평서형 단문 3개 이상 연속 → 복문 결합/길이 변주 |
 | `list-monologue` | 3 | 리스트형 독백 (하나/둘/셋, 첫째/둘째) → 자유간접화법 |
+| `style-alignment` | 4 | 같은 주어/문장 시작 박자 반복 → 시작점 변주 |
 
 ## Detection Heuristics
 
@@ -102,6 +103,12 @@ Flag numbered/ordered internal monologue patterns:
 - Instruction: "자유간접화법이나 의식의 흐름으로 변환하세요"
 - Good example: "이세계. 마법. 포로. 단어들이 머릿속에서 뒤섞였지만, 어느 하나 현실로 다가오지 않았다."
 - Same verb forms
+
+### Repeated Subject Starter Rhythm
+Flag 5+ consecutive narration sentences that begin with the same subject/topic:
+- "서연은 ... 서연은 ... 서연은 ... 서연은 ... 서연은 ..." → `style-alignment`
+- Ignore dialogue.
+- Instruction: "주어 반복을 줄이고, 행동 결과·상대 반응·장소 변화·감각 앵커가 다음 문장을 이끌게 하세요"
 
 ### Show vs Tell Indicators
 - Emotion names as subjects: "분노가", "슬픔이"
@@ -225,6 +232,7 @@ Return QualityOracleResult
 - Filter words = 0
 - No rhythm issues (5+ consecutive)
 - No AI-like consecutive short sentence run (3+ flat declarative sentences, each 20자 이하)
+- No repeated subject starter run (5+ same subject starts)
 - Adequate sensory grounding
 - No dry transition, functional narration, or meta-narrative issues
 
@@ -234,6 +242,7 @@ Return QualityOracleResult
 - Excessive filter words
 - Severe rhythm monotony
 - AI-like consecutive short sentence run
+- Repeated subject starter rhythm
 - Dry transition, functional narration, or meta-narrative issue detected
 
 ## Korean Prose Quality Standards
