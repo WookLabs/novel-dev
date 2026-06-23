@@ -10,13 +10,28 @@
  */
 
 import { readdirSync, existsSync, readFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const agentsDir = join(__dirname, '..', 'agents');
+
+function collectMarkdownFiles(dir, baseDir = dir) {
+  const files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectMarkdownFiles(fullPath, baseDir));
+      continue;
+    }
+    if (entry.isFile() && entry.name.endsWith('.md')) {
+      files.push(relative(baseDir, fullPath).replace(/\\/g, '/'));
+    }
+  }
+  return files;
+}
 
 // Parse YAML-like frontmatter from markdown
 function parseFrontmatter(filePath) {
@@ -142,8 +157,7 @@ if (!existsSync(agentsDir)) {
   process.exit(1);
 }
 
-const agentFiles = readdirSync(agentsDir)
-  .filter(f => f.endsWith('.md'));
+const agentFiles = collectMarkdownFiles(agentsDir);
 
 console.log(`Found ${agentFiles.length} agent files\n`);
 

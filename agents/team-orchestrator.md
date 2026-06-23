@@ -148,13 +148,13 @@ function resolveCharacterModel(role) {
 
 #### Step 2-A-1: 에이전트 파일이 없을 때 — 템플릿에서 동적 생성
 
-`agents/characters/{name}.md`가 존재하지 않으면 `agents/characters/_template.md`의 Part 2(캐릭터 행동 지침 섹션)를 읽어 플레이스홀더를 캐릭터 데이터로 치환합니다:
+`agents/characters/{name}.md`가 존재하지 않으면 `templates/character-agent-template.md`의 Part 2(캐릭터 행동 지침 섹션)를 읽어 플레이스홀더를 캐릭터 데이터로 치환합니다:
 
 ```spec
 function buildCharacterAgentFromTemplate(charId, chapterJson) {
   const charName = charId.replace(/^char_/, '');
   const charData = Read(`characters/${charName}.json`);
-  const templateRaw = Read('agents/characters/_template.md');
+  const templateRaw = Read('templates/character-agent-template.md');
 
   // _template.md에서 Part 2 섹션만 추출 (## Part 2 이후)
   const part2 = templateRaw.split(/^## Part 2/m)[1] ?? templateRaw;

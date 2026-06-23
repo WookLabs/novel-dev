@@ -16,7 +16,7 @@
 
 | 파일 | 책임 |
 |------|------|
-| `agents/characters/_template.md` | 캐릭터 에이전트 작성 가이드 + 단역 동적 생성 플레이스홀더 템플릿 |
+| `templates/character-agent-template.md` | 캐릭터 에이전트 작성 가이드 + 단역 동적 생성 플레이스홀더 템플릿 |
 | `agents/narrator.md` | collaborative 집필 서술자 — 장면 브리핑, 산문 직조, ADULT 마커 삽입 |
 | `teams/writing-team-collab.team.json` | 캐릭터 협업 집필 팀 (non-2pass) |
 | `teams/writing-team-collab-2pass.team.json` | 캐릭터 협업 2-Pass 집필 팀 |
@@ -41,7 +41,7 @@
 캐릭터 에이전트를 작성할 때 참조하는 구조 가이드와 단역 동적 생성용 플레이스홀더 템플릿.
 
 **Files:**
-- Create: `agents/characters/_template.md`
+- Create: `templates/character-agent-template.md`
 
 - [ ] **Step 1: Create _template.md**
 
@@ -159,13 +159,13 @@ tools:
 
 - [ ] **Step 2: Validate the file renders properly**
 
-Run: `cat agents/characters/_template.md | head -5`
+Run: `cat templates/character-agent-template.md | head -5`
 Expected: `# Character Agent Template` 로 시작하는 파일 확인
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add agents/characters/_template.md
+git add templates/character-agent-template.md
 git commit -m "feat(novel-dev): add character agent template for collab writing"
 ```
 
@@ -528,7 +528,7 @@ git commit -m "feat(novel-dev): add collab writing team definitions"
    - minor, cameo → haiku
 
 5. **에이전트 파일이 없는 경우** (단역/카메오 동적 생성):
-   - `agents/characters/_template.md`의 "Part 2: 단역 동적 생성 템플릿" 섹션을 읽습니다
+   - `templates/character-agent-template.md`의 "Part 2: 단역 동적 생성 템플릿" 섹션을 읽습니다
    - `characters/{char_id}.json`의 데이터로 플레이스홀더를 치환합니다:
      - `{{id}}`: char_id에서 `char_` prefix 제거
      - `{{char_id}}`: char_id 원본
@@ -556,7 +556,7 @@ for (const charId of allCharIds) {
     characterAgents.push({ name, path: agentPath, model, charData });
   } else {
     // 동적 생성
-    const template = readTemplatePart2('agents/characters/_template.md');
+    const template = readTemplatePart2('templates/character-agent-template.md');
     const prompt = replacePlaceholders(template, charData);
     characterAgents.push({ name, prompt, model, charData, dynamic: true });
   }
@@ -669,7 +669,7 @@ git commit -m "feat(novel-dev): add from_scene_cast resolution and hybrid workfl
    Task(model="sonnet", prompt="
    다음 두 파일을 읽고, 캐릭터 에이전트 .md 파일을 생성해주세요:
 
-   1. 구조 가이드: agents/characters/_template.md (Part 1 참조)
+   1. 구조 가이드: templates/character-agent-template.md (Part 1 참조)
    2. 캐릭터 데이터: characters/{char_id}.json
 
    생성 규칙:
@@ -940,7 +940,7 @@ git commit -m "docs(novel-dev): document collab writing teams in AGENTS.md"
 
 Run:
 ```bash
-ls -la agents/characters/_template.md agents/narrator.md teams/writing-team-collab.team.json teams/writing-team-collab-2pass.team.json
+ls -la templates/character-agent-template.md agents/narrator.md teams/writing-team-collab.team.json teams/writing-team-collab-2pass.team.json
 ```
 Expected: 4개 파일 모두 존재
 

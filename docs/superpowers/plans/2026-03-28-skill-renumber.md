@@ -68,7 +68,7 @@
 frontmatter: `name: character-designer`, `model: opus`, `tools: [Read, Write, Edit, Glob]`
 
 참조할 스키마: `schemas/character.schema.json`, `schemas/voice-profile.schema.json`
-참조할 템플릿: `agents/characters/_template.md` (Part 1 구조 가이드)
+참조할 템플릿: `templates/character-agent-template.md` (Part 1 구조 가이드)
 
 에이전트 파일 생성 시 role → model 매핑:
 - protagonist/deuteragonist/antagonist → opus

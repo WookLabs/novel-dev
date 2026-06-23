@@ -34,7 +34,7 @@ tools:
 - `agents/characters/{name}.md` — collaborative 집필용 에이전트 파일
 
 에이전트 파일 생성 규칙:
-- `agents/characters/_template.md`의 **Part 1** 가이드를 따라 에이전트 파일 작성
+- `templates/character-agent-template.md`의 **Part 1** 가이드를 따라 에이전트 파일 작성
 - 파일명: 캐릭터 이름의 영문 표기 소문자 (`yuna.md`, `junho.md`)
 - `minor`/`cameo` 캐릭터는 에이전트 파일을 생성하지 않음 (동적 템플릿 사용)
 
@@ -217,7 +217,7 @@ Read: characters/index.json  — 기존 캐릭터 목록 (ID 중복 방지)
 - 에이전트 파일은 해당 캐릭터의 voice profile, 말투 패턴, 행동 원칙을 집필 에이전트에게 전달하는 문서입니다. 집필 방식(collab/solo)과 무관하게 모든 주요 캐릭터에 필요합니다.
 - **에이전트 파일 없이 설계를 완료로 보고하지 마세요.**
 
-**참조**: `agents/characters/_template.md` Part 1 가이드
+**참조**: `templates/character-agent-template.md` Part 1 가이드
 
 ### 에이전트 파일 구조
 

@@ -388,7 +388,7 @@ agents/characters/yuna.md 자동 생성
 
 ```
 입력:
-  - agents/characters/_template.md (구조 가이드)
+  - templates/character-agent-template.md (구조 가이드)
   - characters/char_yuna.json (설계 데이터)
 
 처리: sonnet이 캐릭터 특성을 반영한 에이전트 프롬프트 작성
@@ -527,7 +527,7 @@ tools:
 | 파일 | 설명 |
 |------|------|
 | `agents/narrator.md` | collaborative 집필 서술자 에이전트 |
-| `agents/characters/_template.md` | 작성 가이드 + 단역 동적 생성 템플릿 |
+| `templates/character-agent-template.md` | 작성 가이드 + 단역 동적 생성 템플릿 |
 | `agents/characters/*.md` | 프로젝트별 캐릭터 에이전트 (design-character 시 자동 생성) |
 | `teams/writing-team-collab.team.json` | 캐릭터 협업 집필 팀 (non-2pass) |
 | `teams/writing-team-collab-2pass.team.json` | 캐릭터 협업 2-Pass 집필 팀 |
