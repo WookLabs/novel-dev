@@ -91,7 +91,7 @@ function validateScalarFields(state: Record<string, unknown>, errors: string[]):
   if (
     state.quality_threshold !== undefined &&
     (!Number.isInteger(state.quality_threshold) ||
-      Number(state.quality_threshold) < 70 ||
+      Number(state.quality_threshold) < 95 ||
       Number(state.quality_threshold) > 100)
   ) {
     errors.push('quality_threshold');

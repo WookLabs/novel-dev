@@ -106,7 +106,7 @@ Commands are organized by workflow phase:
 
 The `/write-all` command activates Ralph Loop mode:
 - Automated act-by-act writing
-- Quality gate at 70/100 points
+- Quality gate at 95/100 points
 - Automatic revision on failure (max 3 retries)
 - User confirmation between acts
 
@@ -148,7 +148,7 @@ novels/{novel_id}/
 **DO:**
 - Follow Korean literary conventions (show don't tell, natural dialogue, sensory details)
 - Respect the workflow phases (design → plot → write → revise)
-- Use quality gates - 70/100 minimum score for chapter approval
+- Use quality gates - 95/100 minimum score for chapter approval
 - Maintain consistency with established worldbuilding and characters
 - Plant foreshadowing naturally without telegraphing
 - Follow the style guide in `meta/style-guide.json`
@@ -188,9 +188,9 @@ Automated chapter verification agent that validates quality before completion cl
 **Thresholds**:
 | Validator | Normal | Chapter 1 |
 |-----------|--------|-----------|
-| critic | ≥85 | ≥90 |
-| beta-reader | ≥75 | ≥80 |
-| genre-validator | ≥90 | ≥95 |
+| critic | ≥95 | ≥95 |
+| beta-reader | ≥95 | ≥95 |
+| genre-validator | ≥95 | ≥95 |
 
 ### Common Workflows
 
@@ -248,7 +248,7 @@ Output is compiled to `dist/` directory.
 
 The plugin enforces quality through multiple mechanisms:
 
-1. **Quality Gates**: 70/100 minimum score (25 points each for narrative quality, plot coherence, character consistency, worldbuilding adherence)
+1. **Quality Gates**: 95/100 minimum score (25 points each for narrative quality, plot coherence, character consistency, worldbuilding adherence)
 2. **Consistency Checks**: Automated validation of character traits, timeline, world rules
 3. **Style Guide Enforcement**: Tone, pacing, POV, taboo words validated
 4. **Schema Validation**: All JSON files validated against schemas

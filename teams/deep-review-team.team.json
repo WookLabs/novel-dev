@@ -61,14 +61,14 @@
   },
   "quality_gates": {
     "enabled": true,
-    "consensus": "majority",
+    "consensus": "all_pass",
     "thresholds": {
-      "critic": 85,
-      "beta-reader": 75,
-      "consistency-verifier": 85,
-      "engagement-optimizer": 70,
-      "character-voice-analyzer": 80,
-      "quality-oracle": 75
+      "critic": 95,
+      "beta-reader": 95,
+      "consistency-verifier": 95,
+      "engagement-optimizer": 95,
+      "character-voice-analyzer": 95,
+      "quality-oracle": 95
     },
     "issue_policy": {
       "preserve_issue_codes": true,

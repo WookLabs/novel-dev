@@ -127,7 +127,7 @@ function buildPlotReviewPrompt(projectPath, chapters) {
   system += `4. **plot-architect** (아크 진행률, 복선 타이밍, 서브플롯 밸런스)\n\n`;
   system += `## 출력 형식\n`;
   system += `각 관점별 점수(0-100)와 구체적 피드백을 JSON으로 출력하세요.\n`;
-  system += `Quality Gates: critic>=80, consistency>=85, genre>=85, plot-architect>=80\n`;
+  system += `Quality Gates: critic>=95, consistency>=95, genre>=95, plot-architect>=95\n`;
 
   let user = `# 리뷰 대상 플롯\n\n`;
   for (const ch of chapters) {

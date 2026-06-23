@@ -45,7 +45,7 @@ Chapter {N} (chapters/chapter_{pad(N, 3)}.md)
 ## 지시
 1. revision-team.team.json을 로드하여 pipeline 워크플로우를 실행하세요
 2. critic -> editor -> proofreader -> consistency-verifier 순서로 진행
-3. quality_gates: critic >= 85, consistency-verifier >= 85
+3. quality_gates: critic >= 95, consistency-verifier >= 95
 4. 결과를 reviews/team/revision-team_ch{N}_{timestamp}.json에 저장하세요
 
 ## 실패 시
@@ -65,7 +65,7 @@ Chapter {N} (chapters/chapter_{pad(N, 3)}.md)
 - 결과를 `reviews/team/revision-team_ch{N}_{timestamp}.json`에 저장
 - 성공 메시지 표시:
   ```
-  [OK] revision-team 검증 통과 (critic: {score} >= 85, consistency: {score} >= 85)
+  [OK] revision-team 검증 통과 (critic: {score} >= 95, consistency: {score} >= 95)
   수정본이 저장되었습니다.
   ```
 
@@ -74,7 +74,7 @@ Chapter {N} (chapters/chapter_{pad(N, 3)}.md)
 - 결과를 `reviews/team/revision-team_ch{N}_{timestamp}.json`에 저장
 - 경고 리포트 표시:
   ```
-  [WARN] revision-team 검증 미통과 (critic: {score} < 85, consistency: {score} < 85)
+  [WARN] revision-team 검증 미통과 (critic: {score} < 95, consistency: {score} < 95)
   원고는 그대로 저장되었습니다. 수동 퇴고를 권장합니다:
     /revise {N}
   상세: reviews/team/revision-team_ch{N}_{timestamp}.json

@@ -51,10 +51,10 @@
     "enabled": true,
     "consensus": "all_pass",
     "thresholds": {
-      "critic": 80,
-      "consistency-verifier": 85,
-      "genre-validator": 85,
-      "plot-architect": 80
+      "critic": 95,
+      "consistency-verifier": 95,
+      "genre-validator": 95,
+      "plot-architect": 95
     },
     "issue_policy": {
       "preserve_issue_codes": true,

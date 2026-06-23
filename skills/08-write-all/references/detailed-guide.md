@@ -73,15 +73,15 @@ The system uses three independent validators for each chapter:
 **Output Format**:
 ```json
 {
-  "score": 87,
+  "score": 96,
   "breakdown": {
-    "narrative_quality": 23,
-    "plot_consistency": 22,
-    "character_consistency": 21,
-    "setting_adherence": 21
+    "narrative_quality": 24,
+    "plot_consistency": 24,
+    "character_consistency": 24,
+    "setting_adherence": 24
   },
   "passed": true,
-  "feedback": "Strong opening but dialogue needs refinement..."
+  "feedback": "Strong opening with polished dialogue, rhythm, and clear plot execution..."
 }
 ```
 
@@ -97,14 +97,13 @@ The system uses three independent validators for each chapter:
 - Reader retention likelihood
 
 **Threshold**:
-- Regular chapters: ≥75 engagement
-- Chapter 1: ≥80 engagement
+- All chapters: ≥95 engagement
 
 **Output Format**:
 ```json
 {
-  "engagement_score": 78,
-  "retention_prediction": 82,
+  "engagement_score": 96,
+  "retention_prediction": 96,
   "drop_off_points": [
     {
       "location": "Scene 2, paragraph 5",
@@ -113,7 +112,7 @@ The system uses three independent validators for each chapter:
     }
   ],
   "emotional_peaks": [
-    { "location": "Scene 3", "type": "tension", "strength": 8 }
+    { "location": "Scene 3", "type": "tension", "strength": 9 }
   ],
   "passed": true
 }
@@ -130,20 +129,19 @@ The system uses three independent validators for each chapter:
 - Tone consistency
 
 **Threshold**:
-- Regular chapters: ≥90 compliance
-- Chapter 1: ≥95 compliance
+- All chapters: ≥95 compliance
 
 **Output Format**:
 ```json
 {
-  "compliance_score": 92,
+  "compliance_score": 96,
   "genre": "romance",
   "required_elements": [
     { "element": "chemistry", "present": true, "strength": "strong" },
     { "element": "conflict", "present": true, "strength": "medium" },
     { "element": "tension", "present": true, "strength": "strong" }
   ],
-  "tone_consistency": 95,
+  "tone_consistency": 96,
   "passed": true
 }
 ```
@@ -172,20 +170,20 @@ function checkConsensus(results, chapterNum) {
 
 | Validator | Regular Chapter | Chapter 1 |
 |-----------|----------------|-----------|
-| Critic | ≥85 | ≥90 |
-| Beta-Reader | ≥75 | ≥80 |
-| Genre-Validator | ≥90 | ≥95 |
+| critic | ≥95 | ≥95 |
+| beta-reader | ≥95 | ≥95 |
+| genre-validator | ≥95 | ≥95 |
 
 ### Chapter 1 Special Requirements
 
-Chapter 1 has elevated thresholds because it determines reader retention for the entire novel.
+Chapter 1 uses the same 95-point validator thresholds, plus additional retention checks because it determines reader retention for the entire novel.
 
 **Additional Chapter 1 Checklist**:
 - [ ] Strong hook in first paragraph (crisis or intrigue)
 - [ ] Protagonist's uniqueness established within 3 paragraphs
 - [ ] Promise of "사이다" (payoff) within 3-5 chapters
 - [ ] Genre core elements clearly visible
-- [ ] Predicted retention rate ≥75%
+- [ ] Predicted retention rate ≥95%
 
 **Implementation**:
 ```javascript

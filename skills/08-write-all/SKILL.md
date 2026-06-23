@@ -212,9 +212,9 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 
 | Validator | Regular | Chapter 1 | Role |
 |-----------|---------|-----------|------|
-| critic | ≥85 | ≥90 | Overall quality (100pt scale) |
-| beta-reader | ≥80 | ≥85 | Engagement & retention |
-| genre-validator | ≥95 | ≥97 | Genre compliance |
+| critic | ≥95 | ≥95 | Overall quality (100pt scale) |
+| beta-reader | ≥95 | ≥95 | Engagement & retention |
+| genre-validator | ≥95 | ≥95 | Genre compliance |
 
 **All validators must pass** for chapter to proceed.
 
@@ -222,7 +222,7 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 - Strong hook in first paragraph
 - Protagonist uniqueness within 3 paragraphs
 - Promise of payoff within 3-5 chapters
-- Predicted retention ≥75%
+- Predicted retention ≥95%
 
 ## Key Features
 
@@ -733,7 +733,7 @@ for act in acts:
 
             if same_failure_3_times(diagnostic):
                 # Circuit Breaker
-                action = ask_user(["수동 수정", "기준 완화", "스킵", "중단"])
+                action = ask_user(["수동 수정", "구조/플롯 재설계", "스킵", "중단"])
                 handle_circuit_breaker(action)
                 break
 
@@ -774,7 +774,7 @@ if failed_chapters is empty and last_gate.status == "PASS" and all chapters are 
   "failed_chapters": [],
   "act_complete": false,
   "quality_score": 0,
-  "last_quality_score": 75,
+  "last_quality_score": 96,
   "retry_count": 0,
   "iteration": 1,
   "max_iterations": 100,
@@ -789,9 +789,9 @@ if failed_chapters is empty and last_gate.status == "PASS" and all chapters are 
     "triggered": false
   },
   "last_validation": {
-    "critic": 87,
-    "beta_reader": 78,
-    "genre_validator": 92,
+    "critic": 96,
+    "beta_reader": 96,
+    "genre_validator": 96,
     "all_passed": true
   },
   "last_gate": {
@@ -800,7 +800,7 @@ if failed_chapters is empty and last_gate.status == "PASS" and all chapters are 
     "passed": true,
     "should_retry": false,
     "strategy": "none",
-    "score": 88,
+    "score": 96,
     "blocking_reasons": [],
     "decided_at": "2026-01-21T10:32:00Z"
   }
@@ -817,8 +817,8 @@ if failed_chapters is empty and last_gate.status == "PASS" and all chapters are 
 ## 품질 게이트 로직 (v2 - Multi-Validator)
 
 1. **평가 기준**: 3개 validator 모두 통과
-   - critic >= 85점
-   - beta-reader >= 80점 (engagement)
+   - critic >= 95점
+   - beta-reader >= 95점 (engagement)
    - genre-validator >= 95점 (compliance)
 
 2. **검증 프로세스**:
@@ -852,7 +852,7 @@ if failed_chapters is empty and last_gate.status == "PASS" and all chapters are 
    - 동일 이유로 3회 실패 시 자동 중단
    - 사용자에게 선택지 제공:
      - (A) 수동 수정 후 재시도
-     - (B) 기준 완화 (legacy 70점)
+     - (B) 구조/플롯 재설계 후 재시도
      - (C) 해당 회차 스킵
      - (D) 집필 중단
 
@@ -967,8 +967,8 @@ if (gateDecision.status !== "PASS") {
 The `/verify-chapter` command automatically:
 - Launches all 3 validators in parallel
 - Validates `reader_experience` against design/plot contracts via `evaluateEngagementContract`
-- Applies confidence filtering (≥75)
-- Enforces quality thresholds (critic ≥85, beta-reader ≥80, genre-validator ≥95)
+- Applies confidence filtering (≥95)
+- Enforces quality thresholds (critic ≥95, beta-reader ≥95, genre-validator ≥95)
 - Persists engagement trend via `recordEngagementEvaluation` to `meta/quality-trend.json`
 - Returns structured verdict with scores and high-confidence issues
 - Saves results to `reviews/verifications/chapter_${N}_verification.json`

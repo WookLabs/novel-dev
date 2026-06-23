@@ -62,10 +62,10 @@ Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
 
 | 에이전트 | 기준 |
 |---------|------|
-| critic | >= 80 |
-| consistency-verifier | >= 85 |
-| genre-validator | >= 85 |
-| plot-architect | >= 80 |
+| critic | >= 95 |
+| consistency-verifier | >= 95 |
+| genre-validator | >= 95 |
+| plot-architect | >= 95 |
 
 ## 결과
 

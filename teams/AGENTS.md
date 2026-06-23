@@ -42,12 +42,12 @@
 
 | 팀 | Consensus | 주요 기준 |
 |----|-----------|-----------|
-| verification-team | all_pass | critic>=85, beta-reader>=75, genre-validator>=90 |
-| deep-review-team | majority | 6개 에이전트, 과반수 통과 |
-| writing-team-2pass | all_pass | quality-oracle>=80 |
-| revision-team | all_pass | critic>=85, consistency-verifier>=85 |
-| design-review-team | all_pass | critic>=80, lore-keeper>=85, genre-validator>=85, plot-architect>=80 |
-| plot-review-team | all_pass | critic>=80, consistency-verifier>=85, genre-validator>=85, plot-architect>=80 |
+| verification-team | all_pass | critic>=95, beta-reader>=95, genre-validator>=95 |
+| deep-review-team | all_pass | 6개 에이전트 모두 >=95 |
+| writing-team-2pass | all_pass | quality-oracle>=95 |
+| revision-team | all_pass | critic>=95, consistency-verifier>=95 |
+| design-review-team | all_pass | critic>=95, lore-keeper>=95, genre-validator>=95, plot-architect>=95 |
+| plot-review-team | all_pass | critic>=95, consistency-verifier>=95, genre-validator>=95, plot-architect>=95 |
 
 ## 사용자 정의 팀
 

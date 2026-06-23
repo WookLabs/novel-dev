@@ -34,9 +34,9 @@ await Promise.all([
 
 | 신뢰도 | 처리 |
 |--------|------|
-| ≥85% | 자동 반영 |
-| 70-84% | 사용자 확인 후 반영 |
-| <70% | 참고용 표시만 |
+| ≥95% | 자동 반영 |
+| 80-94% | 사용자 확인 후 반영 |
+| <80% | 참고용 표시만 |
 
 ### Step 3: Unified Chapter Gate Persistence
 
@@ -300,16 +300,16 @@ const repeatedEngagementDirectives = engagement.recurringEngagementDirectives;
 ### Regular Mode
 | Validator | Threshold |
 |-----------|-----------|
-| chapter-verifier | ≥85점 |
-| beta-reader | ≥80점 |
+| chapter-verifier | ≥95점 |
+| beta-reader | ≥95점 |
 | genre-validator | ≥95점 |
 
 ### Masterpiece Mode (1화)
 | Validator | Threshold |
 |-----------|-----------|
-| chapter-verifier | ≥90점 |
-| beta-reader | ≥85점 |
-| genre-validator | ≥97점 |
+| chapter-verifier | ≥95점 |
+| beta-reader | ≥95점 |
+| genre-validator | ≥95점 |
 
 ## Usage
 

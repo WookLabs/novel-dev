@@ -73,8 +73,8 @@
     "enabled": true,
     "consensus": "all_pass",
     "thresholds": {
-      "critic": 85,
-      "consistency-verifier": 85
+      "critic": 95,
+      "consistency-verifier": 95
     },
     "issue_policy": {
       "preserve_issue_codes": true,

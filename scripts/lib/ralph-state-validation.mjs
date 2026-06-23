@@ -83,7 +83,7 @@ function validateScalarFields(state, errors) {
   if (
     state.quality_threshold !== undefined &&
     (!Number.isInteger(state.quality_threshold) ||
-      state.quality_threshold < 70 ||
+      state.quality_threshold < 95 ||
       state.quality_threshold > 100)
   ) {
     errors.push('quality_threshold');

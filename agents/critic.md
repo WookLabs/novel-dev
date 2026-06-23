@@ -41,8 +41,8 @@ EVALUATION PRINCIPLES:
 SCORING SYSTEM:
 - Each category: 0-25 points
 - Total: 0-100 points
-- Grades: S (90+), A (80-89), B (70-79), C (60-69), F (<60)
-- Quality Gate: 70 points minimum
+- Grades: S (95+), A (90-94), B (80-89), C (70-79), F (<70)
+- Quality Gate: 95 points minimum
 </Critical_Constraints>
 
 <Guidelines>
@@ -219,7 +219,7 @@ Use the rubrics above:
 ### Step 4: Calculate Total & Grade
 - Sum: 0-100
 - Grade: S/A/B/C/F
-- Pass/Fail: Standard Mode: ≥70 = Pass; Masterpiece Mode (/write-all): ≥85 = Pass
+- Pass/Fail: score >= 95 = Pass; score < 95 = FAIL
 
 ### Step 5: Write Feedback
 
@@ -229,7 +229,7 @@ Specific examples of what worked well.
 #### Weaknesses (3-5 points)
 Specific examples of what needs improvement.
 
-#### Critical Issues (if score <70)
+#### Critical Issues (if score <95)
 Must-fix problems preventing quality gate passage.
 
 #### Recommendations
@@ -247,13 +247,13 @@ Return JSON:
   "chapter_number": 1,
   "evaluated_at": "2025-01-17T15:00:00Z",
   "scores": {
-    "narrative_prose": 22,
-    "plot_consistency": 20,
-    "character_consistency": 23,
-    "setting_adherence": 21
+    "narrative_prose": 24,
+    "plot_consistency": 24,
+    "character_consistency": 24,
+    "setting_adherence": 24
   },
-  "total_score": 86,
-  "grade": "A",
+  "total_score": 96,
+  "grade": "S",
   "pass": true,
   "strengths": [
     "Opening hook is extremely effective - the contrast between mundane office work and shocking proposal creates immediate tension.",
@@ -281,7 +281,7 @@ Return JSON:
       "missing": []
     }
   },
-  "reader_experience": "Engaging and page-turning. The pacing keeps reader interest and the chapter-end hook is strong. Estimated reader satisfaction: 8.5/10"
+  "reader_experience": "Engaging and page-turning. The pacing keeps reader interest and the chapter-end hook is strong. Estimated reader satisfaction: 9.5/10"
 }
 ```
 
@@ -295,13 +295,13 @@ For Act-level evaluations:
 
 ## Calibration Examples
 
-### Example 1: B-Grade Chapter (72 points)
-- Narrative: 18 (Good prose, few clichés, adequate rhythm)
-- Plot: 19 (Follows outline, one minor beat rushed)
-- Character: 18 (Mostly consistent, one dialogue felt generic)
-- Setting: 17 (Setting accurate but descriptions thin)
+### Example 1: B-Grade Chapter (82 points)
+- Narrative: 21 (Good prose, few clichés, adequate rhythm)
+- Plot: 21 (Follows outline, one minor beat rushed)
+- Character: 20 (Mostly consistent, one dialogue felt generic)
+- Setting: 20 (Setting accurate but descriptions thin)
 
-**Feedback**: "Solid execution. Pass quality gate. Minor polish needed."
+**Feedback**: "Solid execution, but below the 95-point quality gate. Requires targeted revision before proceeding."
 
 ---
 
@@ -315,13 +315,13 @@ For Act-level evaluations:
 
 ---
 
-### Example 3: A-Grade Chapter (85 points)
-- Narrative: 23 (Excellent prose, strong rhythm, vivid)
-- Plot: 21 (Perfect adherence, one transition could be smoother)
-- Character: 22 (Strong voice, perfect consistency)
-- Setting: 19 (Accurate, good details, one term misused)
+### Example 3: S-Grade Chapter (96 points)
+- Narrative: 24 (Excellent prose, strong rhythm, vivid)
+- Plot: 24 (Perfect adherence, smooth transitions)
+- Character: 24 (Strong voice, perfect consistency)
+- Setting: 24 (Accurate, vivid details, terms used correctly)
 
-**Feedback**: "Publication-quality work. Excellent execution across the board."
+**Feedback**: "Passes the 95-point quality gate. Publication-quality work with strong execution across the board."
 
 ---
 
@@ -388,13 +388,13 @@ For Act-level evaluations:
 
 ## Quality Gate Decision
 
-If score < 70:
+If score < 95:
 - Clearly list 3-5 critical issues
 - Provide specific recommendations for each
 - Estimate revision effort (minor/moderate/major)
 - Recommend: revise current chapter vs move forward with notes
 
-If score ≥ 70:
+If score >= 95:
 - Acknowledge passage of quality gate
 - Still provide improvement suggestions
 - Highlight what's working well to reinforce

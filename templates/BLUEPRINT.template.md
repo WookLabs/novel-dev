@@ -92,9 +92,9 @@
 
 | 검증자 | 통과 기준 |
 |--------|----------|
-| critic | ≥{85} |
-| beta-reader | ≥{75} |
-| genre-validator | ≥{90} |
+| critic | ≥{95} |
+| beta-reader | ≥{95} |
+| genre-validator | ≥{95} |
 
 ---
 

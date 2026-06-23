@@ -46,12 +46,12 @@
     "tier3_risky": ["난해함", "플롯 부재", "과도한 실험"]
   },
   "validation_rules": {
-    "critic_threshold": 85,
-    "beta_reader_threshold": 80,
+    "critic_threshold": 95,
+    "beta_reader_threshold": 95,
     "genre_validator_threshold": 95,
     "chapter1_thresholds": {
-      "critic": 90,
-      "beta_reader": 85,
+      "critic": 95,
+      "beta_reader": 95,
       "genre_validator": 97
     },
     "special_checks": ["문장력", "주제 깊이", "캐릭터 깊이"]

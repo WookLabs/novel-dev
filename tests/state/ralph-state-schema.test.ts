@@ -172,6 +172,26 @@ describe('ralph-state schema', () => {
     expect(() => assertValidScriptRalphState(state)).toThrow(/quality_threshold/);
   });
 
+  it('rejects quality thresholds below the 95 point masterpiece bar', async () => {
+    const validate = compileRalphStateSchema();
+    const belowMasterpiece = baseState({
+      quality_threshold: 94,
+    });
+    const atMasterpiece = baseState({
+      quality_threshold: 95,
+    });
+
+    expect(validate(belowMasterpiece)).toBe(false);
+    expect(() => assertValidTypescriptRalphState(belowMasterpiece)).toThrow(/quality_threshold/);
+
+    const assertValidScriptRalphState = await loadScriptRalphStateValidator();
+    expect(() => assertValidScriptRalphState(belowMasterpiece)).toThrow(/quality_threshold/);
+
+    expect(validate(atMasterpiece)).toBe(true);
+    expect(() => assertValidTypescriptRalphState(atMasterpiece)).not.toThrow();
+    expect(() => assertValidScriptRalphState(atMasterpiece)).not.toThrow();
+  });
+
   it('keeps runtime validators aligned with schema for retry count bounds', async () => {
     const validate = compileRalphStateSchema();
     const state = baseState({

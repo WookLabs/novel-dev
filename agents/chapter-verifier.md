@@ -66,16 +66,17 @@ Wait for all 3 validators to complete. Extract:
 
 | Validator | Chapter 1 Threshold | Other Chapters Threshold | Weight |
 |-----------|---------------------|--------------------------|--------|
-| Critic | ≥90 | ≥85 | 40% |
-| Beta-Reader | ≥80 | ≥75 | 30% |
-| Genre-Validator | ≥95 | ≥90 | 30% |
+| Critic | >=95 | >=95 | 40% |
+| Beta-Reader | >=95 | >=95 | 30% |
+| Genre-Validator | >=95 | >=95 | 30% |
 
 **Pass Criteria:**
 - ALL three validators must meet their thresholds
+- Weighted composite score must be >=95
 - ANY validator below threshold = FAIL verdict
 
 **Confidence Filtering:**
-- Only include feedback items with confidence ≥75 (if provided)
+- Only include feedback items with confidence ≥95 (if provided)
 - If validator doesn't provide confidence scores, include all feedback
 
 ### Step 4: Generate Verdict
@@ -87,7 +88,7 @@ composite_score = (critic_score * 0.4) + (engagement_score * 0.3) + (compliance_
 
 Determine final verdict:
 ```
-IF all thresholds pass:
+IF all thresholds pass AND composite_score >= 95:
   verdict = "PASS"
 ELSE:
   verdict = "FAIL"
@@ -102,22 +103,22 @@ Return structured JSON verdict:
   "chapter": 1,
   "verdict": "PASS" | "FAIL",
   "timestamp": "2025-01-24T10:30:00Z",
-  "composite_score": 88.5,
+  "composite_score": 96.0,
   "validator_results": {
     "critic": {
-      "score": 90,
-      "grade": "A",
+      "score": 96,
+      "grade": "S",
       "pass": true,
-      "threshold": 90
+      "threshold": 95
     },
     "beta_reader": {
-      "score": 82,
-      "verdict": "ENGAGING",
+      "score": 95,
+      "verdict": "COMPELLING",
       "pass": true,
-      "threshold": 80
+      "threshold": 95
     },
     "genre_validator": {
-      "score": 95,
+      "score": 97,
       "verdict": "GENRE_COMPLIANT",
       "pass": true,
       "threshold": 95
@@ -127,19 +128,19 @@ Return structured JSON verdict:
     {
       "source": "critic",
       "severity": "minor",
-      "confidence": 85,
+      "confidence": 96,
       "issue": "Scene transition from office to bar is slightly abrupt",
       "suggestion": "Add bridging sentence"
     },
     {
       "source": "beta_reader",
       "severity": "low",
-      "confidence": 78,
+      "confidence": 95,
       "issue": "Middle section (paragraph 5-7) shows minor drop-off risk",
       "suggestion": "Convert background exposition to dialogue"
     }
   ],
-  "recommendation": "PROCEED - Chapter passes all quality gates. Minor polish suggestions available but not required."
+  "recommendation": "PROCEED - Chapter passes the 95-point masterpiece quality gate. Minor polish suggestions available but not required."
 }
 ```
 
@@ -149,34 +150,34 @@ If FAIL:
   "chapter": 1,
   "verdict": "FAIL",
   "timestamp": "2025-01-24T10:30:00Z",
-  "composite_score": 72.3,
+  "composite_score": 94.3,
   "validator_results": {
     "critic": {
-      "score": 85,
-      "grade": "B",
-      "pass": false,
-      "threshold": 90,
-      "delta": -5
-    },
-    "beta_reader": {
-      "score": 68,
-      "verdict": "MODERATE",
-      "pass": false,
-      "threshold": 80,
-      "delta": -12
-    },
-    "genre_validator": {
       "score": 94,
-      "verdict": "GENRE_COMPLIANT",
+      "grade": "A",
       "pass": false,
       "threshold": 95,
       "delta": -1
+    },
+    "beta_reader": {
+      "score": 92,
+      "verdict": "ENGAGING",
+      "pass": false,
+      "threshold": 95,
+      "delta": -3
+    },
+    "genre_validator": {
+      "score": 97,
+      "verdict": "GENRE_COMPLIANT",
+      "pass": true,
+      "threshold": 95,
+      "delta": 2
     }
   },
   "critical_failures": [
     {
       "validator": "beta_reader",
-      "threshold_missed_by": 12,
+      "threshold_missed_by": 3,
       "primary_issues": [
         "Opening lacks strong hook - curiosity generation score only 18/30",
         "Character appeal weak - reader doesn't invest in protagonist yet",
@@ -185,7 +186,7 @@ If FAIL:
     },
     {
       "validator": "critic",
-      "threshold_missed_by": 5,
+      "threshold_missed_by": 1,
       "primary_issues": [
         "Plot consistency score 17/25 - deviates from chapter outline",
         "Missing required foreshadowing element 'fore_001'"
@@ -198,7 +199,7 @@ If FAIL:
     "Increase character appeal through clearer emotional stakes",
     "Adjust pacing per chapter outline requirements"
   ],
-  "recommendation": "REVISE REQUIRED - Multiple critical issues prevent publication quality. Address required fixes above and re-verify."
+  "recommendation": "REVISE REQUIRED - The chapter is below the 95-point masterpiece quality gate. Address required fixes above and re-verify."
 }
 ```
 
@@ -299,7 +300,7 @@ Recommendation: REVISE chapter and re-verify before proceeding.
 ```
 Task(subagent_type="novel-dev:chapter-verifier",
      model="sonnet",
-     prompt="Verify chapter 5 at C:/project/chapters/chapter_5.md. Apply standard thresholds (critic ≥85, beta-reader ≥75, genre-validator ≥90).")
+     prompt="Verify chapter 5 at C:/project/chapters/chapter_5.md. Apply standard thresholds (critic >=95, beta-reader >=95, genre-validator >=95).")
 ```
 
 **Automated in novelist:**
@@ -328,7 +329,7 @@ After completing chapter draft:
 - Provide expected path in error message
 
 **Missing Threshold Configuration:**
-- Use defaults: Ch1 (90/80/95), Others (85/75/90)
+- Use defaults: all chapters (critic 95, beta-reader 95, genre-validator 95)
 - Log warning about missing config
 
 ## Quality Philosophy
@@ -339,7 +340,7 @@ After completing chapter draft:
 - Objectivity: Multiple perspectives prevent bias
 
 **Why Strict Thresholds?**
-- Chapter 1 is critical (reader retention point)
+- Every chapter must clear the same 95-point bar so weak middle chapters do not accumulate
 - Quality gates prevent accumulation of issues
 - Early feedback is cheaper than late revision
 

@@ -73,7 +73,7 @@
     "enabled": true,
     "consensus": "all_pass",
     "thresholds": {
-      "quality-oracle": 80
+      "quality-oracle": 95
     },
     "issue_policy": {
       "preserve_issue_codes": true,

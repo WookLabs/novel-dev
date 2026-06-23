@@ -107,10 +107,10 @@
     },
     "quality_threshold": {
       "type": "integer",
-      "minimum": 70,
+      "minimum": 95,
       "maximum": 100,
-      "default": 85,
-      "description": "품질 게이트 기준 점수 (masterpiece mode: 85)"
+      "default": 95,
+      "description": "품질 게이트 기준 점수 (masterpiece mode: 95)"
     },
     "validators": {
       "type": "array",
@@ -237,12 +237,12 @@
     "masterpiece_mode": {
       "type": "boolean",
       "default": true,
-      "description": "마스터피스 모드 활성화 여부 (85점 기준, 3중 검증)"
+      "description": "마스터피스 모드 활성화 여부 (95점 기준, 3중 검증)"
     },
     "chapter_1_special_gate": {
       "type": "boolean",
       "default": true,
-      "description": "1화 특별 품질 게이트 활성화 여부 (90점 기준)"
+      "description": "1화 특별 품질 게이트 활성화 여부 (95점 기준)"
     }
   },
   "allOf": [

@@ -176,7 +176,7 @@ Step-by-step process
 - Predicting drop-off risk zones
 - Detecting emotional beats (심쿵, 긴장, 설렘)
 - Analyzing pacing from reader perspective
-- Threshold: >=80 engagement score
+- Threshold: >=95 engagement score
 
 **engagement-optimizer** (expanded - absorbs pacing-analyzer + tension-tracker):
 - 7-domain engagement analysis: pacing, tension, emotional beats, hooks, drop-off, cliffhangers, arc compliance
@@ -253,7 +253,7 @@ Agents enforce these standards:
 - **plot-architect**: Clear dramatic structure, proper pacing across acts
 - **proofreader**: Zero grammar/spelling errors in final output
 - **summarizer**: Concise (200-500 words), captures key events and emotional beats
-- **beta-reader**: >=80 engagement score, drop-off risk zones identified with severity
+- **beta-reader**: >=95 engagement score, drop-off risk zones identified with severity
 - **engagement-optimizer**: 7-domain analysis with prioritized actionable fixes
 - **character-voice-analyzer**: Voice consistency + dialogue quality across all characters
 - **consistency-verifier**: 5-domain verification with chapter:line citations
@@ -275,7 +275,7 @@ Agents (especially novelist and editor) follow these Korean literary techniques:
 **DON'T:**
 - Use novelist for planning tasks (use plot-architect)
 - Use critic to revise content (it's read-only; use editor)
-- Bypass quality gates (70/100 minimum)
+- Bypass quality gates (95/100 minimum)
 - Ignore style guide taboo words
 - Create info-dumps in prose
 - Use Western idioms that don't translate well
@@ -289,8 +289,8 @@ Masterpiece Mode uses 3-validator parallel consensus:
 
 | Validator | Threshold | Focus |
 |-----------|-----------|-------|
-| critic | >=85 | Quality (narrative, plot, character, setting) |
-| beta-reader | >=80 | Engagement (hooks, pacing, emotional impact) |
+| critic | >=95 | Quality (narrative, plot, character, setting) |
+| beta-reader | >=95 | Engagement (hooks, pacing, emotional impact) |
 | genre-validator | >=95 | Genre compliance (required elements, commercials) |
 
 **ALL three must PASS** for quality gate approval.
@@ -299,7 +299,7 @@ Masterpiece Mode uses 3-validator parallel consensus:
 
 If same failure reason occurs 3 times:
 1. Auto-pause validation
-2. Present options to user: (A) Manual fix (B) Lower threshold (C) Skip chapter (D) Stop
+2. Present options to user: (A) Manual fix (B) Rework structure/plot (C) Skip chapter (D) Stop
 
 ### Diagnostic Output
 

@@ -362,7 +362,7 @@ export function checkCircuitBreaker(currentFailure) {
       diagnosis: currentFailure,
       options: [
         'A) 수동 수정 후 재시도',
-        'B) 기준 완화 (legacy 70점)',
+        'B) 구조/플롯 재설계 후 재시도',
         'C) 해당 회차 스킵',
         'D) 집필 중단'
       ]

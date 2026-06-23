@@ -111,7 +111,7 @@ node dist/cli/apply-design-gate.js --project novels/{novel_id} --fail-on-blocked
 | 타임라인 | consistency-verifier | 순서 충돌 없음 |
 | 세계관 규칙 | consistency-verifier | 모순 없음 |
 | 필수 트로프 | genre-validator | 80% 이상 포함 |
-| 상업성 | genre-validator | 점수 ≥85 |
+| 상업성 | genre-validator | 점수 ≥95 |
 | 독자 약속 구체성 | genre-validator | 일반어 금지, 고유 장치와 주인공 선택/비용 포함 |
 | 전제 행동 전환성 | genre-validator | 제목/한줄훅/소개문에서 클릭, 첫 화 열람, 저장/팔로우 이유가 보이고 blind listing protocol로 검증 가능 |
 | 전제 promise evidence | premise-appeal-benchmark | `weakPromiseEvidenceCount === 0`, `promiseEvidenceCount > 0` |

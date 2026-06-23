@@ -740,7 +740,7 @@
       "members": [
         { "agent": "critic", "status": "running", "task_id": "t1", "started_at": "2026-02-17T14:30:05Z" },
         { "agent": "beta-reader", "status": "running", "task_id": "t2", "started_at": "2026-02-17T14:30:05Z" },
-        { "agent": "genre-validator", "status": "completed", "task_id": "t3", "started_at": "2026-02-17T14:30:05Z", "completed_at": "2026-02-17T14:31:20Z", "result": { "score": 92, "verdict": "GENRE_COMPLIANT" } }
+        { "agent": "genre-validator", "status": "completed", "task_id": "t3", "started_at": "2026-02-17T14:30:05Z", "completed_at": "2026-02-17T14:31:20Z", "result": { "score": 96, "verdict": "GENRE_COMPLIANT" } }
       ],
       "workflow_progress": {
         "total_steps": 1,
@@ -750,7 +750,7 @@
       "quality_gate": {
         "enabled": true,
         "results": {
-          "genre-validator": { "score": 92, "threshold": 90, "pass": true, "verdict": "GENRE_COMPLIANT" }
+          "genre-validator": { "score": 96, "threshold": 95, "pass": true, "verdict": "GENRE_COMPLIANT" }
         }
       },
       "started_at": "2026-02-17T14:30:00Z",
@@ -809,7 +809,7 @@
           "completed_at": "2026-06-21T00:13:12Z",
           "result": {
             "score": 79,
-            "verdict": "PASS"
+            "verdict": "FAIL"
           }
         }
       ],
@@ -823,15 +823,15 @@
         "results": {
           "critic": {
             "score": 82,
-            "threshold": 85,
+            "threshold": 95,
             "pass": false,
             "verdict": "FAIL"
           },
           "beta-reader": {
             "score": 79,
-            "threshold": 75,
-            "pass": true,
-            "verdict": "PASS"
+            "threshold": 95,
+            "pass": false,
+            "verdict": "FAIL"
           }
         },
         "overall_pass": false,
@@ -878,7 +878,7 @@
           "output_refs": ["failure_attribution", "recovery_plan"],
           "depends_on": ["trace_validate_critic_issue"],
           "issue_codes": ["manuscript-long-hook-thread-not-advanced"],
-          "evidence": ["critical_blocks_pass=true and critic score 82 < threshold 85"],
+          "evidence": ["critical_blocks_pass=true and critic score 82 < threshold 95"],
           "directive": "retry_from_step 또는 revise 단계로 되돌린다."
         }
       ],
@@ -903,7 +903,7 @@
         "required_context_refs": ["chapters/chapter_012.md", "issue:manuscript-long-hook-thread-not-advanced", "directive:장기 미스터리에 새 단서, 해석 변화, 추적 행동 중 하나를 추가한다."],
         "directives_to_apply": ["장기 훅 단서가 반복되는 문단을 새 정보, 가설 변화, 추적 행동 중 하나로 수정한다."],
         "issue_codes": ["manuscript-long-hook-thread-not-advanced"],
-        "success_criteria": ["critic score >= 85", "manuscript-long-hook-thread-not-advanced issue absent", "quality_gate.overall_pass === true"],
+        "success_criteria": ["critic score >= 95", "manuscript-long-hook-thread-not-advanced issue absent", "quality_gate.overall_pass === true"],
         "verification_commands": ["npx vitest run tests/teams/team-definitions.test.ts", "/team run verification-team 12"],
         "rollback_refs": ["chapters/chapter_012.md@pre-revise"],
         "rationale": "원인 trace 이전 dispatch와 critic issue는 보존하고, 수정 가능한 원고 단계부터 재실행하면 전체 팀 run을 반복하지 않고 차단 issue를 검증할 수 있다."

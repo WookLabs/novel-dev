@@ -639,7 +639,7 @@ Genre-validator는 critic과 협력합니다:
 Workflow:
 1. Critic evaluates narrative quality (0-100)
 2. Genre-validator checks genre compliance (0-100)
-3. **Both must pass** (≥70) for publication quality
+3. **Both must pass** (≥95) for publication quality
 
 ---
 

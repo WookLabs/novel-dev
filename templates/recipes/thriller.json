@@ -78,12 +78,12 @@
   },
 
   "validation_rules": {
-    "critic_threshold": 85,
-    "beta_reader_threshold": 80,
+    "critic_threshold": 95,
+    "beta_reader_threshold": 95,
     "genre_validator_threshold": 95,
     "chapter1_thresholds": {
-      "critic": 90,
-      "beta_reader": 85,
+      "critic": 95,
+      "beta_reader": 95,
       "genre_validator": 97
     },
     "special_checks": ["플롯홀 검증", "단서 일관성", "반전 타당성"]

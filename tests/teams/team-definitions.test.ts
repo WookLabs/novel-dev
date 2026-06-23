@@ -57,6 +57,28 @@ describe('team definitions', () => {
     expect(failures).toEqual([]);
   });
 
+  it('quality-gated team presets should use 95+ masterpiece thresholds', () => {
+    const failures: string[] = [];
+
+    for (const file of readTeamFiles()) {
+      const team = readTeam(file);
+      if (!team.quality_gates?.enabled) continue;
+
+      if (team.quality_gates.consensus !== 'all_pass') {
+        failures.push(`${file}: consensus must be all_pass for masterpiece gates`);
+      }
+
+      const thresholds = team.quality_gates.thresholds ?? {};
+      for (const [agent, threshold] of Object.entries(thresholds)) {
+        if (typeof threshold !== 'number' || threshold < 95) {
+          failures.push(`${file}: ${agent} threshold must be >=95, got ${threshold}`);
+        }
+      }
+    }
+
+    expect(failures).toEqual([]);
+  });
+
   it('quality-gated teams should preserve validator issue provenance', () => {
     const teamFiles = readTeamFiles();
     const failures: string[] = [];
