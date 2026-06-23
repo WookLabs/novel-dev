@@ -67,7 +67,7 @@ describe('Prose Surgeon Constants', () => {
 
     for (const type of directiveTypes) {
       expect(MODEL_ROUTING[type]).toBeDefined();
-      expect(MODEL_ROUTING[type].model).toMatch(/^(opus|sonnet)$/);
+      expect(MODEL_ROUTING[type].model).toBe('opus');
       expect(MODEL_ROUTING[type].temperature).toBeGreaterThanOrEqual(0);
       expect(MODEL_ROUTING[type].temperature).toBeLessThanOrEqual(1);
     }
@@ -579,10 +579,10 @@ describe('getModelRouting', () => {
     expect(routing.temperature).toBeGreaterThan(0.5);
   });
 
-  it('should return sonnet for mechanical tasks', () => {
+  it('should return opus with low temperature for mechanical tasks', () => {
     const routing = getModelRouting('proofreading');
 
-    expect(routing.model).toBe('sonnet');
+    expect(routing.model).toBe('opus');
     expect(routing.temperature).toBeLessThan(0.5);
   });
 

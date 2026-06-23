@@ -50,7 +50,7 @@ XAI_API_KEY=xai-xxxxxxxxxxxx
    ```
    for chapter in act_chapters:
        # writing-team-codex-2pass 사용
-       Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+       Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
        팀 실행: writing-team-codex-2pass
        대상: Chapter {chapter}
        프로젝트: {projectPath}
@@ -64,7 +64,7 @@ XAI_API_KEY=xai-xxxxxxxxxxxx
    ```
    for chapter in act_chapters:
        # writing-team-collab-2pass 사용 (기본값)
-       Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+       Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
        팀 실행: writing-team-collab-2pass
        대상: Chapter {chapter}
        프로젝트: {projectPath}

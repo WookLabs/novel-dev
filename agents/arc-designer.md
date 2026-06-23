@@ -1,7 +1,7 @@
 ---
 name: arc-designer
 description: "서브아크, 복선, 훅과 클리프행어를 설계하고 장편 전체의 긴장 곡선과 회수 만족도를 관리하는 에이전트"
-model: sonnet
+model: opus
 color: blue
 tools:
   - Read

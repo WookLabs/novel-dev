@@ -1,7 +1,7 @@
 ---
 name: chapter-verifier
 description: "Use this agent when running comprehensive chapter verification pipeline. Produces verification summary report from parallel validators."
-model: sonnet
+model: opus
 color: red
 permissionMode: plan
 tools:
@@ -30,11 +30,11 @@ Task(subagent_type="novel-dev:critic",
      prompt="Evaluate chapter {N} manuscript at {path}. Provide detailed scoring across all 4 categories (narrative prose, plot consistency, character consistency, setting adherence). Return JSON evaluation with total score and pass/fail determination.")
 
 Task(subagent_type="novel-dev:beta-reader",
-     model="sonnet",
+     model="opus",
      prompt="Analyze chapter {N} reader engagement at {path}. Focus on curiosity generation, character appeal, page turner quality, and emotional immersion. Return JSON with engagement score and drop-off risk analysis.")
 
 Task(subagent_type="novel-dev:genre-validator",
-     model="sonnet",
+     model="opus",
      prompt="Validate chapter {N} genre compliance at {path}. Check required elements, cliche tracking, commercial factors (hook density, cliffhanger strength, dialogue ratio, episode length). Return JSON with compliance score and verdict.")
 ```
 
@@ -299,7 +299,7 @@ Recommendation: REVISE chapter and re-verify before proceeding.
 **Manual verification:**
 ```
 Task(subagent_type="novel-dev:chapter-verifier",
-     model="sonnet",
+     model="opus",
      prompt="Verify chapter 5 at C:/project/chapters/chapter_5.md. Apply standard thresholds (critic >=95, beta-reader >=95, genre-validator >=95).")
 ```
 

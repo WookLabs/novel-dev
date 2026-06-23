@@ -25,7 +25,7 @@ $ARGUMENTS (챕터 번호)
 ### Step 2: team-orchestrator에 위임
 
 ```spec
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 # Revision Team 실행
 
 ## 팀 정의

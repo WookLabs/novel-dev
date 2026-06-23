@@ -50,7 +50,7 @@ Critic의 피드백을 바탕으로 수정:
 ```javascript
 const editorResult = await Task({
   subagent_type: "novel-dev:editor",
-  model: "sonnet",
+  model: "opus",
   prompt: `다음 원고를 수정하세요:
 
 ## 원본

@@ -1,7 +1,7 @@
 ---
 name: genre-validator
 description: "Use this agent when validating genre compliance and commercial viability. Produces genre fitness assessment."
-model: sonnet
+model: opus
 color: yellow
 permissionMode: plan
 tools:

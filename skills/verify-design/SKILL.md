@@ -30,7 +30,7 @@ user-invocable: false
 ```javascript
 const consistencyResult = await Task({
   subagent_type: "novel-dev:consistency-verifier",
-  model: "sonnet",
+  model: "opus",
   prompt: `다음 설계 파일들의 일관성을 검증하세요:
 
 ## 검증 대상
@@ -59,7 +59,7 @@ const consistencyResult = await Task({
 ```javascript
 const genreResult = await Task({
   subagent_type: "novel-dev:genre-validator",
-  model: "sonnet",
+  model: "opus",
   prompt: `설계가 장르 요구사항을 충족하는지 검증하세요:
 
 ## 프로젝트 정보

@@ -83,7 +83,7 @@ describe('createPassthroughCallback', () => {
     const callback = createPassthroughCallback();
     const prompt = '## 현재 텍스트 (수정 대상)\n```\n원본 텍스트\n```';
 
-    const result = await callback(prompt, {} as any, { model: 'sonnet', temperature: 0.5 });
+    const result = await callback(prompt, {} as any, { model: 'opus', temperature: 0.5 });
 
     // Note: passthrough extracts from first ``` block
     expect(result).toBe('원본 텍스트');
@@ -100,7 +100,7 @@ describe('createSimpleFixCallback', () => {
     const prompt = '## 현재 텍스트 (수정 대상)\n```\n그녀는 느꼈다.\n```';
     const directive = { type: 'filter-word-removal' } as any;
 
-    const result = await callback(prompt, directive, { model: 'sonnet', temperature: 0.5 });
+    const result = await callback(prompt, directive, { model: 'opus', temperature: 0.5 });
 
     expect(result).toContain('떨렸다');
     expect(result).not.toContain('느꼈다');
@@ -111,7 +111,7 @@ describe('createSimpleFixCallback', () => {
     const prompt = '## 현재 텍스트 (수정 대상)\n```\n단조로운 문장.\n```';
     const directive = { type: 'sensory-enrichment' } as any;
 
-    const result = await callback(prompt, directive, { model: 'sonnet', temperature: 0.5 });
+    const result = await callback(prompt, directive, { model: 'opus', temperature: 0.5 });
 
     expect(result).toContain('바람');
     expect(result).toContain('빛');
@@ -122,7 +122,7 @@ describe('createSimpleFixCallback', () => {
     const prompt = '## 현재 텍스트 (수정 대상)\n```\n갔다. 봤다.\n```';
     const directive = { type: 'rhythm-variation' } as any;
 
-    const result = await callback(prompt, directive, { model: 'sonnet', temperature: 0.5 });
+    const result = await callback(prompt, directive, { model: 'opus', temperature: 0.5 });
 
     expect(result).toContain('?');
   });

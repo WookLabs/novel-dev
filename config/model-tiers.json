@@ -7,8 +7,8 @@
       "description": "Complex creative tasks requiring deep reasoning, narrative understanding, and quality judgment"
     },
     "MEDIUM": {
-      "model": "sonnet",
-      "description": "Balanced tasks needing both creativity and analytical skills, fast validation workflows"
+      "model": "opus",
+      "description": "Compatibility route for balanced tasks; uses Opus instead of legacy Sonnet routing"
     },
     "LOW": {
       "model": "haiku",

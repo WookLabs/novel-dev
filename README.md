@@ -174,27 +174,37 @@ Claude Code의 `Write`, `Edit`, `MultiEdit`가 `chapters/chapter_NNN*.md` 또는
 | `/quickstart` | 5단계 퀵스타트 가이드 | |
 | `/resume` | 중단된 세션 이어쓰기 | resume design + style + summary memory preflight |
 
+### Result Viewer
+
+생성된 산출물은 `result/` 아래 프로젝트별 폴더에 쌓입니다. 로컬에서 다음 명령을 실행하면 모든 프로젝트와 스킬별 산출물을 묶은 정적 HTML viewer가 생성됩니다.
+
+```bash
+npm run view:results
+```
+
+기본 출력은 `result/viewer.html`입니다. viewer는 `00-brainstorm`부터 `10-resume`까지의 번호형 스킬과 병렬/2-pass/검증 보조 스킬을 모두 표시하며, 아직 파일이 없는 스킬은 `아직 생성 안 됨`으로 남깁니다.
+
 ## 에이전트 (22개)
 
 ### 핵심 에이전트 (7개)
 | 에이전트 | 모델 | 역할 | 권한 |
 |---------|------|------|------|
 | novelist | opus | 본문 집필 | 편집 |
-| editor | sonnet | 퇴고/교정 | 편집 |
+| editor | opus | 퇴고/교정 | 편집 |
 | critic | opus | 품질 평가 | READ-ONLY |
 | plot-architect | opus | 플롯 설계 | READ-ONLY |
-| lore-keeper | sonnet | 설정 관리 | 편집 |
+| lore-keeper | opus | 설정 관리 | 편집 |
 | proofreader | haiku | 맞춤법 검사 | READ-ONLY |
 | summarizer | haiku | 회차 요약 | READ-ONLY |
 
 ### 설계/협업 에이전트 (5개)
 | 에이전트 | 모델 | 역할 | 권한 |
 |---------|------|------|------|
-| style-curator | sonnet | 스타일 라이브러리 관리, Few-shot 예시 큐레이션 | 편집 |
-| team-orchestrator | sonnet | 에이전트 팀 조율/병렬 실행 | 편집 |
+| style-curator | opus | 스타일 라이브러리 관리, Few-shot 예시 큐레이션 | 편집 |
+| team-orchestrator | opus | 에이전트 팀 조율/병렬 실행 | 편집 |
 | narrator | opus | 협업 집필 리더, 장면 브리핑과 산문 직조 | 편집 |
 | character-designer | opus | 캐릭터 프로필/관계/성장 아크 설계 | 편집 |
-| arc-designer | sonnet | 서브아크, 복선, 훅 설계 | 편집 |
+| arc-designer | opus | 서브아크, 복선, 훅 설계 | 편집 |
 
 ### 파이프라인 에이전트 (3개)
 | 에이전트 | 모델 | 역할 | 권한 |
@@ -206,17 +216,17 @@ Claude Code의 `Write`, `Edit`, `MultiEdit`가 `chapters/chapter_NNN*.md` 또는
 ### 검증/분석 에이전트 (6개)
 | 에이전트 | 모델 | 역할 | 권한 |
 |---------|------|------|------|
-| beta-reader | sonnet | 독자 관점 몰입도 분석 | READ-ONLY |
-| chapter-verifier | sonnet | 병렬 검증 오케스트레이터 | READ-ONLY |
-| consistency-verifier | sonnet | 일관성 검증 (캐릭터, 타임라인, 설정, 플롯) | READ-ONLY |
-| engagement-optimizer | sonnet | 몰입도 최적화, 텐션 곡선, 페이싱 분석 | READ-ONLY |
-| character-voice-analyzer | sonnet | 말투 일관성, OOC 탐지, 대화 분석 | READ-ONLY |
-| genre-validator | sonnet | 장르별 필수 요소 검증 | READ-ONLY |
+| beta-reader | opus | 독자 관점 몰입도 분석 | READ-ONLY |
+| chapter-verifier | opus | 병렬 검증 오케스트레이터 | READ-ONLY |
+| consistency-verifier | opus | 일관성 검증 (캐릭터, 타임라인, 설정, 플롯) | READ-ONLY |
+| engagement-optimizer | opus | 몰입도 최적화, 텐션 곡선, 페이싱 분석 | READ-ONLY |
+| character-voice-analyzer | opus | 말투 일관성, OOC 탐지, 대화 분석 | READ-ONLY |
+| genre-validator | opus | 장르별 필수 요소 검증 | READ-ONLY |
 
 ### 단역 지원 (1개)
 | 에이전트 | 모델 | 역할 | 권한 |
 |---------|------|------|------|
-| extras | sonnet | 엑스트라/단역 캐릭터 대사·반응 생성 | READ-ONLY |
+| extras | opus | 엑스트라/단역 캐릭터 대사·반응 생성 | READ-ONLY |
 
 ## 프로젝트 구조
 

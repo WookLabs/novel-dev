@@ -43,7 +43,7 @@ tools:
 | role | model |
 |------|-------|
 | protagonist, deuteragonist, antagonist | claude-opus-4-5 |
-| supporting | claude-sonnet-4-5 |
+| supporting | claude-opus-4-5 |
 | minor, cameo | claude-haiku-4-5 |
 
 한국어 원칙:

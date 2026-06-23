@@ -22,9 +22,9 @@ Run parallel validation on a chapter with 3 validators and confidence filtering.
 
 ```javascript
 await Promise.all([
-  Task({ subagent_type: "novel-dev:chapter-verifier", model: "sonnet", prompt: chapterContext }),
-  Task({ subagent_type: "novel-dev:beta-reader", model: "sonnet", prompt: chapterContext }),
-  Task({ subagent_type: "novel-dev:genre-validator", model: "sonnet", prompt: chapterContext })
+  Task({ subagent_type: "novel-dev:chapter-verifier", model: "opus", prompt: chapterContext }),
+  Task({ subagent_type: "novel-dev:beta-reader", model: "opus", prompt: chapterContext }),
+  Task({ subagent_type: "novel-dev:genre-validator", model: "opus", prompt: chapterContext })
 ]);
 ```
 

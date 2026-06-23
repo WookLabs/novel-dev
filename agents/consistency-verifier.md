@@ -1,7 +1,7 @@
 ---
 name: consistency-verifier
 description: "Use this agent when checking 5-domain consistency (setting, character, world, causality, foreshadowing). Produces consistency verification result."
-model: sonnet
+model: opus
 color: red
 permissionMode: plan
 tools:
@@ -626,14 +626,14 @@ Recommendation: 4개 치명적 이슈 수정 후 재검증 필요.
 **Full consistency check:**
 ```
 Task(subagent_type="novel-dev:consistency-verifier",
-     model="sonnet",
+     model="opus",
      prompt="Verify consistency across all chapters in C:/project/chapters/. Check all 5 domains: character, timeline, setting, factual, and plot logic. Report all critical issues with chapter citations.")
 ```
 
 **Incremental check (new chapter):**
 ```
 Task(subagent_type="novel-dev:consistency-verifier",
-     model="sonnet",
+     model="opus",
      prompt="Verify chapter 12 consistency against chapters 1-11. Focus on character continuity, timeline, and plot logic including cause-effect chains and foreshadowing.")
 ```
 

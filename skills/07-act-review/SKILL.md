@@ -54,7 +54,7 @@ Codex CLI가 자체 인증을 처리하므로 별도 API 키가 필요하지 않
 막 전체 원고를 대상으로 거시적 평가를 수행합니다:
 
 ```spec
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 팀 실행: deep-review-team
 대상: Act {actNumber} (Chapter {startCh}-{endCh})
 프로젝트: {projectPath}
@@ -74,10 +74,10 @@ Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
 | 에이전트 | 모델 | 평가 관점 |
 |---------|------|----------|
 | critic | opus | 문학 품질, 서사적 깊이, 구조적 완성도 |
-| beta-reader | sonnet | 독자 몰입도, 감정 반응, 이탈 위험 구간 |
-| consistency-verifier | sonnet | 설정 일관성, 캐릭터 동선, 타임라인 |
-| engagement-optimizer | sonnet | 긴장 곡선, 장면 리듬, 비트 타이밍 |
-| character-voice-analyzer | sonnet | 말투 일관성, OOC 감지, 대화 자연스러움 |
+| beta-reader | opus | 독자 몰입도, 감정 반응, 이탈 위험 구간 |
+| consistency-verifier | opus | 설정 일관성, 캐릭터 동선, 타임라인 |
+| engagement-optimizer | opus | 긴장 곡선, 장면 리듬, 비트 타이밍 |
+| character-voice-analyzer | opus | 말투 일관성, OOC 감지, 대화 자연스러움 |
 | quality-oracle | opus | show vs tell, 감각 묘사, 필터 단어, 구체성 |
 
 ### Step 3: 문제 회차 식별
@@ -94,7 +94,7 @@ Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
 
 ```spec
 for chapter in flagged_chapters:
-    Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+    Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
     팀 실행: deep-review-team
     대상: Chapter {chapter}
     프로젝트: {projectPath}

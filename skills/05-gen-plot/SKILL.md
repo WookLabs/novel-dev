@@ -159,7 +159,7 @@ Task(subagent_type="novel-dev:plot-architect", model="opus", prompt="
 team-orchestrator에 plot-generation-team 실행을 위임합니다:
 
 ```spec
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 팀 실행: plot-generation-team
 프로젝트: {projectPath}
 모드: collaborative
@@ -180,10 +180,10 @@ engagement-optimizer는 reader_promise_contract, first_five_chapter_retention_pl
 | 에이전트 | 모델 | 역할 | 책임 |
 |---------|------|------|------|
 | **plot-architect** (lead) | opus | 초안 생성 + 피드백 반영 | 회차별 chapter_N.json 작성 |
-| arc-designer | sonnet | 아크/복선 검증 | 아크 진행률, 복선 타이밍, 훅 배치 확인 |
-| lore-keeper | sonnet | 세계관 검증 | 타임라인 정합성, 장소/설정 일관성 확인 |
-| character-designer | sonnet | 캐릭터 검증 | 캐릭터 동선, 성장 아크, 행동 동기 확인 |
-| engagement-optimizer | sonnet | 독자 몰입 검증 | fun_spec, 장기 훅, 보상 주기, 신선한 차별점, 감정 보상, 중심 질문, 주인공 매력 선택/행동/비용, 이탈 위험, 페이지터너 질문, must_click_ending, 회차 말미 연속 클릭 이유 확인 |
+| arc-designer | opus | 아크/복선 검증 | 아크 진행률, 복선 타이밍, 훅 배치 확인 |
+| lore-keeper | opus | 세계관 검증 | 타임라인 정합성, 장소/설정 일관성 확인 |
+| character-designer | opus | 캐릭터 검증 | 캐릭터 동선, 성장 아크, 행동 동기 확인 |
+| engagement-optimizer | opus | 독자 몰입 검증 | fun_spec, 장기 훅, 보상 주기, 신선한 차별점, 감정 보상, 중심 질문, 주인공 매력 선택/행동/비용, 이탈 위험, 페이지터너 질문, must_click_ending, 회차 말미 연속 클릭 이유 확인 |
 
 ## Collaborative 진행 방식
 

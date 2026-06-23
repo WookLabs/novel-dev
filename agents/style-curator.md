@@ -1,7 +1,7 @@
 ---
 name: style-curator
 description: "Use this agent when curating style exemplar sentences for few-shot learning. Produces categorized style exemplar collection."
-model: sonnet
+model: opus
 color: cyan
 tools:
   - Read

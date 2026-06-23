@@ -78,7 +78,7 @@ Bash("node dist/cli/apply-style-gate.js --project {projectPath} --fail-on-blocke
 
 **호출:**
 ```spec
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 팀 실행: writing-team-collab
 대상: Chapter {chapterNumber}
 프로젝트: {projectPath}
@@ -428,7 +428,7 @@ if (proseCraft.passed === false) {
 사용자가 요청하면 또는 `/write-all` 루프 내에서:
 
 ```spec
-Task(subagent_type="novel-dev:critic", model="sonnet", prompt="
+Task(subagent_type="novel-dev:critic", model="opus", prompt="
 Chapter {N} 평가:
 {chapter_content}
 

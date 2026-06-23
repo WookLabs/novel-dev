@@ -38,7 +38,7 @@ for chapter in act_chapters:
    ```
    for chapter in act_chapters:
        # writing-team-collab 사용 (기본값)
-       Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+       Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
        팀 실행: writing-team-collab
        대상: Chapter {chapter}
        프로젝트: {projectPath}

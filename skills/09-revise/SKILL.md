@@ -62,7 +62,7 @@ Bash("node dist/cli/apply-design-gate.js --project {projectPath} --fail-on-block
 Bash("node dist/cli/apply-style-gate.js --project {projectPath} --fail-on-blocked --json")
 
 # 3. 집필 팀 collaborative 퇴고
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 팀 실행: writing-team-collab
 대상: Chapter {chapterNumber}
 프로젝트: {projectPath}
@@ -84,7 +84,7 @@ Bash("node dist/cli/apply-design-gate.js --project {projectPath} --fail-on-block
 Bash("node dist/cli/apply-style-gate.js --project {projectPath} --fail-on-blocked --json")
 
 # 2. editor 단독 퇴고
-Task(subagent_type="novel-dev:editor", model="sonnet", prompt="
+Task(subagent_type="novel-dev:editor", model="opus", prompt="
 챕터 {chapterNumber} 퇴고:
 피드백: {feedback}
 ")

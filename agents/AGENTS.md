@@ -9,27 +9,27 @@
 | 에이전트 | 산출물 | 모델 | 권한 | 색상 |
 |---------|--------|------|------|------|
 | novelist | 본문 원고 (markdown) | opus | default | green |
-| editor | 퇴고된 원고 + 변경 사유 | sonnet | default | cyan |
+| editor | 퇴고된 원고 + 변경 사유 | opus | default | cyan |
 | critic | 4차원 품질 평가 리포트 (0-100) | opus | plan (READ-ONLY) | yellow |
 | plot-architect | 플롯 구조 문서 (JSON) + 아크/복선/텐션 곡선 | opus | default | blue |
-| lore-keeper | 검증된 설정 파일 (JSON) - 캐릭터/장소/용어/타임라인 | sonnet | default | cyan |
+| lore-keeper | 검증된 설정 파일 (JSON) - 캐릭터/장소/용어/타임라인 | opus | default | cyan |
 | proofreader | 교정 리포트 + 수정 목록 | haiku | plan (READ-ONLY) | magenta |
 | summarizer | 챕터 요약 (markdown) - 다음 회차 컨텍스트용 | haiku | default | magenta |
 | quality-oracle | 품질 분석 리포트 + 수술 지시서 | opus | plan (READ-ONLY) | yellow |
 | prose-surgeon | 수술적 개선 원고 | opus | default | green |
-| beta-reader | 독자 몰입도 분석 리포트 | sonnet | plan (READ-ONLY) | yellow |
-| chapter-verifier | 챕터 검증 요약 리포트 (병렬 검증기 결과) | sonnet | plan (READ-ONLY) | red |
-| character-voice-analyzer | 캐릭터 목소리 일관성 리포트 | sonnet | plan (READ-ONLY) | yellow |
-| consistency-verifier | 5도메인 일관성 검증 결과 | sonnet | plan (READ-ONLY) | red |
-| engagement-optimizer | 7도메인 몰입도 최적화 리포트 | sonnet | plan (READ-ONLY) | yellow |
-| genre-validator | 장르 적합성 평가서 | sonnet | plan (READ-ONLY) | yellow |
-| style-curator | 분류된 스타일 예시 컬렉션 | sonnet | default | cyan |
-| team-orchestrator | 팀 실행 계획 + 병렬/순차 에이전트 조율 | sonnet | default | blue |
+| beta-reader | 독자 몰입도 분석 리포트 | opus | plan (READ-ONLY) | yellow |
+| chapter-verifier | 챕터 검증 요약 리포트 (병렬 검증기 결과) | opus | plan (READ-ONLY) | red |
+| character-voice-analyzer | 캐릭터 목소리 일관성 리포트 | opus | plan (READ-ONLY) | yellow |
+| consistency-verifier | 5도메인 일관성 검증 결과 | opus | plan (READ-ONLY) | red |
+| engagement-optimizer | 7도메인 몰입도 최적화 리포트 | opus | plan (READ-ONLY) | yellow |
+| genre-validator | 장르 적합성 평가서 | opus | plan (READ-ONLY) | yellow |
+| style-curator | 분류된 스타일 예시 컬렉션 | opus | default | cyan |
+| team-orchestrator | 팀 실행 계획 + 병렬/순차 에이전트 조율 | opus | default | blue |
 | narrator | 협업 집필 리더 — 씬 브리핑 + 캐릭터 출력 통합 산문 직조 | opus | default | cyan |
 | character-designer | 캐릭터 프로필 설계 + collaborative용 에이전트 파일 생성 | opus | default | magenta |
-| arc-designer | 서브아크/복선/훅 설계 전문 | sonnet | default | blue |
+| arc-designer | 서브아크/복선/훅 설계 전문 | opus | default | blue |
 | chapter-merger | 병렬 생성 챕터 비교 + 최종 원고 병합 | opus | default | magenta |
-| extras | 엑스트라/단역 캐릭터의 대사·반응 생성 | sonnet | default | cyan |
+| extras | 엑스트라/단역 캐릭터의 대사·반응 생성 | opus | default | cyan |
 
 ## Purpose
 
@@ -90,7 +90,7 @@ All agent prompts follow this pattern:
 ---
 name: agent-name
 description: "Use this agent when <trigger>. Produces <output>."
-model: opus|sonnet|haiku
+model: opus| opus |haiku
 color: green|cyan|yellow|blue|magenta|red
 permissionMode: default|plan
 tools:
@@ -344,7 +344,7 @@ To add a new agent:
 ---
 name: beta-reader
 description: "Use this agent when simulating reader experience and predicting engagement drop-off. Produces reader immersion analysis report."
-model: sonnet
+model: opus
 color: yellow
 permissionMode: plan
 tools:

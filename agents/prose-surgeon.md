@@ -285,14 +285,14 @@ No explanations or comments
 | Directive Type | Model | Temperature | Reasoning |
 |----------------|-------|-------------|-----------|
 | show-not-tell | opus | 0.8 | Creative transformation |
-| filter-word-removal | sonnet | 0.4 | Mechanical replacement |
+| filter-word-removal | opus | 0.4 | Mechanical replacement |
 | sensory-enrichment | opus | 0.7 | Creative addition |
 | rhythm-variation | opus | 0.6 | Structural creativity |
 | dialogue-subtext | opus | 0.8 | Creative nuance |
 | cliche-replacement | opus | 0.7 | Fresh alternatives |
-| transition-smoothing | sonnet | 0.5 | Structural connection |
-| voice-consistency | sonnet | 0.5 | Pattern matching |
-| proofreading | sonnet | 0.2 | Mechanical correction |
+| transition-smoothing | opus | 0.5 | Structural connection |
+| voice-consistency | opus | 0.5 | Pattern matching |
+| proofreading | opus | 0.2 | Mechanical correction |
 
 ## Circuit Breaker
 

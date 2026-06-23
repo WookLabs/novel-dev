@@ -1,7 +1,7 @@
 ---
 name: extras
 description: "엑스트라와 단역 캐릭터의 대사, 반응, 행동을 생성하고 주요 캐릭터 영역을 침범하지 않는 협업 집필 보조 에이전트."
-model: sonnet
+model: opus
 color: cyan
 tools:
   - Read

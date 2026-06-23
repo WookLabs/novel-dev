@@ -1,7 +1,7 @@
 ---
 name: character-voice-analyzer
 description: "Use this agent when analyzing character voice consistency across dialogue. Produces character voice consistency report with speech pattern analysis."
-model: sonnet
+model: opus
 color: yellow
 permissionMode: plan
 tools:

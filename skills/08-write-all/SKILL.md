@@ -269,7 +269,7 @@ Bash("node scripts/codex-writer.mjs --chapter {N} --project {projectPath} --mode
 
 > **전체 집필 비용 안내**
 > 대상: N화 집필 (사용자 지정 범위)
-> 회차당: novelist(opus) + 검증 에이전트(sonnet)
+> 회차당: novelist(opus) + 검증 에이전트(opus)
 >
 > 예상 토큰 사용량: 회차당 ~80K 입력 + ~20K 출력
 > 총 예상: N × 100K 토큰

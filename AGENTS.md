@@ -44,27 +44,27 @@ The plugin implements a multi-agent system with specialized roles:
 | Agent | Model | Role |
 |-------|-------|------|
 | novelist | opus | Main prose writing |
-| editor | sonnet | Revision and editing |
+| editor | opus | Revision and editing |
 | critic | opus | Quality evaluation (read-only) |
-| lore-keeper | sonnet | Worldbuilding and consistency |
+| lore-keeper | opus | Worldbuilding and consistency |
 | plot-architect | opus | Plot structure design |
 | proofreader | haiku | Grammar and spelling |
 | summarizer | haiku | Chapter summarization |
-| beta-reader | sonnet | Reader engagement simulation |
-| genre-validator | sonnet | Genre compliance validation |
-| consistency-verifier | sonnet | 5-domain consistency checking |
-| engagement-optimizer | sonnet | 7-domain engagement analysis |
-| character-voice-analyzer | sonnet | Voice and dialogue analysis |
+| beta-reader | opus | Reader engagement simulation |
+| genre-validator | opus | Genre compliance validation |
+| consistency-verifier | opus | 5-domain consistency checking |
+| engagement-optimizer | opus | 7-domain engagement analysis |
+| character-voice-analyzer | opus | Voice and dialogue analysis |
 | quality-oracle | opus | Quality evaluation + surgical directive generation (2-Pass) |
 | prose-surgeon | opus | Surgical prose revision per quality-oracle directives (2-Pass) |
-| style-curator | sonnet | Style exemplar curation and library management |
-| chapter-verifier | sonnet | Automated chapter verification with parallel validators |
-| team-orchestrator | sonnet | Team orchestration - loads team definitions, spawns agent teams, coordinates workflows |
+| style-curator | opus | Style exemplar curation and library management |
+| chapter-verifier | opus | Automated chapter verification with parallel validators |
+| team-orchestrator | opus | Team orchestration - loads team definitions, spawns agent teams, coordinates workflows |
 | narrator | opus | Collaborative scene lead and prose weaving |
 | character-designer | opus | Character profile, relationship, and agent-file design |
-| arc-designer | sonnet | Sub-arc, foreshadowing, and hook design |
+| arc-designer | opus | Sub-arc, foreshadowing, and hook design |
 | chapter-merger | opus | Merges independent chapter drafts into a final version |
-| extras | sonnet | Minor/cameo character dialogue and reaction support |
+| extras | opus | Minor/cameo character dialogue and reaction support |
 
 ### Team System
 
@@ -174,7 +174,7 @@ Choose the appropriate agent based on task:
 - **summarizer**: Chapter summaries, context building for subsequent chapters
 - **chapter-verifier**: Quality verification before completion claims
 
-### chapter-verifier (sonnet)
+### chapter-verifier (opus)
 
 Automated chapter verification agent that validates quality before completion claims.
 

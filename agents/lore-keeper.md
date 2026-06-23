@@ -1,7 +1,7 @@
 ---
 name: lore-keeper
 description: "Use this agent when managing world-building consistency. Produces verified setting files (JSON) for characters, locations, terminology, and timeline."
-model: sonnet
+model: opus
 color: cyan
 tools:
   - Read

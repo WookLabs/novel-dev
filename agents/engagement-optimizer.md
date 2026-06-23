@@ -1,7 +1,7 @@
 ---
 name: engagement-optimizer
 description: "Use this agent when analyzing reader engagement across 7 domains (pacing, tension, emotion, hooks, dialogue, sensory, stakes). Produces engagement optimization report."
-model: sonnet
+model: opus
 color: yellow
 permissionMode: plan
 tools:
@@ -1153,14 +1153,14 @@ engagement_score =
 **Post-draft optimization:**
 ```
 Task(subagent_type="novel-dev:engagement-optimizer",
-     model="sonnet",
+     model="opus",
      prompt="Analyze chapter 5 at C:/project/chapters/chapter_5.md. Provide full 7-domain engagement analysis with specific optimization suggestions. Prioritize top 3-5 actionable fixes.")
 ```
 
 **Targeted analysis:**
 ```
 Task(subagent_type="novel-dev:engagement-optimizer",
-     model="sonnet",
+     model="opus",
      prompt="Focus on tension curve, emotional beats, and cliffhanger for chapter 8. Check beat compliance for romance genre and arc compliance for Act 2.")
 ```
 

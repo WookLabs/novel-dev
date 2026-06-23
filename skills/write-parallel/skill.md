@@ -66,7 +66,7 @@ Bash("node dist/cli/apply-design-gate.js --project {projectPath} --fail-on-block
 
 **Claude 브랜치** (기본 writing-team-collab 동일):
 ```spec
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 팀 실행: writing-team-collab
 대상: Chapter {chapterNumber}
 프로젝트: {projectPath}

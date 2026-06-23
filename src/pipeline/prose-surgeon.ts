@@ -23,23 +23,23 @@ const logger = createLogger('prose-surgeon');
  * Model and temperature routing by directive type
  *
  * Higher creativity tasks use Opus with higher temperature.
- * Mechanical tasks use Sonnet with lower temperature.
+ * Mechanical tasks also use Opus for Claude model compatibility, with lower temperature.
  */
 export const MODEL_ROUTING: Record<DirectiveType, { model: 'opus' | 'sonnet'; temperature: number }> = {
   'show-not-tell': { model: 'opus', temperature: 0.8 },
-  'filter-word-removal': { model: 'sonnet', temperature: 0.4 },
+  'filter-word-removal': { model: 'opus', temperature: 0.4 },
   'sensory-enrichment': { model: 'opus', temperature: 0.7 },
   'rhythm-variation': { model: 'opus', temperature: 0.6 },
   'dialogue-subtext': { model: 'opus', temperature: 0.8 },
   'cliche-replacement': { model: 'opus', temperature: 0.7 },
-  'transition-smoothing': { model: 'sonnet', temperature: 0.5 },
-  'voice-consistency': { model: 'sonnet', temperature: 0.5 },
-  'proofreading': { model: 'sonnet', temperature: 0.2 },
+  'transition-smoothing': { model: 'opus', temperature: 0.5 },
+  'voice-consistency': { model: 'opus', temperature: 0.5 },
+  'proofreading': { model: 'opus', temperature: 0.2 },
   'consecutive-short-sentences': { model: 'opus', temperature: 0.6 },
   'list-monologue': { model: 'opus', temperature: 0.6 },
   // Korean specialization (Phase 3)
-  'honorific-violation': { model: 'sonnet', temperature: 0.3 },
-  'banned-expression': { model: 'sonnet', temperature: 0.4 },
+  'honorific-violation': { model: 'opus', temperature: 0.3 },
+  'banned-expression': { model: 'opus', temperature: 0.4 },
   'texture-enrichment': { model: 'opus', temperature: 0.7 },
   // Advanced quality (Phase 4)
   'style-alignment': { model: 'opus', temperature: 0.6 },

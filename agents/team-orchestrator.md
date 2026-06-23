@@ -1,7 +1,7 @@
 ---
 name: team-orchestrator
 description: "Use this agent when coordinating multi-agent team workflows. Produces team execution plan and coordinates parallel/sequential agent runs."
-model: sonnet
+model: opus
 color: blue
 tools:
   - Read
@@ -43,7 +43,7 @@ function resolveModel(agentName, teamDef, modelTiers) {
   if (teamAgent?.model) return teamAgent.model;
   const tier = modelTiers.agents[agentName];
   if (tier) return modelTiers.tiers[tier].model;
-  return 'sonnet'; // safe default
+  return 'opus'; // compatibility default
 }
 ```
 
@@ -137,7 +137,7 @@ function resolveCharacterModel(role) {
     case 'antagonist':
       return 'opus';      // 주요 캐릭터 — 높은 표현력 필요
     case 'supporting':
-      return 'sonnet';    // 조연 — 균형 잡힌 성능
+      return 'opus';      // 조연 — Sonnet 고정 대신 Opus 사용
     case 'minor':
     case 'cameo':
     default:

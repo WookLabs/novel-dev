@@ -88,18 +88,14 @@ describe('REVISION_STAGES', () => {
     expect(REVISION_STAGES[3].directiveTypes).toEqual(FINAL_DIRECTIVE_TYPES);
   });
 
-  it('should have appropriate model configs', () => {
-    // Draft uses sonnet (structural, lower creativity)
-    expect(REVISION_STAGES[0].modelConfig.model).toBe('sonnet');
+  it('should route every stage through opus for Claude model compatibility', () => {
+    expect(REVISION_STAGES[0].modelConfig.model).toBe('opus');
 
-    // Tone uses opus (emotional, higher creativity)
     expect(REVISION_STAGES[1].modelConfig.model).toBe('opus');
 
-    // Style uses opus (craft, higher creativity)
     expect(REVISION_STAGES[2].modelConfig.model).toBe('opus');
 
-    // Final uses sonnet (proofreading, precision)
-    expect(REVISION_STAGES[3].modelConfig.model).toBe('sonnet');
+    expect(REVISION_STAGES[3].modelConfig.model).toBe('opus');
   });
 
   it('should have temperature settings appropriate for each stage', () => {

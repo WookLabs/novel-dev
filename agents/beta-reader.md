@@ -1,7 +1,7 @@
 ---
 name: beta-reader
 description: "Use this agent when simulating reader experience and predicting engagement drop-off. Produces reader immersion analysis report."
-model: sonnet
+model: opus
 color: yellow
 permissionMode: plan
 tools:

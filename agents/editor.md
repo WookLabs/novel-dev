@@ -1,7 +1,7 @@
 ---
 name: editor
 description: "Use this agent when revising draft manuscripts. Produces polished manuscript with tracked changes and editorial rationale."
-model: sonnet
+model: opus
 color: cyan
 tools:
   - Read

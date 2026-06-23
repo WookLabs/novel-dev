@@ -35,7 +35,7 @@ Bash("node scripts/codex-reviewer.mjs --mode design-review --project {projectPat
 team-orchestrator에 design-review-team 실행을 위임합니다:
 
 ```spec
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 팀 실행: design-review-team
 프로젝트: {projectPath}
 ")

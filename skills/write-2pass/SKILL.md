@@ -55,7 +55,7 @@ Bash("node dist/cli/apply-design-gate.js --project {projectPath} --fail-on-block
 
 **호출:**
 ```spec
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 팀 실행: writing-team-collab-2pass
 대상: Chapter {chapterNumber}
 프로젝트: {projectPath}

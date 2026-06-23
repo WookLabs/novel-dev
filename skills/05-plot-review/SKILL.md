@@ -44,7 +44,7 @@ Codex CLI가 자체 인증을 처리하므로 별도 API 키가 필요하지 않
 ### 기본: plot-review-team (4명 병렬)
 
 ```spec
-Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
+Task(subagent_type="novel-dev:team-orchestrator", model="opus", prompt="
 팀 실행: plot-review-team
 대상: Chapter {chapterRange}
 프로젝트: {projectPath}
@@ -54,8 +54,8 @@ Task(subagent_type="novel-dev:team-orchestrator", model="sonnet", prompt="
 | 에이전트 | 모델 | 평가 관점 |
 |---------|------|----------|
 | critic | opus | 극적 긴장, 전환점 배치, 페이싱 |
-| consistency-verifier | sonnet | 회차 간 연속성, 캐릭터 동선, 시간 정합성 |
-| genre-validator | sonnet | 장르 비트 배치, 클리프행어 밀도, 상업성 |
+| consistency-verifier | opus | 회차 간 연속성, 캐릭터 동선, 시간 정합성 |
+| genre-validator | opus | 장르 비트 배치, 클리프행어 밀도, 상업성 |
 | plot-architect | opus | 아크 진행률, 복선 심기/회수 타이밍, 서브플롯 밸런스 |
 
 ## Quality Gates
