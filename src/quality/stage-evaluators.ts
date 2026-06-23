@@ -511,7 +511,7 @@ function proseTasteIssueMaxScope(issue: ProseTasteIssue): number {
  * - Texture enrichment
  * - Style alignment (when styleProfile provided)
  *
- * Model: opus, Temperature: 0.7, Threshold: 80
+ * Model: opus, Temperature: 0.7, Threshold: 95 in the multi-stage loop
  */
 export const StyleStageEvaluator: StageEvaluator = {
   name: 'style',

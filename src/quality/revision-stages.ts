@@ -40,7 +40,7 @@ const logger = createLogger('revision-stages');
  * Thresholds from RESEARCH.md:
  * - Draft: 70 (structural completeness)
  * - Tone: 75 (emotional alignment)
- * - Style: 88 (prose craft + prose taste gate)
+ * - Style: 95 (prose craft + prose taste gate)
  * - Final: 95 (proofreading cleanliness)
  */
 export const REVISION_STAGES: RevisionStage[] = [
@@ -66,7 +66,7 @@ export const REVISION_STAGES: RevisionStage[] = [
     directiveTypes: STYLE_DIRECTIVE_TYPES,
     modelConfig: { model: 'opus', temperature: 0.7 },
     maxIterations: 5,
-    passThreshold: 88,
+    passThreshold: 95,
   },
   {
     name: 'final',
@@ -112,11 +112,13 @@ export async function runMultiStageRevision(
   const initialScore = await REVISION_STAGES[0].evaluator.score(content, options);
 
   for (const stage of REVISION_STAGES) {
+    const stageOptions = resolveStageOptions(stage, options);
+
     // 1. Evaluate input score
-    const inputScore = await stage.evaluator.score(currentContent, options);
+    const inputScore = await stage.evaluator.score(currentContent, stageOptions);
 
     // 2. Generate directives
-    const allDirectives = await stage.evaluator.generateDirectives(currentContent, options);
+    const allDirectives = await stage.evaluator.generateDirectives(currentContent, stageOptions);
 
     // 3. Filter to stage-appropriate directives
     const stageDirectives = allDirectives.filter(d =>
@@ -140,7 +142,12 @@ export async function runMultiStageRevision(
 
         // Apply fix to content (simplified - would use applySurgicalFix in real implementation)
         if (fixedText && fixedText !== targetText) {
-          currentContent = currentContent.replace(targetText, fixedText);
+          const updatedContent = applyDirectiveFix(currentContent, targetText, fixedText);
+          if (updatedContent === currentContent) {
+            continue;
+          }
+
+          currentContent = updatedContent;
           directivesProcessed++;
         }
       } catch (error) {
@@ -151,7 +158,7 @@ export async function runMultiStageRevision(
     }
 
     // 5. Evaluate output score
-    const outputScore = await stage.evaluator.score(currentContent, options);
+    const outputScore = await stage.evaluator.score(currentContent, stageOptions);
 
     // 6. Track results
     const passed = outputScore >= stage.passThreshold;
@@ -186,6 +193,43 @@ export async function runMultiStageRevision(
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+function resolveStageOptions(
+  stage: RevisionStage,
+  options?: MultiStageOptions
+): MultiStageOptions | undefined {
+  if (stage.name !== 'style' || options?.proseTasteThreshold !== undefined) {
+    return options;
+  }
+
+  return {
+    ...options,
+    proseTasteThreshold: stage.passThreshold,
+  };
+}
+
+function applyDirectiveFix(content: string, targetText: string, fixedText: string): string {
+  if (!targetText.trim()) return content;
+  if (content.includes(targetText)) {
+    return content.replace(targetText, fixedText);
+  }
+
+  const flexibleTarget = targetText
+    .trim()
+    .split(/\s+/u)
+    .filter(Boolean)
+    .map(escapeRegExp)
+    .join('\\s+');
+
+  if (!flexibleTarget) return content;
+
+  const pattern = new RegExp(flexibleTarget, 'u');
+  return content.replace(pattern, fixedText);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /**
  * Build a stage-specific prompt for the surgeon

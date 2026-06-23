@@ -182,7 +182,9 @@ export interface MultiStageOptions extends AnalyzeChapterOptions {
   proseTasteProfile?: ProseTasteProfile;
 
   /**
-   * Minimum score for prose taste gate. Defaults to the profile minimum or 88.
+   * Minimum score for prose taste gate.
+   * Standalone prose taste evaluation defaults to the profile minimum or 88;
+   * the multi-stage style loop defaults this to the style stage threshold.
    */
   proseTasteThreshold?: number;
 

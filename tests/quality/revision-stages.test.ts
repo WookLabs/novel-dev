@@ -3,6 +3,7 @@ import {
   REVISION_STAGES,
   runMultiStageRevision,
 } from '../../src/quality/revision-stages.js';
+import { evaluateProseTaste } from '../../src/quality/prose-taste-gate.js';
 import {
   DRAFT_DIRECTIVE_TYPES,
   TONE_DIRECTIVE_TYPES,
@@ -33,6 +34,23 @@ const POOR_CONTENT = `
 그녀는 그가 떠났다고 생각했다.  그것이 확실했다.
 `.trim();
 
+const IMMERSIVE_RHYTHM_FLATLINE_CONTENT = `
+서연은 이 상황이 더 이상 단순한 오해가 아니라고 생각했다.
+민준의 침묵은 두 사람 사이의 거리를 보여 주는 결과였다.
+관계는 이미 예전과 다른 상태가 되어 있었다.
+모든 선택은 결국 서로를 시험하는 의미였다.
+불안은 더 커졌고 확신은 점점 작아졌다.
+그녀는 자신이 왜 멀어졌는지 알 수 있었다.
+`.trim();
+
+const GROUNDED_IMMERSIVE_REVISION = `
+서연은 봉투를 컵 아래로 밀었다.
+민준은 대답 대신 녹음기의 빨간 불을 껐다.
+복도 끝 발소리가 멎자 그녀는 사진 뒷면의 번호를 확인했다.
+"네가 고르면 내가 책임질게."
+그 말 뒤에 문 잠금장치가 한 번 더 내려갔다.
+`.trim();
+
 // ============================================================================
 // REVISION_STAGES Configuration Tests
 // ============================================================================
@@ -52,7 +70,7 @@ describe('REVISION_STAGES', () => {
   it('should have increasing pass thresholds', () => {
     expect(REVISION_STAGES[0].passThreshold).toBe(70);  // draft
     expect(REVISION_STAGES[1].passThreshold).toBe(75);  // tone
-    expect(REVISION_STAGES[2].passThreshold).toBe(88);  // style
+    expect(REVISION_STAGES[2].passThreshold).toBe(95);  // style
     expect(REVISION_STAGES[3].passThreshold).toBe(95);  // final
   });
 
@@ -293,6 +311,52 @@ describe('runMultiStageRevision', () => {
 
     expect(typeof result.durationMs).toBe('number');
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should remove immersive rhythm flatlines through style-stage rewrite', async () => {
+    const profile = {
+      minImmersiveRhythmAnchorDensityPer1000: 2.4,
+      maxImmersiveRhythmFlatlineRun: 5,
+    };
+    const initial = evaluateProseTaste(IMMERSIVE_RHYTHM_FLATLINE_CONTENT, {
+      profile,
+      threshold: 95,
+    });
+    expect(initial.issues.map(issue => issue.code)).toContain('immersive-rhythm-flatline');
+
+    const mockSurgeon: SurgeonCallback = vi.fn().mockImplementation(async (prompt, directive) => {
+      if (
+        directive.issue.includes('문단 리듬이 평평합니다') ||
+        directive.instruction.includes('장면 진행으로 다시 구성')
+      ) {
+        return GROUNDED_IMMERSIVE_REVISION;
+      }
+
+      const match = prompt.match(/```\n([\s\S]*?)\n```/);
+      return match ? match[1] : '';
+    });
+
+    const result = await runMultiStageRevision(
+      IMMERSIVE_RHYTHM_FLATLINE_CONTENT,
+      mockSurgeon,
+      {
+        proseTasteProfile: profile,
+      }
+    );
+
+    expect(
+      vi.mocked(mockSurgeon).mock.calls.some(([, directive]) =>
+        directive.type === 'style-alignment' &&
+        directive.instruction.includes('장면 진행으로 다시 구성')
+      )
+    ).toBe(true);
+
+    const revised = evaluateProseTaste(result.finalContent, {
+      profile,
+      threshold: 95,
+    });
+    expect(revised.issues.map(issue => issue.code)).not.toContain('immersive-rhythm-flatline');
+    expect(result.finalContent).toContain('봉투를 컵 아래로 밀었다');
   });
 });
 
