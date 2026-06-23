@@ -4,6 +4,7 @@ import {
   evaluateProseTaste,
 } from '../../src/quality/prose-taste-gate.js';
 import { StyleStageEvaluator } from '../../src/quality/stage-evaluators.js';
+import { validateScopeCompliance } from '../../src/pipeline/prose-surgeon.js';
 
 const CLEAN_PROSE = `
 비가 그친 뒤 골목의 물웅덩이가 간판 불빛을 천천히 흔들었다.
@@ -2905,5 +2906,6 @@ describe('StyleStageEvaluator prose taste integration', () => {
     expect(directive?.instruction).toContain('선택 비용');
     expect(directive?.instruction).toContain('단문 나열로 해결하지 마세요');
     expect(directive?.maxScope).toBe(3);
+    expect(validateScopeCompliance(directive!).valid).toBe(true);
   });
 });

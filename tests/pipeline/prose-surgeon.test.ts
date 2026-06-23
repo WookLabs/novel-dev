@@ -181,6 +181,23 @@ describe('validateScopeCompliance', () => {
 
     expect(result.valid).toBe(true);
   });
+
+  it('should allow style alignment to revise up to three paragraphs', () => {
+    const directive = createMockDirective({
+      id: 'dir_style-alignment_001',
+      type: 'style-alignment',
+      maxScope: 3,
+      location: {
+        sceneNumber: 1,
+        paragraphStart: 0,
+        paragraphEnd: 2,
+      },
+    });
+
+    const result = validateScopeCompliance(directive);
+
+    expect(result.valid).toBe(true);
+  });
 });
 
 // ============================================================================

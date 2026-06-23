@@ -69,7 +69,7 @@ export const MAX_SCOPE_LIMITS: Record<DirectiveType, number> = {
   'banned-expression': 1,
   'texture-enrichment': 2,
   // Advanced quality (Phase 4)
-  'style-alignment': 2,
+  'style-alignment': 3,
   'subtext-injection': 2,
   'voice-drift': 2,
   'arc-alignment': 2,
